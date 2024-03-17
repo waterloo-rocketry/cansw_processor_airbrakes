@@ -731,10 +731,12 @@ void StartDefaultTask(void *argument)
 		}*/
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, LED_state);
 		LED_state = !LED_state;
+
 		can_msg_t message;
 		build_board_stat_msg(12345678, E_NOMINAL, NULL, 0, &message);
 		can_send(&message);
-		HAL_Delay (500);
+
+		HAL_Delay (1000);
 		osDelay(1);
 	}
   /* USER CODE END 5 */
