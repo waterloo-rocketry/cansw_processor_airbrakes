@@ -24,6 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+#include "canlib.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -86,39 +87,11 @@ static void MX_UART4_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
-void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs);
+//void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-FDCAN_TxHeaderTypeDef   TxHeader;
-  FDCAN_RxHeaderTypeDef   RxHeader;
-  uint8_t               TxData[8];
-  uint8_t               RxData[8];
-  int indx = 0;
-
-  // FDCAN1 Callback
-  // FDCAN2 Callback
-  void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs)
-    {
-      if((RxFifo0ITs & FDCAN_IT_RX_FIFO0_NEW_MESSAGE) != RESET)
-      {
-        /* Retreive Rx messages from RX FIFO0 */
-        if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK)
-        {
-        /* Reception Error */
-        Error_Handler();
-        }
-
-        if (HAL_FDCAN_ActivateNotification(hfdcan, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK)
-        {
-          /* Notification Error */
-          Error_Handler();
-        }
-      }
-    }
-
 
 /* USER CODE END 0 */
 
@@ -165,7 +138,7 @@ int main(void)
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
 
-    /* USER CODE END 2 */
+  /* USER CODE END 2 */
 
   /* Init scheduler */
   osKernelInitialize();
@@ -490,15 +463,15 @@ static void MX_FDCAN1_Init(void)
   hfdcan1.Init.MessageRAMOffset = 0;
   hfdcan1.Init.StdFiltersNbr = 0;
   hfdcan1.Init.ExtFiltersNbr = 0;
-  hfdcan1.Init.RxFifo0ElmtsNbr = 4;
+  hfdcan1.Init.RxFifo0ElmtsNbr = 64;
   hfdcan1.Init.RxFifo0ElmtSize = FDCAN_DATA_BYTES_8;
   hfdcan1.Init.RxFifo1ElmtsNbr = 0;
   hfdcan1.Init.RxFifo1ElmtSize = FDCAN_DATA_BYTES_8;
   hfdcan1.Init.RxBuffersNbr = 0;
   hfdcan1.Init.RxBufferSize = FDCAN_DATA_BYTES_8;
-  hfdcan1.Init.TxEventsNbr = 0;
+  hfdcan1.Init.TxEventsNbr = 32;
   hfdcan1.Init.TxBuffersNbr = 0;
-  hfdcan1.Init.TxFifoQueueElmtsNbr = 4;
+  hfdcan1.Init.TxFifoQueueElmtsNbr = 32;
   hfdcan1.Init.TxFifoQueueMode = FDCAN_TX_FIFO_OPERATION;
   hfdcan1.Init.TxElmtSize = FDCAN_DATA_BYTES_8;
   if (HAL_FDCAN_Init(&hfdcan1) != HAL_OK)
@@ -729,6 +702,10 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+void can_handle_rx(const can_msg_t *message){
+	return;
+}
+
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -741,43 +718,25 @@ static void MX_GPIO_Init(void)
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
-	if(HAL_FDCAN_Start(&hfdcan1)!= HAL_OK)
-		     {
-		   	  Error_Handler();
-		     }
-		     // Activate the notification for new data in FIFO0 for FDCAN1
-		     if (HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK)
-		     {
-		        //Notification Error
-		       Error_Handler();
-		     }
+	can_init_stm(&hfdcan1, can_handle_rx);
+	uint32_t LED_state = 0;
+	/* Infinite loop */
+	for(;;)
+	{
+		/*sprintf ((char *)TxData, "CANTX%d", indx++);
 
-		    TxHeader.Identifier = 0x11;
-		  	TxHeader.IdType = FDCAN_STANDARD_ID;
-		  	TxHeader.TxFrameType = FDCAN_DATA_FRAME;
-		  	TxHeader.DataLength = FDCAN_DLC_BYTES_8;
-		  	TxHeader.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
-		  	TxHeader.BitRateSwitch = FDCAN_BRS_OFF;
-		  	TxHeader.FDFormat = FDCAN_CLASSIC_CAN;
-		  	TxHeader.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
-		  	TxHeader.MessageMarker = 0;
-
-		  	uint32_t LED_state = 0;
-  /* Infinite loop */
-  for(;;)
-  {
-
-	  sprintf ((char *)TxData, "CANTX%d", indx++);
-
-	   if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, TxData)!= HAL_OK)
-	   {
+		if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, TxData)!= HAL_OK)
+		{
 		Error_Handler();
-	   }
-	   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, LED_state);
-	   LED_state = !LED_state;
-	   HAL_Delay (500);
-	   osDelay(1);
-  }
+		}*/
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, LED_state);
+		LED_state = !LED_state;
+		can_msg_t message;
+		build_board_stat_msg(12345678, E_NOMINAL, NULL, 0, &message);
+		can_send(&message);
+		HAL_Delay (500);
+		osDelay(1);
+	}
   /* USER CODE END 5 */
 }
 
