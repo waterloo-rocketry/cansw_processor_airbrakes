@@ -67,6 +67,58 @@ const osThreadAttr_t defaultTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
+/* Definitions for stateEst */
+osThreadId_t stateEstHandle;
+const osThreadAttr_t stateEst_attributes = {
+  .name = "stateEst",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for control */
+osThreadId_t controlHandle;
+const osThreadAttr_t control_attributes = {
+  .name = "control",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for trajectory */
+osThreadId_t trajectoryHandle;
+const osThreadAttr_t trajectory_attributes = {
+  .name = "trajectory",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for sdLogWrite */
+osThreadId_t sdLogWriteHandle;
+const osThreadAttr_t sdLogWrite_attributes = {
+  .name = "sdLogWrite",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for healthCheck */
+osThreadId_t healthCheckHandle;
+const osThreadAttr_t healthCheck_attributes = {
+  .name = "healthCheck",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for flightPhase */
+osThreadId_t flightPhaseHandle;
+const osThreadAttr_t flightPhase_attributes = {
+  .name = "flightPhase",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for altitudeQueue */
+osMessageQueueId_t altitudeQueueHandle;
+const osMessageQueueAttr_t altitudeQueue_attributes = {
+  .name = "altitudeQueue"
+};
+/* Definitions for eventTest */
+osEventFlagsId_t eventTestHandle;
+const osEventFlagsAttr_t eventTest_attributes = {
+  .name = "eventTest"
+};
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -85,6 +137,12 @@ static void MX_RTC_Init(void);
 static void MX_SDMMC1_SD_Init(void);
 static void MX_UART4_Init(void);
 void StartDefaultTask(void *argument);
+void stateEstimationTask(void *argument);
+void controlTask(void *argument);
+void trajectoryEstimationTask(void *argument);
+void sdLogWriteTask(void *argument);
+void healthCheckTask(void *argument);
+void flightPhaseTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 //void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs);
@@ -155,6 +213,10 @@ int main(void)
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
+  /* Create the queue(s) */
+  /* creation of altitudeQueue */
+  altitudeQueueHandle = osMessageQueueNew (8, sizeof(int32_t), &altitudeQueue_attributes);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
@@ -163,9 +225,31 @@ int main(void)
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
+  /* creation of stateEst */
+  stateEstHandle = osThreadNew(stateEstimationTask, NULL, &stateEst_attributes);
+
+  /* creation of control */
+  controlHandle = osThreadNew(controlTask, NULL, &control_attributes);
+
+  /* creation of trajectory */
+  trajectoryHandle = osThreadNew(trajectoryEstimationTask, NULL, &trajectory_attributes);
+
+  /* creation of sdLogWrite */
+  sdLogWriteHandle = osThreadNew(sdLogWriteTask, NULL, &sdLogWrite_attributes);
+
+  /* creation of healthCheck */
+  healthCheckHandle = osThreadNew(healthCheckTask, NULL, &healthCheck_attributes);
+
+  /* creation of flightPhase */
+  flightPhaseHandle = osThreadNew(flightPhaseTask, NULL, &flightPhase_attributes);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
+
+  /* Create the event(s) */
+  /* creation of eventTest */
+  eventTestHandle = osEventFlagsNew(&eventTest_attributes);
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
@@ -740,6 +824,114 @@ void StartDefaultTask(void *argument)
 		osDelay(1);
 	}
   /* USER CODE END 5 */
+}
+
+/* USER CODE BEGIN Header_stateEstimationTask */
+/**
+* @brief Function implementing the stateEst thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_stateEstimationTask */
+void stateEstimationTask(void *argument)
+{
+  /* USER CODE BEGIN stateEstimationTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END stateEstimationTask */
+}
+
+/* USER CODE BEGIN Header_controlTask */
+/**
+* @brief Function implementing the control thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_controlTask */
+void controlTask(void *argument)
+{
+  /* USER CODE BEGIN controlTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END controlTask */
+}
+
+/* USER CODE BEGIN Header_trajectoryEstimationTask */
+/**
+* @brief Function implementing the trajectory thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_trajectoryEstimationTask */
+void trajectoryEstimationTask(void *argument)
+{
+  /* USER CODE BEGIN trajectoryEstimationTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END trajectoryEstimationTask */
+}
+
+/* USER CODE BEGIN Header_sdLogWriteTask */
+/**
+* @brief Function implementing the sdLogWrite thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_sdLogWriteTask */
+void sdLogWriteTask(void *argument)
+{
+  /* USER CODE BEGIN sdLogWriteTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END sdLogWriteTask */
+}
+
+/* USER CODE BEGIN Header_healthCheckTask */
+/**
+* @brief Function implementing the healthCheck thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_healthCheckTask */
+void healthCheckTask(void *argument)
+{
+  /* USER CODE BEGIN healthCheckTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END healthCheckTask */
+}
+
+/* USER CODE BEGIN Header_flightPhaseTask */
+/**
+* @brief Function implementing the flightPhase thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_flightPhaseTask */
+void flightPhaseTask(void *argument)
+{
+  /* USER CODE BEGIN flightPhaseTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END flightPhaseTask */
 }
 
 /**
