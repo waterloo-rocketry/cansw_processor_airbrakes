@@ -120,7 +120,7 @@ const osEventFlagsAttr_t eventTest_attributes = {
   .name = "eventTest"
 };
 /* USER CODE BEGIN PV */
-
+uint32 idx;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -804,6 +804,7 @@ void StartDefaultTask(void *argument)
   /* USER CODE BEGIN 5 */
 	can_init_stm(&hfdcan1, can_handle_rx);
 	uint32_t LED_state = 0;
+	idx = 0;
 	/* Infinite loop */
 	for(;;)
 	{
@@ -817,11 +818,10 @@ void StartDefaultTask(void *argument)
 		LED_state = !LED_state;
 
 		can_msg_t message;
-		build_board_stat_msg(12345678, E_NOMINAL, NULL, 0, &message);
+		build_board_stat_msg(idx, E_NOMINAL, NULL, 0, &message);
 		can_send(&message);
 
-		HAL_Delay (1000);
-		osDelay(1);
+		osDelay(1000);
 	}
   /* USER CODE END 5 */
 }
@@ -839,7 +839,8 @@ void stateEstimationTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	  idx++;
+    osDelay(100);
   }
   /* USER CODE END stateEstimationTask */
 }
@@ -854,10 +855,19 @@ void stateEstimationTask(void *argument)
 void controlTask(void *argument)
 {
   /* USER CODE BEGIN controlTask */
+	//TODO: Ensure altitude estimate access is thread-safe, use mutex or queue as necessary
+	//TODO: Add controller gains and integral/derivative terms
+	//TODO: Add apogee target (and method to edit via CAN?)
+	uint32 min_controller_frequency = 10; //10 Hz
+	uint32 controller_delay_ticks = 1000 / min_controller_frequency / portTICK_RATE_MS; //equivalent FreeRTOS ticks
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	 //TODO: Fetch updated apogee estimate
+	 //TODO: Check flight phase flag
+		 //TODO: Calculate updated control output and clamp btw 0 and 1
+		 //TODO: Push control output to CAN bus
+    osDelayUntil(controller_delay_ticks); //Implements periodic behaviour (nominal delay - time spent running the loop code)
   }
   /* USER CODE END controlTask */
 }
