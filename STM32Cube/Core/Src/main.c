@@ -120,7 +120,7 @@ const osEventFlagsAttr_t eventTest_attributes = {
   .name = "eventTest"
 };
 /* USER CODE BEGIN PV */
-uint32 idx;
+uint32_t idx;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -858,8 +858,8 @@ void controlTask(void *argument)
 	//TODO: Ensure altitude estimate access is thread-safe, use mutex or queue as necessary
 	//TODO: Add controller gains and integral/derivative terms
 	//TODO: Add apogee target (and method to edit via CAN?)
-	uint32 min_controller_frequency = 10; //10 Hz
-	uint32 controller_delay_ticks = 1000 / min_controller_frequency / portTICK_RATE_MS; //equivalent FreeRTOS ticks
+	uint32_t min_controller_frequency = 10; //10 Hz
+	uint32_t controller_delay_ticks = 1000 / min_controller_frequency / portTICK_RATE_MS; //equivalent FreeRTOS ticks
   /* Infinite loop */
   for(;;)
   {
@@ -885,7 +885,7 @@ void trajectoryEstimationTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    osDelay(1000);
   }
   /* USER CODE END trajectoryEstimationTask */
 }
@@ -900,10 +900,14 @@ void trajectoryEstimationTask(void *argument)
 void sdLogWriteTask(void *argument)
 {
   /* USER CODE BEGIN sdLogWriteTask */
+	//TODO: Wait for state estimation to load drag table into RAM so we don't block that operation
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	  //TODO: Open log file stream
+	  //TODO: Take data from log message buffer and write to SD card; figure out how to not get preempted
+	  //TODO: Close log file stream
+    osDelay(1000);
   }
   /* USER CODE END sdLogWriteTask */
 }
@@ -921,7 +925,10 @@ void healthCheckTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	//TODO: Read ADC channels
+	//TODO: convert ADC readings to target values
+	//TODO: push out of range errors to CAN bus; push values to bus in debug mode
+    osDelay(1000);
   }
   /* USER CODE END healthCheckTask */
 }
@@ -936,10 +943,15 @@ void healthCheckTask(void *argument)
 void flightPhaseTask(void *argument)
 {
   /* USER CODE BEGIN flightPhaseTask */
+
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	//TODO: Check injector valve message (actually do it this time)
+	//TODO: Start internal timer, check timer
+		//TODO: Set coast flag once timer has elapsed time from launch
+		//TODO: Set recovery flag once time has elapsed from launch
+    osDelay(1000);
   }
   /* USER CODE END flightPhaseTask */
 }
@@ -955,6 +967,7 @@ void Error_Handler(void)
   __disable_irq();
   while (1)
   {
+	  //TODO: Report error condition over BUS, attempt to command airbrakes closed
   }
   /* USER CODE END Error_Handler_Debug */
 }
