@@ -31,6 +31,11 @@
 	</natures>
 	<linkedResources>
 		<link>
+			<name>Fusion</name>
+			<type>2</type>
+			<locationURI>PROJECT_LOC/Fusion</locationURI>
+		</link>
+		<link>
 			<name>canlib</name>
 			<type>2</type>
 			<locationURI>PROJECT_LOC/canlib</locationURI>
