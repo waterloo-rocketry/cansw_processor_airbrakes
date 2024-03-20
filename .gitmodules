@@ -1,3 +1,6 @@
 [submodule "STM32Cube/canlib"]
 	path = STM32Cube/canlib
 	url = https://github.com/waterloo-rocketry/canlib.git
+[submodule "STM32Cube/Fusion"]
+	path = STM32Cube/Fusion
+	url = https://github.com/xioTechnologies/Fusion.git

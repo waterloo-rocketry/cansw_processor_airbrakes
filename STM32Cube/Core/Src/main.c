@@ -67,8 +67,60 @@ const osThreadAttr_t defaultTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
+/* Definitions for stateEst */
+osThreadId_t stateEstHandle;
+const osThreadAttr_t stateEst_attributes = {
+  .name = "stateEst",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for control */
+osThreadId_t controlHandle;
+const osThreadAttr_t control_attributes = {
+  .name = "control",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for trajectory */
+osThreadId_t trajectoryHandle;
+const osThreadAttr_t trajectory_attributes = {
+  .name = "trajectory",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for sdLogWrite */
+osThreadId_t sdLogWriteHandle;
+const osThreadAttr_t sdLogWrite_attributes = {
+  .name = "sdLogWrite",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for healthCheck */
+osThreadId_t healthCheckHandle;
+const osThreadAttr_t healthCheck_attributes = {
+  .name = "healthCheck",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for flightPhase */
+osThreadId_t flightPhaseHandle;
+const osThreadAttr_t flightPhase_attributes = {
+  .name = "flightPhase",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for altitudeQueue */
+osMessageQueueId_t altitudeQueueHandle;
+const osMessageQueueAttr_t altitudeQueue_attributes = {
+  .name = "altitudeQueue"
+};
+/* Definitions for eventTest */
+osEventFlagsId_t eventTestHandle;
+const osEventFlagsAttr_t eventTest_attributes = {
+  .name = "eventTest"
+};
 /* USER CODE BEGIN PV */
-
+uint32_t idx;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -85,6 +137,12 @@ static void MX_RTC_Init(void);
 static void MX_SDMMC1_SD_Init(void);
 static void MX_UART4_Init(void);
 void StartDefaultTask(void *argument);
+void stateEstimationTask(void *argument);
+void controlTask(void *argument);
+void trajectoryEstimationTask(void *argument);
+void sdLogWriteTask(void *argument);
+void healthCheckTask(void *argument);
+void flightPhaseTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 //void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs);
@@ -155,6 +213,10 @@ int main(void)
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
+  /* Create the queue(s) */
+  /* creation of altitudeQueue */
+  altitudeQueueHandle = osMessageQueueNew (8, sizeof(int32_t), &altitudeQueue_attributes);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
@@ -163,9 +225,31 @@ int main(void)
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
+  /* creation of stateEst */
+  stateEstHandle = osThreadNew(stateEstimationTask, NULL, &stateEst_attributes);
+
+  /* creation of control */
+  controlHandle = osThreadNew(controlTask, NULL, &control_attributes);
+
+  /* creation of trajectory */
+  trajectoryHandle = osThreadNew(trajectoryEstimationTask, NULL, &trajectory_attributes);
+
+  /* creation of sdLogWrite */
+  sdLogWriteHandle = osThreadNew(sdLogWriteTask, NULL, &sdLogWrite_attributes);
+
+  /* creation of healthCheck */
+  healthCheckHandle = osThreadNew(healthCheckTask, NULL, &healthCheck_attributes);
+
+  /* creation of flightPhase */
+  flightPhaseHandle = osThreadNew(flightPhaseTask, NULL, &flightPhase_attributes);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
+
+  /* Create the event(s) */
+  /* creation of eventTest */
+  eventTestHandle = osEventFlagsNew(&eventTest_attributes);
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
@@ -685,9 +769,13 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOE_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : PB5 */
   GPIO_InitStruct.Pin = GPIO_PIN_5;
@@ -695,6 +783,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PE0 PE1 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
@@ -720,6 +815,7 @@ void StartDefaultTask(void *argument)
   /* USER CODE BEGIN 5 */
 	can_init_stm(&hfdcan1, can_handle_rx);
 	uint32_t LED_state = 0;
+	idx = 0;
 	/* Infinite loop */
 	for(;;)
 	{
@@ -733,13 +829,142 @@ void StartDefaultTask(void *argument)
 		LED_state = !LED_state;
 
 		can_msg_t message;
-		build_board_stat_msg(12345678, E_NOMINAL, NULL, 0, &message);
+		build_board_stat_msg(idx, E_NOMINAL, NULL, 0, &message);
 		can_send(&message);
 
-		HAL_Delay (1000);
-		osDelay(1);
+		osDelay(1000);
 	}
   /* USER CODE END 5 */
+}
+
+/* USER CODE BEGIN Header_stateEstimationTask */
+/**
+* @brief Function implementing the stateEst thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_stateEstimationTask */
+void stateEstimationTask(void *argument)
+{
+  /* USER CODE BEGIN stateEstimationTask */
+  /* Infinite loop */
+  for(;;)
+  {
+	  idx++;
+    osDelay(100);
+  }
+  /* USER CODE END stateEstimationTask */
+}
+
+/* USER CODE BEGIN Header_controlTask */
+/**
+* @brief Function implementing the control thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_controlTask */
+void controlTask(void *argument)
+{
+  /* USER CODE BEGIN controlTask */
+	//TODO: Ensure altitude estimate access is thread-safe, use mutex or queue as necessary
+	//TODO: Add controller gains and integral/derivative terms
+	//TODO: Add apogee target (and method to edit via CAN?)
+	uint32_t min_controller_frequency = 10; //10 Hz
+	uint32_t controller_delay_ticks = 1000 / min_controller_frequency / portTICK_RATE_MS; //equivalent FreeRTOS ticks
+  /* Infinite loop */
+  for(;;)
+  {
+	 //TODO: Fetch updated apogee estimate
+	 //TODO: Check flight phase flag
+		 //TODO: Calculate updated control output and clamp btw 0 and 1
+		 //TODO: Push control output to CAN bus
+    osDelayUntil(controller_delay_ticks); //Implements periodic behaviour (nominal delay - time spent running the loop code)
+  }
+  /* USER CODE END controlTask */
+}
+
+/* USER CODE BEGIN Header_trajectoryEstimationTask */
+/**
+* @brief Function implementing the trajectory thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_trajectoryEstimationTask */
+void trajectoryEstimationTask(void *argument)
+{
+  /* USER CODE BEGIN trajectoryEstimationTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1000);
+  }
+  /* USER CODE END trajectoryEstimationTask */
+}
+
+/* USER CODE BEGIN Header_sdLogWriteTask */
+/**
+* @brief Function implementing the sdLogWrite thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_sdLogWriteTask */
+void sdLogWriteTask(void *argument)
+{
+  /* USER CODE BEGIN sdLogWriteTask */
+	//TODO: Wait for state estimation to load drag table into RAM so we don't block that operation
+  /* Infinite loop */
+  for(;;)
+  {
+	  //TODO: Open log file stream
+	  //TODO: Take data from log message buffer and write to SD card; figure out how to not get preempted
+	  //TODO: Close log file stream
+    osDelay(1000);
+  }
+  /* USER CODE END sdLogWriteTask */
+}
+
+/* USER CODE BEGIN Header_healthCheckTask */
+/**
+* @brief Function implementing the healthCheck thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_healthCheckTask */
+void healthCheckTask(void *argument)
+{
+  /* USER CODE BEGIN healthCheckTask */
+  /* Infinite loop */
+  for(;;)
+  {
+	//TODO: Read ADC channels
+	//TODO: convert ADC readings to target values
+	//TODO: push out of range errors to CAN bus; push values to bus in debug mode
+    osDelay(1000);
+  }
+  /* USER CODE END healthCheckTask */
+}
+
+/* USER CODE BEGIN Header_flightPhaseTask */
+/**
+* @brief Function implementing the flightPhase thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_flightPhaseTask */
+void flightPhaseTask(void *argument)
+{
+  /* USER CODE BEGIN flightPhaseTask */
+
+  /* Infinite loop */
+  for(;;)
+  {
+	//TODO: Check injector valve message (actually do it this time)
+	//TODO: Start internal timer, check timer
+		//TODO: Set coast flag once timer has elapsed time from launch
+		//TODO: Set recovery flag once time has elapsed from launch
+    osDelay(1000);
+  }
+  /* USER CODE END flightPhaseTask */
 }
 
 /**
@@ -753,6 +978,7 @@ void Error_Handler(void)
   __disable_irq();
   while (1)
   {
+	  //TODO: Report error condition over BUS, attempt to command airbrakes closed
   }
   /* USER CODE END Error_Handler_Debug */
 }
