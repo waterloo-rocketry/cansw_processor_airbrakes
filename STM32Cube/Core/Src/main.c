@@ -29,12 +29,20 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+typedef struct {
+	float altitude;
+	uint32_t timestamp_ms;
+} altitudeMessage;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define CONTROLLER_GAIN_P 0.05
+#define CONTROLLER_GAIN_I 0.01
+#define CONTROLLER_GAIN_D 0.0
+#define ALTITUDE_TARGET_FT 20000
+#define CONTROLLER_MAX_EXTENSION 1.0
+#define CONTROLLER_MIN_EXTENSION 0.0
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -109,11 +117,6 @@ const osThreadAttr_t flightPhase_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
-/* Definitions for altitudeQueue */
-osMessageQueueId_t altitudeQueueHandle;
-const osMessageQueueAttr_t altitudeQueue_attributes = {
-  .name = "altitudeQueue"
-};
 /* Definitions for eventTest */
 osEventFlagsId_t eventTestHandle;
 const osEventFlagsAttr_t eventTest_attributes = {
@@ -121,6 +124,8 @@ const osEventFlagsAttr_t eventTest_attributes = {
 };
 /* USER CODE BEGIN PV */
 uint32_t idx;
+QueueHandle_t altitudeQueue; //store predicted apogee TODO: change the name because we get altitude in, this is apogee
+QueueHandle_t busQueue; //Store outgoing CAN messages
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -145,7 +150,7 @@ void healthCheckTask(void *argument);
 void flightPhaseTask(void *argument);
 
 /* USER CODE BEGIN PFP */
-//void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -212,10 +217,6 @@ int main(void)
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
-
-  /* Create the queue(s) */
-  /* creation of altitudeQueue */
-  altitudeQueueHandle = osMessageQueueNew (8, sizeof(int32_t), &altitudeQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -813,6 +814,12 @@ void can_handle_rx(const can_msg_t *message){
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
+	altitudeQueue = xQueueCreate(8, sizeof(altitudeMessage *));
+	if(altitudeQueue == NULL)
+		{
+			ErrorHandler(); //Not enough memory to create queue!
+		}
+
 	can_init_stm(&hfdcan1, can_handle_rx);
 	uint32_t LED_state = 0;
 	idx = 0;
@@ -866,20 +873,47 @@ void stateEstimationTask(void *argument)
 void controlTask(void *argument)
 {
   /* USER CODE BEGIN controlTask */
-	//TODO: Ensure altitude estimate access is thread-safe, use mutex or queue as necessary
-	//TODO: Add controller gains and integral/derivative terms
-	//TODO: Add apogee target (and method to edit via CAN?)
-	uint32_t min_controller_frequency = 10; //10 Hz
+	uint32_t min_controller_frequency = 10; //10 Hz TODO: Make defines for these somewhere more visible
 	uint32_t controller_delay_ticks = 1000 / min_controller_frequency / portTICK_RATE_MS; //equivalent FreeRTOS ticks
+
+	altitudeMessage altitudeEstimate;
+
+	//TODO: Put inside of struct
+	float controller_term_P = 0;
+	float controller_term_I = 0;
+	float controller_term_D = 0;
+	float target_altitude = ALTITUDE_TARGET_FT;
+	float last_error;
+	float error;
+	float target_extension;
+	TickType_t last_ticks = xTaskGetTickCount();
+
   /* Infinite loop */
-  for(;;)
-  {
-	 //TODO: Fetch updated apogee estimate
-	 //TODO: Check flight phase flag
-		 //TODO: Calculate updated control output and clamp btw 0 and 1
-		 //TODO: Push control output to CAN bus
-    osDelayUntil(controller_delay_ticks); //Implements periodic behaviour (nominal delay - time spent running the loop code)
-  }
+	for(;;)
+	{
+		//xQueueReceive(altitudeQueue, &altitudeEstimate, 10);
+		altitudeEstimate.altitude = idx*10; //Test code
+
+		error = target_altitude - altitudeEstimate.altitude;
+		controller_term_P = error * CONTROLLER_GAIN_P;
+		float dt = (float)(xTaskGetTickCount() - last_ticks) / (portTICK_RATE_MS * 1000); //time delay in ms TODO: convert to more accurate source
+		controller_term_I = controller_term_I + CONTROLLER_GAIN_I * error * dt; //Add some time measure here
+		controller_term_D = (error - last_error) * CONTROLLER_GAIN_D / dt; //here too
+		last_ticks = xTaskGetTickCount();
+
+		float extension = controller_term_P + controller_term_I - controller_term_D;
+
+		if(extension > CONTROLLER_MAX_EXTENSION) extension = CONTROLLER_MAX_EXTENSION;
+		if(extension < CONTROLLER_MIN_EXTENSION) extension = CONTROLLER_MIN_EXTENSION;
+
+		//xQueueSend(busQueue);
+
+		//Test Code
+		char buffer[16] = {0};
+		sprintf(&buffer, "Target Ext: %f", extension);
+		HAL_UART_Transmit(&buffer, art4, &buffer, 16, 10); //Blocking API, 10ms timeout
+		osDelayUntil(controller_delay_ticks); //Implements periodic behaviour (nominal delay - time spent running the loop code)
+	}
   /* USER CODE END controlTask */
 }
 
