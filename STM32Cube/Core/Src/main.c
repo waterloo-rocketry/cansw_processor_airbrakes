@@ -109,6 +109,13 @@ const osThreadAttr_t flightPhase_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
+/* Definitions for canHandler */
+osThreadId_t canHandlerHandle;
+const osThreadAttr_t canHandler_attributes = {
+  .name = "canHandler",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityAboveNormal,
+};
 /* Definitions for altitudeQueue */
 osMessageQueueId_t altitudeQueueHandle;
 const osMessageQueueAttr_t altitudeQueue_attributes = {
@@ -121,6 +128,8 @@ const osEventFlagsAttr_t eventTest_attributes = {
 };
 /* USER CODE BEGIN PV */
 uint32_t idx;
+QueueHandle_t busQueue;
+uint32_t LED_state = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -143,6 +152,7 @@ void trajectoryEstimationTask(void *argument);
 void sdLogWriteTask(void *argument);
 void healthCheckTask(void *argument);
 void flightPhaseTask(void *argument);
+void canHandlerTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 //void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs);
@@ -218,7 +228,8 @@ int main(void)
   altitudeQueueHandle = osMessageQueueNew (8, sizeof(int32_t), &altitudeQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
+  busQueue = xQueueCreate(16, sizeof(can_msg_t));
+  can_init_stm(&hfdcan1, can_handle_rx);
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -243,6 +254,9 @@ int main(void)
   /* creation of flightPhase */
   flightPhaseHandle = osThreadNew(flightPhaseTask, NULL, &flightPhase_attributes);
 
+  /* creation of canHandler */
+  canHandlerHandle = osThreadNew(canHandlerTask, NULL, &canHandler_attributes);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -253,6 +267,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
+
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
@@ -798,6 +813,7 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 void can_handle_rx(const can_msg_t *message){
+
 	return;
 }
 
@@ -813,25 +829,17 @@ void can_handle_rx(const can_msg_t *message){
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
-	can_init_stm(&hfdcan1, can_handle_rx);
-	uint32_t LED_state = 0;
+
 	idx = 0;
 	/* Infinite loop */
 	for(;;)
 	{
-		/*sprintf ((char *)TxData, "CANTX%d", indx++);
-
-		if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, TxData)!= HAL_OK)
-		{
-		Error_Handler();
-		}*/
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, LED_state);
-		LED_state = !LED_state;
-
 		can_msg_t message;
 		build_board_stat_msg(idx, E_NOMINAL, NULL, 0, &message);
-		can_send(&message);
-
+		if(xQueueSend(busQueue, &message, 1) != pdTRUE)
+		{
+			//Push a bus full error to the log queue
+		}
 		osDelay(1000);
 	}
   /* USER CODE END 5 */
@@ -965,6 +973,31 @@ void flightPhaseTask(void *argument)
     osDelay(1000);
   }
   /* USER CODE END flightPhaseTask */
+}
+
+/* USER CODE BEGIN Header_canHandlerTask */
+/**
+* @brief Function implementing the canHandler thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_canHandlerTask */
+void canHandlerTask(void *argument)
+{
+  /* USER CODE BEGIN canHandlerTask */
+  /* Infinite loop */
+  for(;;)
+  {
+	can_msg_t tx_msg;
+	//Block the thread until we see data in the bus queue or 5 ticks elapse
+	if(xQueueReceive(busQueue, &tx_msg, 5) == pdTRUE) //Returns pdTRUE if we got a message, pdFALSE if timed out
+	{
+		can_send(&tx_msg);
+		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_1, LED_state); //toggle D3 when we send a CAN message
+		LED_state = !LED_state;
+	}
+  }
+  /* USER CODE END canHandlerTask */
 }
 
 /**
