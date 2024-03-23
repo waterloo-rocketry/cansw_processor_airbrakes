@@ -25,6 +25,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "canlib.h"
+#include "can_handler.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -128,8 +129,7 @@ const osEventFlagsAttr_t eventTest_attributes = {
 };
 /* USER CODE BEGIN PV */
 uint32_t idx;
-QueueHandle_t busQueue;
-uint32_t LED_state = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -152,7 +152,7 @@ void trajectoryEstimationTask(void *argument);
 void sdLogWriteTask(void *argument);
 void healthCheckTask(void *argument);
 void flightPhaseTask(void *argument);
-void canHandlerTask(void *argument);
+//void canHandlerTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 //void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs);
@@ -228,8 +228,7 @@ int main(void)
   altitudeQueueHandle = osMessageQueueNew (8, sizeof(int32_t), &altitudeQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  busQueue = xQueueCreate(16, sizeof(can_msg_t));
-  can_init_stm(&hfdcan1, can_handle_rx);
+  canHandlerInit(); //create bus queue
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -812,10 +811,7 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-void can_handle_rx(const can_msg_t *message){
 
-	return;
-}
 
 /* USER CODE END 4 */
 
@@ -829,7 +825,6 @@ void can_handle_rx(const can_msg_t *message){
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
-
 	idx = 0;
 	/* Infinite loop */
 	for(;;)
@@ -859,7 +854,7 @@ void stateEstimationTask(void *argument)
   for(;;)
   {
 	  idx++;
-    osDelay(100);
+    osDelay(1000);
   }
   /* USER CODE END stateEstimationTask */
 }
@@ -982,23 +977,7 @@ void flightPhaseTask(void *argument)
 * @retval None
 */
 /* USER CODE END Header_canHandlerTask */
-void canHandlerTask(void *argument)
-{
-  /* USER CODE BEGIN canHandlerTask */
-  /* Infinite loop */
-  for(;;)
-  {
-	can_msg_t tx_msg;
-	//Block the thread until we see data in the bus queue or 5 ticks elapse
-	if(xQueueReceive(busQueue, &tx_msg, 5) == pdTRUE) //Returns pdTRUE if we got a message, pdFALSE if timed out
-	{
-		can_send(&tx_msg);
-		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_1, LED_state); //toggle D3 when we send a CAN message
-		LED_state = !LED_state;
-	}
-  }
-  /* USER CODE END canHandlerTask */
-}
+
 
 /**
   * @brief  This function is executed in case of error occurrence.
