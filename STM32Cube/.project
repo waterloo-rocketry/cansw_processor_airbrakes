@@ -40,5 +40,10 @@
 			<type>2</type>
 			<locationURI>PROJECT_LOC/canlib</locationURI>
 		</link>
+		<link>
+			<name>vnproglib</name>
+			<type>2</type>
+			<locationURI>PROJECT_LOC/vnproglib</locationURI>
+		</link>
 	</linkedResources>
 </projectDescription>
