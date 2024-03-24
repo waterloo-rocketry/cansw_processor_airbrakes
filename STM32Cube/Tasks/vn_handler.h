@@ -10,9 +10,12 @@
 
 #include "stm32h7xx_hal.h"
 #include "freertos.h"
+#include "vectornav.h"
 
 extern UART_HandleTypeDef huart1;
 extern TIM_HandleTypeDef htim1;
+
+extern xQueueHandle logQueue;
 
 typedef struct {
 	uint32 timestamp;
@@ -38,6 +41,9 @@ typedef struct {
 
 } vn_full_state_t;
 
+bool vnIMUSetup();
+
+void vnIMUHandler(void *argument);
 
 
 #endif /* VN_HANDLER_H_ */
