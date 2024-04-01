@@ -25,6 +25,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "canlib.h"
+#include "vn/util.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/

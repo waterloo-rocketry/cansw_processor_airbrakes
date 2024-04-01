@@ -10,7 +10,7 @@
 
 #include "stm32h7xx_hal.h"
 #include "freertos.h"
-#include "vectornav.h"
+#include "queue.h"
 
 extern UART_HandleTypeDef huart1;
 extern TIM_HandleTypeDef htim1;
@@ -18,7 +18,7 @@ extern TIM_HandleTypeDef htim1;
 extern xQueueHandle logQueue;
 
 typedef struct {
-	uint32 timestamp;
+	uint32_t timestamp;
 	float accel_x;
 	float accel_y;
 	float accel_z;
@@ -31,7 +31,7 @@ typedef struct {
 } vn_imu_data_t;
 
 typedef struct {
-	uint32 timestamp;
+	uint32_t timestamp;
 	float gps_lat;
 	float gps_lon;
 	float gps_alt;
@@ -41,7 +41,7 @@ typedef struct {
 
 } vn_full_state_t;
 
-bool vnIMUSetup();
+int vnIMUSetup();
 
 void vnIMUHandler(void *argument);
 
