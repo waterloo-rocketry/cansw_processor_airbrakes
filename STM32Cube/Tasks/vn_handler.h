@@ -17,6 +17,8 @@ extern TIM_HandleTypeDef htim1;
 
 extern xQueueHandle logQueue;
 
+#define DATA_MSG_LENGTH_MAX 100 //max # of bytes in binary output message
+
 typedef struct {
 	uint32_t timestamp;
 	float accel_x;
@@ -38,8 +40,12 @@ typedef struct {
 } vn_gps_data_t;
 
 typedef struct {
-
+//TODO: Define this struct
 } vn_full_state_t;
+
+typedef struct {
+	uint8_t buffer[DATA_MSG_LENGTH_MAX];
+} vn_binary_out;
 
 int vnIMUSetup();
 
