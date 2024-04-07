@@ -25,6 +25,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "canlib.h"
+#include "sdmmc.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -249,14 +250,19 @@ int main(void)
 
   /* Create the event(s) */
   /* creation of eventTest */
-  eventTestHandle = osEventFlagsNew(&eventTest_attributes);
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
-  osKernelStart();
+//  osKernelStart();
+
+  eventTestHandle = osEventFlagsNew(&eventTest_attributes);
+
+  xTaskCreate(sdmmcTask, "SDMMCTestingTask", 1000, NULL, 1, NULL);
+
+  vTaskStartScheduler();
 
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */

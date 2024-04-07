@@ -5,13 +5,14 @@
 extern "C" {
 #endif
 
-#include "sdmmc.c"
 #include "stm32h7xx_hal.h"
 #include "FreeRTOS.h"
-
+#include "task.h"
+#include "ff.h"
+#include <stdio.h>
 
 // function declarations
-
+void sdmmcTask(void* arguments);
 
 
 #ifdef __cplusplus
