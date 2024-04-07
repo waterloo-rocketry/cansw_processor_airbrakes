@@ -108,7 +108,7 @@ uint8_t MY2C_read1ByteRegister(uint8_t address, uint8_t reg)
  */
 HAL_StatusTypeDef MY2C_write1ByteRegister(uint8_t address, uint8_t reg, uint8_t data)
 {
-	return MY2C_writeNByteRegister_IT(address, reg, data, 2);
+	return MY2C_writeNByteRegister_IT(address, reg, data, 1);
 }
 
 // callbacks -------------------------------------
