@@ -7,7 +7,7 @@
 #include "FreeRTOS.h"
 #include "semphr.h"
 
-SemaphoreHandle_t I2CBinarySemaphore;
+SemaphoreHandle_t I2C4BinarySemaphore;
 
 extern I2C_HandleTypeDef hi2c4;
 
@@ -33,9 +33,9 @@ bool MY2C_init(void)
         return false;
     }
 
-	I2CBinarySemaphore = xSemaphoreCreateBinary();
+	I2C4BinarySemaphore = xSemaphoreCreateBinary();
 
-	if (I2CBinarySemaphore)
+	if (I2C4BinarySemaphore)
 	{
 		return true;
 	}
@@ -50,17 +50,16 @@ HAL_StatusTypeDef MY2C_readNByteRegister_IT(uint8_t address, uint8_t reg, uint8_
 {
 	HAL_StatusTypeDef status = HAL_OK;
 
-	status = HAL_I2C_IsDeviceReady(&hi2c4, address << 1, 50, 500);
+    // request async write, returning HAL_OK if it successfully started the write
+	status = HAL_I2C_Mem_Read_IT(&hi2c4, address << 1, reg, 1, data, len);
 
     if (status != HAL_OK)
     {
     	return status;
     }
 
-    // trigger i2c read to start, wait until interrupt gives semaphore
-	status = HAL_I2C_Mem_Read_IT(&hi2c4, address << 1, reg, 1, data, len);
-
-	if (xSemaphoreTake(I2CBinarySemaphore, pdMS_TO_TICKS(timeout_MS)) != pdTRUE)
+    // semaphore is given in the I2C4 interrupt when the write succeeded
+	if (xSemaphoreTake(I2C4BinarySemaphore, pdMS_TO_TICKS(timeout_MS)) != pdTRUE)
 	{
 		// semaphore timed out; handle error?
 	}
@@ -76,16 +75,16 @@ HAL_StatusTypeDef MY2C_writeNByteRegister_IT(uint8_t address, uint8_t reg, uint8
 {
 	HAL_StatusTypeDef status = HAL_OK;
     
-	status = HAL_I2C_IsDeviceReady(&hi2c4, address << 1, 50, 500);
+    // request async write, returning HAL_OK if it successfully started the write
+	status = HAL_I2C_Mem_Write_IT(&hi2c4, address << 1, reg, 1, &data, len);
 
     if (status != HAL_OK)
     {
     	return status;
     }
 
-	status = HAL_I2C_Mem_Write_IT(&hi2c4, address << 1, reg, 1, &data, len);
-
-	if (xSemaphoreTake(I2CBinarySemaphore, pdMS_TO_TICKS(timeout_MS)) != pdTRUE)
+    // semaphore is given in the I2C4 interrupt when the write succeeded
+	if (xSemaphoreTake(I2C4BinarySemaphore, pdMS_TO_TICKS(timeout_MS)) != pdTRUE)
 	{
 		// semaphore timed out; handle error?
 	}
@@ -94,7 +93,7 @@ HAL_StatusTypeDef MY2C_writeNByteRegister_IT(uint8_t address, uint8_t reg, uint8
 }
 
 /**
- * Read 1 byte register, using interrupt
+ * Read 1 byte register synchronously
  */
 uint8_t MY2C_read1ByteRegister(uint8_t address, uint8_t reg)
 {
@@ -104,19 +103,19 @@ uint8_t MY2C_read1ByteRegister(uint8_t address, uint8_t reg)
 }
 
 /**
- * Write 1 byte register, using interrupt
+ * Write 1 byte register synchronously
  */
 HAL_StatusTypeDef MY2C_write1ByteRegister(uint8_t address, uint8_t reg, uint8_t data)
 {
 	return MY2C_writeNByteRegister_IT(address, reg, data, 1);
 }
 
-// callbacks -------------------------------------
+// Called from I2C4 ISR after a successful read 
 void I2C4_MemRxCallback(I2C_HandleTypeDef* hi2c4)
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE; 
 
-    if (xSemaphoreGiveFromISR(I2CBinarySemaphore, &xHigherPriorityTaskWoken) != pdTRUE)
+    if (xSemaphoreGiveFromISR(I2C4BinarySemaphore, &xHigherPriorityTaskWoken) != pdTRUE)
     {
         // semaphore timed out; handle this?
     }
@@ -124,12 +123,12 @@ void I2C4_MemRxCallback(I2C_HandleTypeDef* hi2c4)
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
-// after receiving data
+// Called from I2C4 ISR after a successful write 
 void I2C4_MemTxCallback(I2C_HandleTypeDef* hi2c4)
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE; 
 
-    if (xSemaphoreGiveFromISR(I2CBinarySemaphore, &xHigherPriorityTaskWoken) != pdTRUE)
+    if (xSemaphoreGiveFromISR(I2C4BinarySemaphore, &xHigherPriorityTaskWoken) != pdTRUE)
     {
         // semaphore timed out; handle this?
     }
@@ -137,6 +136,7 @@ void I2C4_MemTxCallback(I2C_HandleTypeDef* hi2c4)
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
+// Called from I2C4 ISR after I2C error
 void I2C4_ErrorCallback(I2C_HandleTypeDef* hi2c4)
 {
 	// handle i2c read/write give up error
