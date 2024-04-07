@@ -50,7 +50,7 @@ HAL_StatusTypeDef MY2C_readNByteRegister_IT(uint8_t address, uint8_t reg, uint8_
 {
 	HAL_StatusTypeDef status = HAL_OK;
 
-    // request async write, returning HAL_OK if it successfully started the write
+    // request async read, returning HAL_OK if it successfully started the read
 	status = HAL_I2C_Mem_Read_IT(&hi2c4, address << 1, reg, 1, data, len);
 
     if (status != HAL_OK)
@@ -58,7 +58,7 @@ HAL_StatusTypeDef MY2C_readNByteRegister_IT(uint8_t address, uint8_t reg, uint8_
     	return status;
     }
 
-    // semaphore is given in the I2C4 interrupt when the write succeeded
+    // semaphore is given in the I2C4 interrupt when the read succeeded
 	if (xSemaphoreTake(I2C4BinarySemaphore, pdMS_TO_TICKS(timeout_MS)) != pdTRUE)
 	{
 		// semaphore timed out; handle error?
