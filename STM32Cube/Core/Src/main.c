@@ -25,6 +25,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "canlib.h"
+#include "ICM-20948.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -847,12 +848,43 @@ void StartDefaultTask(void *argument)
 void stateEstimationTask(void *argument)
 {
   /* USER CODE BEGIN stateEstimationTask */
+    if (!ICM_20948_init())
+    {
+	    // handle i2c init failure?
+    }
+
+    if (!ICM_20948_check_sanity()) {
+		// handle i2c sanity check failure?
+    }
+
+    int16_t magData[3];
+    int16_t accelData[3];
+    int16_t gyroData[3];
+
   /* Infinite loop */
-  for(;;)
-  {
-	  idx++;
-    osDelay(100);
-  }
+    for(;;)
+    {
+        ICM_20948_get_mag_raw(magData, magData + 1, magData + 2);
+        ICM_20948_get_accel_raw(accelData, accelData + 1, accelData + 2);
+        ICM_20948_get_gyro_raw(gyroData, gyroData + 1, gyroData + 2);
+
+        // very scuffed serial printing for testing
+        /*
+        char dataStr[50];
+        char* newLine = "\n";
+
+        int len = snprintf(dataStr, 50, "mag: %hd, %hd, %hd\n", magData[0], magData[1], magData[2]);
+        HAL_UART_Transmit(&huart4, dataStr, len, 500);
+
+        len = snprintf(dataStr, 50, "accel: %hd, %hd, %hd\n", accelData[0], accelData[1], accelData[2]);
+        HAL_UART_Transmit(&huart4, dataStr, len, 500);
+
+        len = snprintf(dataStr, 50, "gyro: %hd, %hd, %hd\n", gyroData[0], gyroData[1], gyroData[2]);
+        HAL_UART_Transmit(&huart4, dataStr, len, 500);
+        */
+	    idx++;
+        osDelay(100);
+    }
   /* USER CODE END stateEstimationTask */
 }
 
@@ -878,7 +910,7 @@ void controlTask(void *argument)
 	 //TODO: Check flight phase flag
 		 //TODO: Calculate updated control output and clamp btw 0 and 1
 		 //TODO: Push control output to CAN bus
-    osDelayUntil(controller_delay_ticks); //Implements periodic behaviour (nominal delay - time spent running the loop code)
+   // osDelayUntil(controller_delay_ticks); //Implements periodic behaviour (nominal delay - time spent running the loop code)
   }
   /* USER CODE END controlTask */
 }

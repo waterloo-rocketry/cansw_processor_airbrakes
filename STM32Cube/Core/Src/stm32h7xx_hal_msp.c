@@ -363,6 +363,11 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
 
     /* Peripheral clock enable */
     __HAL_RCC_I2C4_CLK_ENABLE();
+    /* I2C4 interrupt Init */
+    HAL_NVIC_SetPriority(I2C4_EV_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(I2C4_EV_IRQn);
+    HAL_NVIC_SetPriority(I2C4_ER_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(I2C4_ER_IRQn);
   /* USER CODE BEGIN I2C4_MspInit 1 */
 
   /* USER CODE END I2C4_MspInit 1 */
@@ -394,6 +399,9 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* hi2c)
 
     HAL_GPIO_DeInit(GPIOB, GPIO_PIN_7);
 
+    /* I2C4 interrupt DeInit */
+    HAL_NVIC_DisableIRQ(I2C4_EV_IRQn);
+    HAL_NVIC_DisableIRQ(I2C4_ER_IRQn);
   /* USER CODE BEGIN I2C4_MspDeInit 1 */
 
   /* USER CODE END I2C4_MspDeInit 1 */
