@@ -74,10 +74,11 @@ bool MAG_Self_Test(void) {
     // set self-test mode
     MY2C_write1ByteRegister(AK09916_MAG_ADDR, CNTL2, 0x10);
     
-    // Check if magnetometer data is ready, fail if it is not
+    // bit 1 of this reg indicates whether data is ready
     uint8_t mag_data_status_1 = MY2C_read1ByteRegister(AK09916_MAG_ADDR, ST1);
 
-    while (mag_data_status_1 != 0x0) {
+    // wait until data is ready
+    while (!(mag_data_status_1 & 1)) {
         mag_data_status_1 = MY2C_read1ByteRegister(AK09916_MAG_ADDR, ST1);
     }
 
@@ -102,6 +103,7 @@ bool MAG_Self_Test(void) {
     MY2C_read1ByteRegister(AK09916_MAG_ADDR, ST2);
 
     // partially validate data according to self-test thresholds
+    // view datasheet for full threshold
     if (x <= 200 && y <= 200 && z <= -200) {
         return true;
     }
@@ -150,7 +152,8 @@ bool ICM_20948_get_mag_raw(int16_t *x, int16_t *y, int16_t *z) {
      // Check if magnetometer data is ready, fail if it is not
     uint8_t mag_data_status_1 = MY2C_read1ByteRegister(AK09916_MAG_ADDR, ST1);
 
-    if (mag_data_status_1 != 0x8) {
+    // the 1st bit of this reg indicates whether data is ready (1) or not (0)
+    if (!(mag_data_status_1 & 1)) {
         return false;
     }
 

@@ -35,12 +35,12 @@ bool MY2C_init(void)
 
 	I2C4BinarySemaphore = xSemaphoreCreateBinary();
 
-	if (I2C4BinarySemaphore)
+	if (I2C4BinarySemaphore == NULL)
 	{
-		return true;
+		return false;
 	}
 
-	return false;
+	return true;
 }
 
 /**
