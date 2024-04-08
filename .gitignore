@@ -1,1 +1,4 @@
 STM32Cube/Debug/*
+STM32Cube/.settings
+.metadata
+.settings
