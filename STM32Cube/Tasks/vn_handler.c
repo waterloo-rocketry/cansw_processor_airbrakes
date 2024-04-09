@@ -67,14 +67,14 @@ bool vnIMUSetup(){
 	VnError err = VnUartPacket_genWriteBinaryOutput1(buffer, CONFIG_MSG_LENGTH, VNERRORDETECTIONMODE_CHECKSUM, &returnedLength, ASYNCMODE_BOTH, RATE1_DIVISOR,COMMONGROUP_PARAMS,TIMEGROUP_PARAMS,IMUGROUP_PARAMS,GPSGROUP_PARAMS,ATTITUDEGROUP_PARAMS,INSGROUP_PARAMS, GPSGROUP_NONE);
 	if (err == E_NONE)
 	{
-		return HAL_UART_Transmit(&huart1, buffer, returnedLength, 10); //Send the command to configure IMU output format
+		return HAL_OK == HAL_UART_Transmit(&huart1, buffer, returnedLength, 10); //Send the command to configure IMU output format
 		//TODO: Log error to logQueue
 	}
 	else
 	{
 		//TODO: Log error to logQueue
 	}
-	return true;
+	return false;
 }
 
 
