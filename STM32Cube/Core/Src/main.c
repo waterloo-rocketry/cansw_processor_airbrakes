@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include "canlib.h"
 #include "ICM-20948.h"
+#include "vn_handler.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -62,6 +63,7 @@ TIM_HandleTypeDef htim1;
 
 UART_HandleTypeDef huart4;
 UART_HandleTypeDef huart1;
+DMA_HandleTypeDef hdma_usart1_rx;
 
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -130,7 +132,7 @@ uint32_t idx;
 void SystemClock_Config(void);
 void PeriphCommonClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_ADC1_Init(void);
+static void MX_DMA_Init(void);
 static void MX_CORDIC_Init(void);
 static void MX_FDCAN1_Init(void);
 static void MX_FMAC_Init(void);
@@ -139,6 +141,7 @@ static void MX_RTC_Init(void);
 static void MX_SDMMC1_SD_Init(void);
 static void MX_UART4_Init(void);
 static void MX_TIM1_Init(void);
+static void MX_ADC1_Init(void);
 static void MX_USART1_UART_Init(void);
 void StartDefaultTask(void *argument);
 void stateEstimationTask(void *argument);
@@ -189,7 +192,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_ADC1_Init();
+  MX_DMA_Init();
   MX_CORDIC_Init();
   MX_FDCAN1_Init();
   MX_FMAC_Init();
@@ -199,6 +202,7 @@ int main(void)
   MX_UART4_Init();
   MX_FATFS_Init();
   MX_TIM1_Init();
+  MX_ADC1_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
@@ -840,6 +844,25 @@ static void MX_USART1_UART_Init(void)
   /* USER CODE BEGIN USART1_Init 2 */
 
   /* USER CODE END USART1_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+  /* DMAMUX1_OVR_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMAMUX1_OVR_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMAMUX1_OVR_IRQn);
 
 }
 

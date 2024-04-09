@@ -8,11 +8,19 @@
 
 #include "vn_handler.h"
 #include "vn/protocol/upack.h"
+#include "FreeRTOS.h"
+#include "semphr.h"
+#include "fake_logging.h"
+#include "stm32h7xx_hal.h"
 
+
+//RateDivisor sets the output rate as a function of the sensor ImuRate (800 Hz for the VN-200)
 #define CONFIG_MSG_LENGTH 100
 #define VN_200_IMURATE 800 //Hz
-#define BINARY_OUT_RATE 10 //Hz
-#define RATE_DIVISOR VN_200_IMURATE / BINARY_OUT_RATE
+
+//Binary Output #1
+#define BINARY1_OUT_RATE 10 //Hz
+#define RATE1_DIVISOR VN_200_IMURATE / BINARY1_OUT_RATE
 
 //See "vnenum.h" and the ICD for parameter definitions
 /*
@@ -24,7 +32,7 @@
 #define INSGROUP_PARAMS INSGROUP_NONE
 */
 
-//Minimize binary output contents for intial testing
+//Minimize binary output contents for initial testing
 #define COMMONGROUP_PARAMS COMMONGROUP_NONE
 #define TIMEGROUP_PARAMS TIMEGROUP_TIMEUTC
 #define IMUGROUP_PARAMS IMUGROUP_NONE
@@ -32,23 +40,29 @@
 #define ATTITUDEGROUP_PARAMS ATTITUDEGROUP_NONE
 #define INSGROUP_PARAMS INSGROUP_NONE
 
-xQueueHandle binaryOutQueue;
-xQueueHandle rawIMUQueue;
-xQueueHandle vnStateQueue;
+
+#define MAX_BINARY_OUTPUT_LENGTH 200
+#define DMA_RX_TIMEOUT 300
+uint8_t USART1_Rx_Buffer[MAX_BINARY_OUTPUT_LENGTH];
+SemaphoreHandle_t USART1_DMA_Sempahore;
+
+void USART1_DMA_Rx_Complete_Callback(UART_HandleTypeDef *huart)
+{
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+	xSemaphoreGiveFromISR(USART1_DMA_Sempahore, &xHigherPriorityTaskWoken);
+	portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+}
 
 int vnIMUSetup(){
-	//Create the necessary queues
-	rawIMUQueue = xQueueCreate(4, sizeof(vn_imu_data_t));
-	vnStateQueue = xQueueCreate(4, sizeof(vn_full_state_t));
-	binaryOutQueue = xQueueCreate(1, sizeof(vn_binary_out));
+	//Setup DMA on Rx
+	HAL_UART_RegisterCallback(&huart1, HAL_UART_RX_COMPLETE_CB_ID, USART1_DMA_Rx_Complete_Callback);
 	//TODO: Read the WHOAMI registers or equivalent to verify IMU is connected, if not throw error
 		//Register ID 0x01: Offset 0 Model string[24] – Product model number, maximum length 24 characters.
 
 	//configure binary output for raw IMU data and full state estimate
-		//RateDivisor sets the output rate as a function of the sensor ImuRate (800 Hz for the VN-200). So to achieve a 40 Hz output rate, the RateDivisor is set to 20.
 	uint8_t buffer[CONFIG_MSG_LENGTH];
 	size_t returnedLength;
-	VnError err = VnUartPacket_genWriteBinaryOutput1(buffer, CONFIG_MSG_LENGTH, VNERRORDETECTIONMODE_CHECKSUM, &returnedLength, ASYNCMODE_BOTH, RATE_DIVISOR,COMMONGROUP_PARAMS,TIMEGROUP_PARAMS,IMUGROUP_PARAMS,GPSGROUP_PARAMS,ATTITUDEGROUP_PARAMS,INSGROUP_PARAMS, GPSGROUP_NONE);
+	VnError err = VnUartPacket_genWriteBinaryOutput1(buffer, CONFIG_MSG_LENGTH, VNERRORDETECTIONMODE_CHECKSUM, &returnedLength, ASYNCMODE_BOTH, RATE1_DIVISOR,COMMONGROUP_PARAMS,TIMEGROUP_PARAMS,IMUGROUP_PARAMS,GPSGROUP_PARAMS,ATTITUDEGROUP_PARAMS,INSGROUP_PARAMS, GPSGROUP_NONE);
 	if (err == E_NONE)
 	{
 		return HAL_UART_Transmit(&huart1, buffer, returnedLength, 10); //Send the command to configure IMU output format
@@ -61,41 +75,69 @@ int vnIMUSetup(){
 	return -1;
 }
 
-void vnIMUHandler(void *argument){
-	//block on USART1 ready
+
+void vnIMUHandler(void *argument)
+{
+	USART1_DMA_Sempahore = xSemaphoreCreateBinary();
 	for(;;)
 	{
-		vn_binary_out output;
-		if(xQueueReceive(binaryOutQueue, &output, 1) == pdTRUE)
+		xSemaphoreTake(USART1_DMA_Sempahore, 0); //Take semaphore with no timeout to ensure state
+		HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(&huart1, USART1_Rx_Buffer, MAX_BINARY_OUTPUT_LENGTH);
+		if(status != HAL_OK)
 		{
-			uint8_t *buffer = output.buffer;
-			VnUartPacket packet;
-			packet.curExtractLoc = 0;
-			packet.data = buffer;
-			packet.length = DATA_MSG_LENGTH_MAX;
-			//uint16_t *dump;
-			//uint16_t *time_group;
-			//VnUartPacket_parseBinaryOutput(&packet, dump, dump, dump, dump, time_group, dump, dump, dump, dump, dump);
-
-			TimeUtc timestamp = VnUartPacket_extractTimeUtc(&packet); //grab timestamp from binary output - this should be the only data in there
+			//yikes, log an error and try again
 		}
+		else
+		{
+			if(xSemaphoreTake(USART1_DMA_Sempahore, 0) != pdTRUE)
+			{
+				//we timed out, throw an error
+			}
+			else //we got data in the buffer! this implies the shared memory region is safe to access
+			{
+				VnUartPacket packet;
+				packet.curExtractLoc = 0;
+				packet.data = USART1_Rx_Buffer;
+				packet.length = MAX_BINARY_OUTPUT_LENGTH;
+				uint16_t *dump;
+				uint16_t *time_group;
+				uint16_t *imu_group;
+				uint16_t *gps_group;
+				uint16_t *ins_group;
 
+				if(VnUartPacket_type(&packet) == PACKETTYPE_BINARY)
+				{
+					//TODO: Detect message type properly
+					VnUartPacket_parseBinaryOutput(&packet, dump, dump, dump, dump, time_group, imu_group, gps_group, dump, ins_group, dump);
+					if(*time_group & TIMEGROUP_TIMEUTC)
+					{
+						logMsg_t msg;
+						TimeUtc timestamp = VnUartPacket_extractTimeUtc(&packet);
+						sprintf(msg.data, "%d:%d:%d", timestamp.hour, timestamp.min, timestamp.sec);
+						xQueueSend(logQueue, &msg, 10);
+					}
+					if(*imu_group != IMUGROUP_NONE)
+					{
+						//assume this is the IMU type message we expect
+						//TODO: Build a valid IMU message for state est and push it to queue
+					}
+					if(*gps_group != GPSGROUP_NONE)
+					{
+						//decode the GPS data and push it to log
+						//Every so often, build GPS canlib messages and send them over the bus as well
+						//also we have 2 GPSs... no provisions in canlib for THAT
+					}
+					if(*ins_group != INSGROUP_NONE)
+					{
+						//fancy state estimation results!
+						//dump these to the logging queue
+					}
+				}
+
+			}
+		}
 	}
+
 }
 
-//This method is really bad because we copy a full byte message into local memory, then again into a queue
-//We should be using DMA
-// TODO: Use DMA for this
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-	if(huart->Instance == USART1) //we received UART data from the IMU
-	{
-		vn_binary_out output;
-		HAL_UART_Receive(huart, output.buffer, DATA_MSG_LENGTH_MAX, 10);
-
-		BaseType_t *xHigherPriorityTaskWoken;
-		xQueueSendFromISR(binaryOutQueue, &output, xHigherPriorityTaskWoken); //Dump the bytes we received into a queue for decoding
-		portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
-	}
-}
