@@ -850,16 +850,17 @@ void StartDefaultTask(void *argument)
 void stateEstimationTask(void *argument)
 {
     /* USER CODE BEGIN stateEstimationTask */
-    /* Infinite loop */
+
     // Define calibration (replace with actual calibration data if available)
+	//all of these have this missing braces error..... that seems to just be a bug...?
 	const FusionMatrix gyroscopeMisalignment = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
-	const FusionVector gyroscopeSensitivity = {1.0f, 1.0f, 1.0f};
+	const FusionVector gyroscopeSensitivity = {0.0f, 0.0f, 0.0f};
 	const FusionVector gyroscopeOffset = {0.0f, 0.0f, 0.0f};
 	const FusionMatrix accelerometerMisalignment = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
-	const FusionVector accelerometerSensitivity = {1.0f, 1.0f, 1.0f};
+	const FusionVector accelerometerSensitivity = {0.0f, 0.0f, 0.0f};
 	const FusionVector accelerometerOffset = {0.0f, 0.0f, 0.0f};
 
-	//the fucking coordinates thing (how to do?)
+	//figure out how to check soft and hard iron (?)
 	const FusionMatrix softIronMatrix = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
 	const FusionVector hardIronOffset = {0.0f, 0.0f, 0.0f};
 
@@ -887,8 +888,8 @@ void stateEstimationTask(void *argument)
 		 // Acquire latest sensor data
 		 const clock_t timestamp = clock(); // replace this with actual gyroscope timestamp
 		 FusionVector gyroscope = {0.0f, 0.0f, 0.0f}; // replace this with actual gyroscope data in degrees/s
-		 FusionVector accelerometer = {0.0f, 0.0f, 1.0f}; // replace this with actual accelerometer data in g
-		 FusionVector magnetometer = {1.0f, 0.0f, 0.0f}; // replace this with actual magnetometer data in arbitrary units
+		 FusionVector accelerometer = {0.0f, 0.0f, 0.0f}; // replace this with actual accelerometer data in g
+		 FusionVector magnetometer = {0.0f, 0.0f, 0.0f}; // replace this with actual magnetometer data in arbitrary units
 
 		 // Apply calibration
 		 gyroscope = FusionCalibrationInertial(gyroscope, gyroscopeMisalignment, gyroscopeSensitivity, gyroscopeOffset);
@@ -906,13 +907,15 @@ void stateEstimationTask(void *argument)
 	 	 // Update gyroscope AHRS algorithm
 	 	 FusionAhrsUpdate(&ahrs, gyroscope, accelerometer, magnetometer, deltaTime);
 
-	 	 // Print algorithm outputs
-	 	 const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
-	 	 const FusionVector earth = FusionAhrsGetEarthAcceleration(&ahrs);
+	 	 //calculate algorithm outputs
+	 	 //const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
+	 	 //const FusionVector earth = FusionAhrsGetEarthAcceleration(&ahrs);
 
-	 	 //HAL_UART_Transmit("Roll %0.1f, Pitch %0.1f, Yaw %0.1f, X %0.1f, Y %0.1f, Z %0.1f\n",
-	 	 //              euler.angle.roll, euler.angle.pitch, euler.angle.yaw,
-	 	 //              earth.axis.x, earth.axis.y, earth.axis.z);
+	 	 //format: roll pitch yaw x y z
+	 	 //HAL_UART_Transmit something here?
+	 	 //(to_string(euler.angle.roll)+ to_string(euler.angle.pitch) + to_string(euler.angle.yaw) +
+	 	               //earth.axis.x, earth.axis.y, earth.axis.z);
+	 	 // don't think that's quite right
 
 	 }
   /* USER CODE END stateEstimationTask */
