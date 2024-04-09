@@ -12,6 +12,7 @@
 #include "semphr.h"
 #include "fake_logging.h"
 #include "stm32h7xx_hal.h"
+#include <stdio.h>
 
 
 //RateDivisor sets the output rate as a function of the sensor ImuRate (800 Hz for the VN-200)
@@ -53,9 +54,10 @@ void USART1_DMA_Rx_Complete_Callback(UART_HandleTypeDef *huart)
 	portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
 }
 
-int vnIMUSetup(){
+bool vnIMUSetup(){
 	//Setup DMA on Rx
 	HAL_UART_RegisterCallback(&huart1, HAL_UART_RX_COMPLETE_CB_ID, USART1_DMA_Rx_Complete_Callback);
+
 	//TODO: Read the WHOAMI registers or equivalent to verify IMU is connected, if not throw error
 		//Register ID 0x01: Offset 0 Model string[24] – Product model number, maximum length 24 characters.
 
@@ -72,7 +74,7 @@ int vnIMUSetup(){
 	{
 		//TODO: Log error to logQueue
 	}
-	return -1;
+	return true;
 }
 
 
@@ -89,49 +91,42 @@ void vnIMUHandler(void *argument)
 		}
 		else
 		{
-			if(xSemaphoreTake(USART1_DMA_Sempahore, 0) != pdTRUE)
-			{
-				//we timed out, throw an error
-			}
-			else //we got data in the buffer! this implies the shared memory region is safe to access
-			{
-				VnUartPacket packet;
-				packet.curExtractLoc = 0;
-				packet.data = USART1_Rx_Buffer;
-				packet.length = MAX_BINARY_OUTPUT_LENGTH;
-				uint16_t *dump;
-				uint16_t time_group;
-				uint16_t imu_group;
-				uint16_t gps_group;
-				uint16_t ins_group;
+			VnUartPacket packet;
+			packet.curExtractLoc = 0;
+			packet.data = USART1_Rx_Buffer;
+			packet.length = MAX_BINARY_OUTPUT_LENGTH;
+			uint16_t *dump;
+			uint16_t time_group;
+			uint16_t imu_group;
+			uint16_t gps_group;
+			uint16_t ins_group;
 
-				if(VnUartPacket_type(&packet) == PACKETTYPE_BINARY)
+			if(VnUartPacket_type(&packet) == PACKETTYPE_BINARY)
+			{
+				//TODO: Detect message type properly
+				VnUartPacket_parseBinaryOutput(&packet, dump, dump, dump, dump, &time_group, &imu_group, &gps_group, dump, &ins_group, dump);
+				if(time_group & TIMEGROUP_TIMEUTC)
 				{
-					//TODO: Detect message type properly
-					VnUartPacket_parseBinaryOutput(&packet, dump, dump, dump, dump, &time_group, &imu_group, &gps_group, dump, &ins_group, dump);
-					if(time_group & TIMEGROUP_TIMEUTC)
-					{
-						logMsg_t msg;
-						TimeUtc timestamp = VnUartPacket_extractTimeUtc(&packet);
-						sprintf(msg.data, "%d:%d:%d", timestamp.hour, timestamp.min, timestamp.sec);
-						xQueueSend(logQueue, &msg, 10);
-					}
-					if(imu_group != IMUGROUP_NONE)
-					{
-						//assume this is the IMU type message we expect
-						//TODO: Build a valid IMU message for state est and push it to queue
-					}
-					if(gps_group != GPSGROUP_NONE)
-					{
-						//decode the GPS data and push it to log
-						//Every so often, build GPS canlib messages and send them over the bus as well
-						//also we have 2 GPSs... no provisions in canlib for THAT
-					}
-					if(ins_group != INSGROUP_NONE)
-					{
-						//fancy state estimation results!
-						//dump these to the logging queue
-					}
+					logMsg_t msg;
+					TimeUtc timestamp = VnUartPacket_extractTimeUtc(&packet);
+					sprintf(msg.data, "%d:%d:%d", timestamp.hour, timestamp.min, timestamp.sec);
+					xQueueSend(logQueue, &msg, 10);
+				}
+				if(imu_group != IMUGROUP_NONE)
+				{
+					//assume this is the IMU type message we expect
+					//TODO: Build a valid IMU message for state est and push it to queue
+				}
+				if(gps_group != GPSGROUP_NONE)
+				{
+					//decode the GPS data and push it to log
+					//Every so often, build GPS canlib messages and send them over the bus as well
+					//also we have 2 GPSs... no provisions in canlib for THAT
+				}
+				if(ins_group != INSGROUP_NONE)
+				{
+					//fancy state estimation results!
+					//dump these to the logging queue
 				}
 
 			}
