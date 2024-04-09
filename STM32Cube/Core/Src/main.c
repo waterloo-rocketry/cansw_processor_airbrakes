@@ -911,15 +911,11 @@ void stateEstimationTask(void *argument)
 	 	 const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
 	 	 const FusionVector earth = FusionAhrsGetEarthAcceleration(&ahrs);
 
-	 	 sprintf("Roll %0.1f, Pitch %0.1f, Yaw %0.1f, X %0.1f, Y %0.1f, Z %0.1f\n",
-	               euler.angle.roll, euler.angle.pitch, euler.angle.yaw,
-	               earth.axis.x, earth.axis.y, earth.axis.z);
 
-	 	 //format: roll pitch yaw x y z
-	 	 //HAL_UART_Transmit something here?
-	 	 //(to_string(euler.angle.roll)+ to_string(euler.angle.pitch) + to_string(euler.angle.yaw) +
-	 	               //earth.axis.x, earth.axis.y, earth.axis.z);
-	 	 // don't think that's quite right
+	 	 //send data somewhere, still not clear on what I'm meant to be doing with it tbh
+	 	 //sprintf(???, "Roll %0.1f, Pitch %e, Yaw %0.1f, X %0.1f, Y %0.1f, Z %0.1f\n",
+	               //euler.angle.roll, euler.angle.pitch, euler.angle.yaw,
+	               //earth.axis.x, earth.axis.y, earth.axis.z);
 
 	 }
   /* USER CODE END stateEstimationTask */
