@@ -9,7 +9,6 @@ extern "C" {
 #include "FreeRTOS.h"
 #include "task.h"
 #include "ff.h"
-#include <stdio.h>
 
 // function declarations
 void sdmmcTask(void* arguments);
