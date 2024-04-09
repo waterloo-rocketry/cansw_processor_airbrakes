@@ -908,8 +908,12 @@ void stateEstimationTask(void *argument)
 	 	 FusionAhrsUpdate(&ahrs, gyroscope, accelerometer, magnetometer, deltaTime);
 
 	 	 //calculate algorithm outputs
-	 	 //const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
-	 	 //const FusionVector earth = FusionAhrsGetEarthAcceleration(&ahrs);
+	 	 const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
+	 	 const FusionVector earth = FusionAhrsGetEarthAcceleration(&ahrs);
+
+	 	 sprintf("Roll %0.1f, Pitch %0.1f, Yaw %0.1f, X %0.1f, Y %0.1f, Z %0.1f\n",
+	               euler.angle.roll, euler.angle.pitch, euler.angle.yaw,
+	               earth.axis.x, earth.axis.y, earth.axis.z);
 
 	 	 //format: roll pitch yaw x y z
 	 	 //HAL_UART_Transmit something here?
