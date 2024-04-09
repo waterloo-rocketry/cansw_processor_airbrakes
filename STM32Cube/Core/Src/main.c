@@ -875,7 +875,7 @@ void stateEstimationTask(void *argument)
 	 const FusionAhrsSettings settings = {
 			 .convention = FusionConventionNwu,
 	         .gain = 0.5f,
-	         .gyroscopeRange = 2000.0f, /* replace this with actual gyroscope range in degrees/s */
+	         .gyroscopeRange = 2000.0f, // checked, this is correct
 	         .accelerationRejection = 10.0f,
 	         .magneticRejection = 10.0f,
 	         .recoveryTriggerPeriod = 5 * SAMPLE_RATE, /* 5 seconds */
@@ -886,7 +886,9 @@ void stateEstimationTask(void *argument)
 	 while (true) {
 
 		 // Acquire latest sensor data
+		 // how the hell do I do that again
 		 const clock_t timestamp = clock(); // replace this with actual gyroscope timestamp
+		 //how to use vn300
 		 FusionVector gyroscope = {0.0f, 0.0f, 0.0f}; // replace this with actual gyroscope data in degrees/s
 		 FusionVector accelerometer = {0.0f, 0.0f, 0.0f}; // replace this with actual accelerometer data in g
 		 FusionVector magnetometer = {0.0f, 0.0f, 0.0f}; // replace this with actual magnetometer data in arbitrary units
@@ -912,7 +914,7 @@ void stateEstimationTask(void *argument)
 	 	 const FusionVector earth = FusionAhrsGetEarthAcceleration(&ahrs);
 
 
-	 	 //send data somewhere, still not clear on what I'm meant to be doing with it tbh
+	 	 //put data somewhere, still not clear on what I'm meant to be doing with it tbh
 	 	 //sprintf(???, "Roll %0.1f, Pitch %e, Yaw %0.1f, X %0.1f, Y %0.1f, Z %0.1f\n",
 	               //euler.angle.roll, euler.angle.pitch, euler.angle.yaw,
 	               //earth.axis.x, earth.axis.y, earth.axis.z);
