@@ -853,16 +853,32 @@ void stateEstimationTask(void *argument)
 
     // Define calibration (replace with actual calibration data if available)
 	//all of these have this missing braces error..... that seems to just be a bug...?
-	const FusionMatrix gyroscopeMisalignment = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
-	const FusionVector gyroscopeSensitivity = {0.0f, 0.0f, 0.0f};
-	const FusionVector gyroscopeOffset = {0.0f, 0.0f, 0.0f};
-	const FusionMatrix accelerometerMisalignment = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
-	const FusionVector accelerometerSensitivity = {0.0f, 0.0f, 0.0f};
-	const FusionVector accelerometerOffset = {0.0f, 0.0f, 0.0f};
+	const FusionMatrix gyroscopeMisalignment = {
+			.element = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
+	};
+	const FusionVector gyroscopeSensitivity = {
+			.axis = {0.0f, 0.0f, 0.0f}
+	};
+	const FusionVector gyroscopeOffset = {
+			.axis = {0.0f, 0.0f, 0.0f}
+	};
+	const FusionMatrix accelerometerMisalignment = {
+				.element = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
+		};
+	const FusionVector accelerometerSensitivity = {
+			.axis = {0.0f, 0.0f, 0.0f}
+	};
+	const FusionVector accelerometerOffset = {
+			.axis = {0.0f, 0.0f, 0.0f}
+	};
 
-	//figure out how to check soft and hard iron (?)
-	const FusionMatrix softIronMatrix = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
-	const FusionVector hardIronOffset = {0.0f, 0.0f, 0.0f};
+	// Figure out how to check soft and hard iron (?)
+	const FusionMatrix softIronMatrix = {
+			.element = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
+	};
+	const FusionVector hardIronOffset = {
+			.axis = {0.0f, 0.0f, 0.0f}
+	};
 
 	// Initialise algorithms
 	FusionOffset offset;
@@ -889,9 +905,15 @@ void stateEstimationTask(void *argument)
 		 // how the hell do I do that again
 		 const clock_t timestamp = clock(); // replace this with actual gyroscope timestamp
 		 //how to use vn300
-		 FusionVector gyroscope = {0.0f, 0.0f, 0.0f}; // replace this with actual gyroscope data in degrees/s
-		 FusionVector accelerometer = {0.0f, 0.0f, 0.0f}; // replace this with actual accelerometer data in g
-		 FusionVector magnetometer = {0.0f, 0.0f, 0.0f}; // replace this with actual magnetometer data in arbitrary units
+		 FusionVector gyroscope = {
+					.axis = {0.0f, 0.0f, 0.0f}
+			}; // replace this with actual gyroscope data in degrees/s
+		 FusionVector accelerometer = {
+					.axis = {0.0f, 0.0f, 0.0f}
+			}; // replace this with actual accelerometer data in g
+		 FusionVector magnetometer = {
+					.axis = {0.0f, 0.0f, 0.0f}
+			}; // replace this with actual magnetometer data in arbitrary units
 
 		 // Apply calibration
 		 gyroscope = FusionCalibrationInertial(gyroscope, gyroscopeMisalignment, gyroscopeSensitivity, gyroscopeOffset);
