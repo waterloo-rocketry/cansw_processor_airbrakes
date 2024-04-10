@@ -938,8 +938,8 @@ void stateEstimationTask(void *argument)
 	 	 //we only care about attitude says joe but I'm outputting this anyways for now
 	 	 const FusionVector earth = FusionAhrsGetEarthAcceleration(&ahrs);
 
-	 	 unsigned char dataStr[50];
-	 	int  length = snprintf(dataStr, 50, "Roll %0.1f, Pitch %0.1f, Yaw %0.1f, X %lf, Y %lf, Z %lf\n",
+	 	 unsigned char dataStr[100];
+	 	int  length = snprintf(dataStr, 100, "Roll %0.1f, Pitch %0.1f, Yaw %0.1f, X %lf, Y %lf, Z %lf\n",
 	 		               euler.angle.roll, euler.angle.pitch, euler.angle.yaw,
 	 		               earth.axis.x, earth.axis.y, earth.axis.z) ;
 	 	 HAL_UART_Transmit(&huart4, dataStr, length, 500);
