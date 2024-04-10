@@ -939,7 +939,8 @@ void stateEstimationTask(void *argument)
 	 	 const FusionVector earth = FusionAhrsGetEarthAcceleration(&ahrs);
 
 	 	 unsigned char dataStr[100];
-	 	int  length = snprintf(dataStr, 100, "Roll %0.1f, Pitch %0.1f, Yaw %0.1f, X %lf, Y %lf, Z %lf\n",
+	 	 //this has an error even if you change the setting, but it will build
+	 	 int  length = snprintf(dataStr, 100, "Roll %0.1f, Pitch %0.1f, Yaw %0.1f, X %lf, Y %lf, Z %lf\n",
 	 		               euler.angle.roll, euler.angle.pitch, euler.angle.yaw,
 	 		               earth.axis.x, earth.axis.y, earth.axis.z) ;
 	 	 HAL_UART_Transmit(&huart4, dataStr, length, 500);
