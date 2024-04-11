@@ -83,7 +83,7 @@ void vnIMUHandler(void *argument)
 	USART1_DMA_Sempahore = xSemaphoreCreateBinary();
 	for(;;)
 	{
-		xSemaphoreTake(USART1_DMA_Sempahore, 0); //Take semaphore with no timeout to ensure state
+
 		HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(&huart1, USART1_Rx_Buffer, MAX_BINARY_OUTPUT_LENGTH);
 		if(status != HAL_OK)
 		{
@@ -91,45 +91,53 @@ void vnIMUHandler(void *argument)
 		}
 		else
 		{
-			VnUartPacket packet;
-			packet.curExtractLoc = 0;
-			packet.data = USART1_Rx_Buffer;
-			packet.length = MAX_BINARY_OUTPUT_LENGTH;
-			uint16_t *dump;
-			uint16_t time_group;
-			uint16_t imu_group;
-			uint16_t gps_group;
-			uint16_t ins_group;
-
-			if(VnUartPacket_type(&packet) == PACKETTYPE_BINARY)
+			if(xSemaphoreTake(USART1_DMA_Sempahore, 100) != pdTRUE)
 			{
-				//TODO: Detect message type properly
-				VnUartPacket_parseBinaryOutput(&packet, dump, dump, dump, dump, &time_group, &imu_group, &gps_group, dump, &ins_group, dump);
-				if(time_group & TIMEGROUP_TIMEUTC)
-				{
-					logMsg_t msg;
-					TimeUtc timestamp = VnUartPacket_extractTimeUtc(&packet);
-					sprintf(msg.data, "%d:%d:%d", timestamp.hour, timestamp.min, timestamp.sec);
-					xQueueSend(logQueue, &msg, 10);
-				}
-				if(imu_group != IMUGROUP_NONE)
-				{
-					//assume this is the IMU type message we expect
-					//TODO: Build a valid IMU message for state est and push it to queue
-				}
-				if(gps_group != GPSGROUP_NONE)
-				{
-					//decode the GPS data and push it to log
-					//Every so often, build GPS canlib messages and send them over the bus as well
-					//also we have 2 GPSs... no provisions in canlib for THAT
-				}
-				if(ins_group != INSGROUP_NONE)
-				{
-					//fancy state estimation results!
-					//dump these to the logging queue
-				}
-
+				//we timed out, throw an error
 			}
+			else
+			{
+				VnUartPacket packet;
+				packet.curExtractLoc = 0;
+				packet.data = USART1_Rx_Buffer;
+				packet.length = MAX_BINARY_OUTPUT_LENGTH;
+				uint16_t *dump;
+				uint16_t time_group;
+				uint16_t imu_group;
+				uint16_t gps_group;
+				uint16_t ins_group;
+
+				if(VnUartPacket_type(&packet) == PACKETTYPE_BINARY)
+				{
+					//TODO: Detect message type properly
+					VnUartPacket_parseBinaryOutput(&packet, dump, dump, dump, dump, &time_group, &imu_group, &gps_group, dump, &ins_group, dump);
+					if(time_group & TIMEGROUP_TIMEUTC)
+					{
+						logMsg_t msg;
+						TimeUtc timestamp = VnUartPacket_extractTimeUtc(&packet);
+						sprintf(msg.data, "%d:%d:%d", timestamp.hour, timestamp.min, timestamp.sec);
+						xQueueSend(logQueue, &msg, 10);
+					}
+					if(imu_group != IMUGROUP_NONE)
+					{
+						//assume this is the IMU type message we expect
+						//TODO: Build a valid IMU message for state est and push it to queue
+					}
+					if(gps_group != GPSGROUP_NONE)
+					{
+						//decode the GPS data and push it to log
+						//Every so often, build GPS canlib messages and send them over the bus as well
+						//also we have 2 GPSs... no provisions in canlib for THAT
+					}
+					if(ins_group != INSGROUP_NONE)
+					{
+						//fancy state estimation results!
+						//dump these to the logging queue
+					}
+
+				}
+			}
+
 		}
 	}
 
