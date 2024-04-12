@@ -857,30 +857,30 @@ void stateEstimationTask(void *argument)
 		// handle i2c sanity check failure?
     }
 
-    int16_t magData[3];
-    int16_t accelData[3];
-    int16_t gyroData[3];
+    float magData[3];
+    float accelData[3];
+    float gyroData[3];
+    //int len;
+    //char dataStr[50];
 
   /* Infinite loop */
     for(;;)
     {
-        ICM_20948_get_mag_raw(magData, magData + 1, magData + 2);
-        ICM_20948_get_accel_raw(accelData, accelData + 1, accelData + 2);
-        ICM_20948_get_gyro_raw(gyroData, gyroData + 1, gyroData + 2);
+        ICM_20948_get_mag_converted(magData, magData + 1, magData + 2);
+        ICM_20948_get_accel_converted(accelData, accelData + 1, accelData + 2);
+        ICM_20948_get_gyro_converted(gyroData, gyroData + 1, gyroData + 2);
 
-        // very scuffed serial printing for testing
-        /*
-        char dataStr[50];
-        char* newLine = "\n";
+        // TODO: look into how better manage snprintf to not cause death (esp with %f)
+		/*
+        // FOR TESTING: serial print data
+        len = snprintf(dataStr, 50, "mag: %.3f, %.3f, %.3f\n", magData[0], magData[1], magData[2]);
+        //HAL_UART_Transmit(&huart4, (uint8_t) dataStr, len, 500);
 
-        int len = snprintf(dataStr, 50, "mag: %hd, %hd, %hd\n", magData[0], magData[1], magData[2]);
-        HAL_UART_Transmit(&huart4, dataStr, len, 500);
+		len = snprintf(dataStr, 50, "accel: %.3f, %.3f, %.3f\n", accelData[0], accelData[1], accelData[2]);
+        //HAL_UART_Transmit(&huart4, dataStr, len, 500);
 
-        len = snprintf(dataStr, 50, "accel: %hd, %hd, %hd\n", accelData[0], accelData[1], accelData[2]);
-        HAL_UART_Transmit(&huart4, dataStr, len, 500);
-
-        len = snprintf(dataStr, 50, "gyro: %hd, %hd, %hd\n", gyroData[0], gyroData[1], gyroData[2]);
-        HAL_UART_Transmit(&huart4, dataStr, len, 500);
+        len = snprintf(dataStr, 50, "gyro: %.3f, %.3f, %.3f\n", gyroData[0], gyroData[1], gyroData[2]);
+		//HAL_UART_Transmit(&huart4, dataStr, len, 500);
         */
 	    idx++;
         osDelay(100);
