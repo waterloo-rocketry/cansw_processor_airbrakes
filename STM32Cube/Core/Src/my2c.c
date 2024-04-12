@@ -7,11 +7,18 @@
 #include "FreeRTOS.h"
 #include "semphr.h"
 
-SemaphoreHandle_t I2C4BinarySemaphore;
-
 extern I2C_HandleTypeDef hi2c4;
 
-uint8_t timeout_MS = 200;
+SemaphoreHandle_t I2C4BinarySemaphore;
+
+/* Max timeout to wait for read/write semaphore */
+static const uint8_t timeout_MS = 200;
+
+/* Callback function definitions */
+void I2C4_MemRxCallback(I2C_HandleTypeDef* hi2c4);
+void I2C4_MemTxCallback(I2C_HandleTypeDef* hi2c4);
+void I2C4_ErrorCallback(I2C_HandleTypeDef* hi2c4);
+
 
 /**
  * Register i2c4 callbacks, semaphore
