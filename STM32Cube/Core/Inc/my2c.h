@@ -12,10 +12,4 @@ HAL_StatusTypeDef MY2C_write1ByteRegister(uint8_t address, uint8_t reg, uint8_t 
 
 uint8_t MY2C_read1ByteRegister(uint8_t address, uint8_t reg);
 
-void I2C4_MemTxCallback(I2C_HandleTypeDef* hi2c4);
-
-void I2C4_MemRxCallback(I2C_HandleTypeDef* hi2c4);
-
-void I2C4_ErrorCallback(I2C_HandleTypeDef* hi2c4);
-
 #endif	/* MY2C_H */
