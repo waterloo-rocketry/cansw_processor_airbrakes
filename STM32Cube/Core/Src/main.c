@@ -159,7 +159,8 @@ int main(void)
   MX_ADC1_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  //Init Modules
+  vnIMUSetup();
   /* USER CODE END 2 */
 
   /* Init scheduler */
