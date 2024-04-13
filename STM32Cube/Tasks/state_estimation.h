@@ -8,6 +8,6 @@
 #ifndef STATE_ESTIMATION_H_
 #define STATE_ESTIMATION_H_
 
-void stateEstTask(void * argument);
+
 
 #endif /* STATE_ESTIMATION_H_ */
