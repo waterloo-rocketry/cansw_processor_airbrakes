@@ -5,15 +5,13 @@
  *      Author: joedo
  */
 
-
+#include <stdio.h>
 #include "vn_handler.h"
 #include "vn/protocol/upack.h"
 #include "FreeRTOS.h"
 #include "semphr.h"
-#include "fake_logging.h"
+#include "log.h"
 #include "stm32h7xx_hal.h"
-#include <stdio.h>
-
 
 //RateDivisor sets the output rate as a function of the sensor ImuRate (800 Hz for the VN-200)
 #define CONFIG_MSG_LENGTH 100
@@ -113,10 +111,8 @@ void vnIMUHandler(void *argument)
 					VnUartPacket_parseBinaryOutput(&packet, dump, dump, dump, dump, &time_group, &imu_group, &gps_group, dump, &ins_group, dump);
 					if(time_group & TIMEGROUP_TIMEUTC)
 					{
-						logMsg_t msg;
+						LogData_t msg;
 						TimeUtc timestamp = VnUartPacket_extractTimeUtc(&packet);
-						sprintf(msg.data, "%d:%d:%d", timestamp.hour, timestamp.min, timestamp.sec);
-						xQueueSend(logQueue, &msg, 10);
 					}
 					if(imu_group != IMUGROUP_NONE)
 					{
