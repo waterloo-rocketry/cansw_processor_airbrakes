@@ -63,6 +63,7 @@
 									<listOptionValue builtIn="false" value="../Core/ThreadSafe"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/processor_board/canlib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/processor_board/Tasks}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vnproglib/c/include}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.312848412" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>
@@ -89,13 +90,14 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="FATFS"/>
-						<entry excluding="Examples|Python" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Fusion"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Tasks"/>
 						<entry excluding="dspic*|pic18*|tests|mcp*" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="canlib"/>
+						<entry excluding="c/src/vn/sensors|c/src/vn/sensors.c|c/src/vn/xplat|c/examples|c/help|c/include/vn/sensors|c/include/vn/xplat|c/projects|python|help" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="vnproglib"/>
+						<entry excluding="Examples|Python" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Fusion"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="FATFS"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Tasks"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -163,6 +165,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Tasks}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:C:\Users\joedo\Documents\Rocketry\cansw_processor_stm\STM32Cube\Tasks}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/processor_board/Tasks}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vnproglib/c/include/vn}&quot;"/>
 								</option>
 								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.328401648" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
 							</tool>

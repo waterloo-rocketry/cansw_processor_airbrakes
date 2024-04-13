@@ -1,0 +1,43 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30717.126
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "getting_started", "getting_started.vcxproj", "{620DB29A-E896-3F44-A0B7-202206594DC3}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E237AE2C-CE1B-39F5-B931-3C0E53353E53} = {E237AE2C-CE1B-39F5-B931-3C0E53353E53}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libvnc", "..\..\..\..\projects\vs2017\libvnc.vcxproj", "{E237AE2C-CE1B-39F5-B931-3C0E53353E53}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		MinSizeRel|Win32 = MinSizeRel|Win32
+		Release|Win32 = Release|Win32
+		RelWithDebInfo|Win32 = RelWithDebInfo|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{620DB29A-E896-3F44-A0B7-202206594DC3}.Debug|Win32.ActiveCfg = Debug|Win32
+		{620DB29A-E896-3F44-A0B7-202206594DC3}.Debug|Win32.Build.0 = Debug|Win32
+		{620DB29A-E896-3F44-A0B7-202206594DC3}.MinSizeRel|Win32.ActiveCfg = MinSizeRel|Win32
+		{620DB29A-E896-3F44-A0B7-202206594DC3}.MinSizeRel|Win32.Build.0 = MinSizeRel|Win32
+		{620DB29A-E896-3F44-A0B7-202206594DC3}.Release|Win32.ActiveCfg = Release|Win32
+		{620DB29A-E896-3F44-A0B7-202206594DC3}.Release|Win32.Build.0 = Release|Win32
+		{620DB29A-E896-3F44-A0B7-202206594DC3}.RelWithDebInfo|Win32.ActiveCfg = RelWithDebInfo|Win32
+		{620DB29A-E896-3F44-A0B7-202206594DC3}.RelWithDebInfo|Win32.Build.0 = RelWithDebInfo|Win32
+		{E237AE2C-CE1B-39F5-B931-3C0E53353E53}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E237AE2C-CE1B-39F5-B931-3C0E53353E53}.Debug|Win32.Build.0 = Debug|Win32
+		{E237AE2C-CE1B-39F5-B931-3C0E53353E53}.MinSizeRel|Win32.ActiveCfg = MinSizeRel|Win32
+		{E237AE2C-CE1B-39F5-B931-3C0E53353E53}.MinSizeRel|Win32.Build.0 = MinSizeRel|Win32
+		{E237AE2C-CE1B-39F5-B931-3C0E53353E53}.Release|Win32.ActiveCfg = Release|Win32
+		{E237AE2C-CE1B-39F5-B931-3C0E53353E53}.Release|Win32.Build.0 = Release|Win32
+		{E237AE2C-CE1B-39F5-B931-3C0E53353E53}.RelWithDebInfo|Win32.ActiveCfg = RelWithDebInfo|Win32
+		{E237AE2C-CE1B-39F5-B931-3C0E53353E53}.RelWithDebInfo|Win32.Build.0 = RelWithDebInfo|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C1FEB865-624A-4310-B6B6-41DF9ADD78ED}
+	EndGlobalSection
+EndGlobal
