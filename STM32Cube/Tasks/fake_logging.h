@@ -18,4 +18,6 @@ typedef struct {
 	uint32_t timestamp;
 } logMsg_t;
 
+void fakeLogTask(void *argument);
+
 #endif /* FAKE_LOGGING_H_ */
