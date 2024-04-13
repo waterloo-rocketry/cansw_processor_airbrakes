@@ -44,6 +44,7 @@
 #define DMA_RX_TIMEOUT 300
 uint8_t USART1_Rx_Buffer[MAX_BINARY_OUTPUT_LENGTH];
 SemaphoreHandle_t USART1_DMA_Sempahore;
+SemaphoreHandle_t vnIMUResultMutex;
 
 void USART1_DMA_Rx_Complete_Callback(UART_HandleTypeDef *huart)
 {
@@ -137,6 +138,11 @@ void vnIMUHandler(void *argument)
 		}
 	}
 
+}
+
+bool writeIMUData(FusionVector *gyroscope, FusionVector *accelerometer, FusionVector *magnetometer)
+{
+	return false;
 }
 
 

@@ -7,10 +7,13 @@
 
 
 #include "state_estimation.h"
+#include "ICM-20948.h"
 #include "Fusion.h"
+#include "vn_handler.h"
 #include <time.h>
 
 #define SAMPLE_RATE 100 // replace this with actual sample rate
+#define USE_ICM 0
 
 void stateEstTask(void *arguments)
 {
@@ -37,7 +40,7 @@ void stateEstTask(void *arguments)
 				.axis = {0.0f, 0.0f, 0.0f}
 		};
 
-		// Figure out how to check soft and hard iron (?)
+		// TODO Figure out how to check soft and hard iron (?)
 		const FusionMatrix softIronMatrix = {
 				.element = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
 		};
@@ -45,7 +48,7 @@ void stateEstTask(void *arguments)
 				.axis = {0.0f, 0.0f, 0.0f}
 		};
 
-		// Initialise algorithms
+		// Create and Init Fusion objects
 		FusionOffset offset;
 		FusionAhrs ahrs;
 
@@ -63,22 +66,57 @@ void stateEstTask(void *arguments)
 		 };
 		 FusionAhrsSetSettings(&ahrs, &settings);
 
+		 #if USE_ICM == 1
+		 //if we are using the ICM IMU, initialize it
+		 bool res = true;
+		 res &= ICM_20948_init();
+		 res &= ICM_20948_check_sanity();
+		 res &= MAG_Self_Test();
+		 if(!res)
+		 {
+			 //throw an error?
+		 }
+		#endif
+
+		 FusionVector gyroscope;
+		 FusionVector accelerometer;
+		 FusionVector magnetometer;
+
 		 // This loop should repeat each time new gyroscope data is available
 		 while (true) {
+			#if USE_ICM == 1
+			 //If using the ICM, do a synchronous (wrt to state estimation) read on all sensors
+			 float xData;
+			 float yData;
+			 float zData;
 
-			 // Acquire latest sensor data
-			 // how the hell do I do that again
-			 const clock_t timestamp = clock(); // replace this with actual gyroscope timestamp
-			 //how to use vn300
-			 FusionVector gyroscope = {
-						.axis = {0.0f, 0.0f, 0.0f}
-				}; // replace this with actual gyroscope data in degrees/s
-			 FusionVector accelerometer = {
-						.axis = {0.0f, 0.0f, 0.0f}
-				}; // replace this with actual accelerometer data in g
-			 FusionVector magnetometer = {
-						.axis = {0.0f, 0.0f, 0.0f}
-				}; // replace this with actual magnetometer data in arbitrary units
+			 //TODO: wrap this operation in a single function call that populates Fusion Vectors and spits out a single bool
+			 ICM_20948_get_gyro_converted(&xData, &yData, &zData);
+			 gyroscope = {
+			 						.axis = {0.0f, 0.0f, 0.0f}
+			 				}; // gyroscope data in degrees/s
+			 ICM_20948_get_accel_converted(&xData, &yData, &zData);
+			 accelerometer = {
+			 						.axis = {0.0f, 0.0f, 0.0f}
+			 				}; // accelerometer data in g
+			 ICM_20948_get_mag_converted(&xData, &yData, &zData);
+			 magnetometer = {
+			 						.axis = {0.0f, 0.0f, 0.0f}
+			 				}; // magnetometer data in arbitrary units //TODO Figure out units
+			#else
+			 //wait for the VN data buffer mutex to be available
+			 if(xSemaphoreTake(vnIMUResultMutex, 100) != pdTRUE)
+			 {
+				 //we timed out, something is holding onto the mutex
+
+			 }
+
+			 writeIMUData(&gyroscope, &accelerometer, &magnetometer);
+
+			#endif
+
+
+
 
 			 // Apply calibration
 			 gyroscope = FusionCalibrationInertial(gyroscope, gyroscopeMisalignment, gyroscopeSensitivity, gyroscopeOffset);
@@ -89,7 +127,10 @@ void stateEstTask(void *arguments)
 		 	 gyroscope = FusionOffsetUpdate(&offset, gyroscope);
 
 		 	 // Calculate delta time (in seconds) to account for gyroscope sample clock error
+
+		 	 //TODO Replace anything to do with time.h with a FreeRTOS or HAL service
 		 	 static clock_t previousTimestamp;
+		 	 const clock_t timestamp = clock(); // replace this with actual gyroscope timestamp
 		 	 const float deltaTime = (float) (timestamp - previousTimestamp) / (float) CLOCKS_PER_SEC;
 		 	 previousTimestamp = timestamp;
 
@@ -115,5 +156,6 @@ void stateEstTask(void *arguments)
 		               //earth.axis.x, earth.axis.y, earth.axis.z);
 
 		 	//printf(to_string(euler.angle.roll) + to_string(euler.angle.pitch) + to_string(euler.angle.yaw));
+		 	 vTaskDelay(1000); //TODO replace this with vTaskDelayUntil
 		 }
 }
