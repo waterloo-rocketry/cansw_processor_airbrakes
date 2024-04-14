@@ -47,8 +47,13 @@
 uint8_t USART1_Rx_Buffer[MAX_BINARY_OUTPUT_LENGTH];
 SemaphoreHandle_t USART1_DMA_Sempahore;
 
+//IMU Results
 SemaphoreHandle_t vnIMUResultMutex;
-float IMUResults[9]; //0-2 accel, 3-5 gyro, 6-8 mag
+vec3f accel;
+vec3f gyro;
+vec3f mag;
+float temp;
+float pressure;
 
 void USART1_DMA_Rx_Complete_Callback(UART_HandleTypeDef *huart)
 {
@@ -73,7 +78,8 @@ bool vnIMUSetup(){
 
 	//configure binary output #1
 	VnError err = VnUartPacket_genWriteBinaryOutput1(buffer, CONFIG_MSG_LENGTH, VNERRORDETECTIONMODE_CHECKSUM, &returnedLength, ASYNCMODE_BOTH, RATE1_DIVISOR,
-			COMMONGROUP_PARAMS1, TIMEGROUP_PARAMS1, IMUGROUP_PARAMS1, GPSGROUP_PARAMS1, ATTITUDEGROUP_PARAMS1, INSGROUP_PARAMS1, GPSGROUP_NONE);
+		COMMONGROUP_PARAMS1, TIMEGROUP_PARAMS1, IMUGROUP_PARAMS1, GPSGROUP_PARAMS1, ATTITUDEGROUP_PARAMS1, INSGROUP_PARAMS1, GPSGROUP_NONE);
+
 	if (err == E_NONE)
 	{
 		return HAL_OK == HAL_UART_Transmit(&huart1, buffer, returnedLength, 10); //Send the command to configure IMU output format
@@ -86,16 +92,17 @@ bool vnIMUSetup(){
 
 	//configure binary output #2
 	err = VnUartPacket_genWriteBinaryOutput1(buffer, CONFIG_MSG_LENGTH, VNERRORDETECTIONMODE_CHECKSUM, &returnedLength, ASYNCMODE_BOTH, RATE2_DIVISOR,
-			COMMONGROUP_PARAMS2, TIMEGROUP_PARAMS2, IMUGROUP_PARAMS2, GPSGROUP_PARAMS2,ATTITUDEGROUP_PARAMS2,INSGROUP_PARAMS2, GPSGROUP_NONE);
-		if (err == E_NONE)
-		{
-			return HAL_OK == HAL_UART_Transmit(&huart1, buffer, returnedLength, 10); //Send the command to configure IMU output format
-			//TODO: Log error to logQueue
-		}
-		else
-		{
-			//TODO: Log error to logQueue
-		}
+		COMMONGROUP_PARAMS2, TIMEGROUP_PARAMS2, IMUGROUP_PARAMS2, GPSGROUP_PARAMS2,ATTITUDEGROUP_PARAMS2,INSGROUP_PARAMS2, GPSGROUP_NONE);
+
+	if (err == E_NONE)
+	{
+		return HAL_OK == HAL_UART_Transmit(&huart1, buffer, returnedLength, 10); //Send the command to configure IMU output format
+		//TODO: Log error to logQueue
+	}
+	else
+	{
+		//TODO: Log error to logQueue
+	}
 
 
 	return false;
@@ -142,29 +149,13 @@ void vnIMUHandler(void *argument)
 					}
 					if(imu_group != IMUGROUP_NONE)
 					{
-						vec3f accel;
-						vec3f gyro;
-						vec3f mag;
-						float temp;
-						float pressure;
-						VnUartPacket_parseVNIMU(&packet, &mag, &accel, &gyro, &temp, &pressure);
-
+						//TODO make sure we aren't writing bad data, check IMU status or smth
 						if(xSemaphoreTake(vnIMUResultMutex, 10) != pdTRUE)
 						{
 							//we timed out, throw an error
 						}
-						//Take mutex - shared memory is now safe to access
-						IMUResults[0] = accel.c[0]; //X
-						IMUResults[1] = accel.c[1]; //Y
-						IMUResults[2] = accel.c[2]; //Z
 
-						IMUResults[3] = gyro.c[0]; //X
-						IMUResults[4] = gyro.c[1]; //Y
-						IMUResults[5] = gyro.c[2]; //Z
-
-						IMUResults[6] = mag.c[0]; //X
-						IMUResults[7] = mag.c[1]; //Y
-						IMUResults[8] = mag.c[2]; //Z
+						VnUartPacket_parseVNIMU(&packet, &mag, &accel, &gyro, &temp, &pressure);
 
 						//Release IMU data mutex
 						xSemaphoreGive(vnIMUResultMutex);
@@ -201,17 +192,17 @@ bool writeIMUData(FusionVector *gyroscope, FusionVector *accelerometer, FusionVe
 		return false; //couldn't get mutex before timeout
 	}
 
-	accelerometer->array[0] = IMUResults[0];
-	accelerometer->array[1] = IMUResults[1];
-	accelerometer->array[2] = IMUResults[2];
+	accelerometer->array[0] = accel.c[0]; //X
+	accelerometer->array[1] = accel.c[1]; //Y
+	accelerometer->array[2] = accel.c[2]; //Z
 
-	gyroscope->array[0] = IMUResults[3];
-	gyroscope->array[1] = IMUResults[4];
-	gyroscope->array[2] = IMUResults[5];
+	gyroscope->array[0] = gyro.c[0]; //X
+	gyroscope->array[1] = gyro.c[1]; //Y
+	gyroscope->array[2] = gyro.c[2]; //Z
 
-	magnetometer->array[0] = IMUResults[6];
-	magnetometer->array[1] = IMUResults[7];
-	magnetometer->array[2] = IMUResults[8];
+	magnetometer->array[0] = mag.c[0]; //X
+	magnetometer->array[1] = mag.c[1]; //Y
+	magnetometer->array[2] = mag.c[2]; //Z
 
 	//Release IMU data mutex
 	xSemaphoreGive(vnIMUResultMutex);
