@@ -54,12 +54,19 @@ vec3f gyro;
 vec3f mag;
 float temp;
 float pressure;
+TimeUtc readTime;
+TimeUtc lastReadTime;
 
 void USART1_DMA_Rx_Complete_Callback(UART_HandleTypeDef *huart)
 {
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 	xSemaphoreGiveFromISR(USART1_DMA_Sempahore, &xHigherPriorityTaskWoken);
 	portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+}
+
+uint32_t TimeUTCDiffms(TimeUtc end, TimeUtc start)
+{
+	return ((uint32_t) end.ms + (uint32_t) end.sec * 1000 + (uint32_t) end.min * 60 * 1000 + (uint32_t) end.hour * 60 * 60 * 1000) - ((uint32_t) start.ms + (uint32_t) start.sec * 1000 + (uint32_t) start.min * 60 * 1000 + (uint32_t) start.hour * 60 * 60 * 1000);
 }
 
 bool vnIMUSetup(){
@@ -137,6 +144,8 @@ void vnIMUHandler(void *argument)
 				uint16_t gps_group;
 				uint16_t ins_group;
 
+				TimeUtc timestamp;
+
 				if(VnUartPacket_type(&packet) == PACKETTYPE_BINARY)
 				{
 					//TODO: Detect message type properly
@@ -144,7 +153,7 @@ void vnIMUHandler(void *argument)
 					if(time_group & TIMEGROUP_TIMEUTC)
 					{
 						LogData_t msg;
-						TimeUtc timestamp = VnUartPacket_extractTimeUtc(&packet);
+						timestamp = VnUartPacket_extractTimeUtc(&packet);
 
 					}
 					if(imu_group != IMUGROUP_NONE)
@@ -156,6 +165,8 @@ void vnIMUHandler(void *argument)
 						}
 
 						VnUartPacket_parseVNIMU(&packet, &mag, &accel, &gyro, &temp, &pressure);
+						lastReadTime = readTime;
+						readTime = timestamp;
 
 						//Release IMU data mutex
 						xSemaphoreGive(vnIMUResultMutex);
@@ -185,7 +196,7 @@ void vnIMUHandler(void *argument)
 
 }
 
-bool writeIMUData(FusionVector *gyroscope, FusionVector *accelerometer, FusionVector *magnetometer)
+bool writeIMUData(FusionVector *gyroscope, FusionVector *accelerometer, FusionVector *magnetometer, uint32_t *deltaTimems)
 {
 	if(xSemaphoreTake(vnIMUResultMutex, 10) != pdTRUE)
 	{
@@ -204,10 +215,14 @@ bool writeIMUData(FusionVector *gyroscope, FusionVector *accelerometer, FusionVe
 	magnetometer->array[1] = mag.c[1]; //Y
 	magnetometer->array[2] = mag.c[2]; //Z
 
+	*deltaTimems = TimeUTCDiffms(readTime, lastReadTime);
+
 	//Release IMU data mutex
 	xSemaphoreGive(vnIMUResultMutex);
 
 	return true;
 }
+
+
 
 

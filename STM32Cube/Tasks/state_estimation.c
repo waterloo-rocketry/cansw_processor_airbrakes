@@ -103,20 +103,30 @@ void stateEstTask(void *arguments)
 			 magnetometer = {
 			 						.axis = {0.0f, 0.0f, 0.0f}
 			 				}; // magnetometer data in arbitrary units //TODO Figure out units
+
+		 	 // Calculate delta time (in seconds) to account for gyroscope sample clock error
+
+			 //TODO Replace anything to do with time.h with a FreeRTOS or HAL service
+			 static clock_t previousTimestamp;
+			 const clock_t timestamp = clock(); // replace this with actual gyroscope timestamp
+			 const float deltaTime = (float) (timestamp - previousTimestamp) / (float) CLOCKS_PER_SEC;
+			 previousTimestamp = timestamp;
+
+
 			#else
 			 //wait for the VN data buffer mutex to be available
 			 if(xSemaphoreTake(vnIMUResultMutex, 100) != pdTRUE)
 			 {
 				 //we timed out, something is holding onto the mutex
-
 			 }
 
-			 writeIMUData(&gyroscope, &accelerometer, &magnetometer);
+			 uint32_t deltaTimeMS;
+			 writeIMUData(&gyroscope, &accelerometer, &magnetometer, &deltaTimeMS);
+			 float deltaTime = (float) deltaTimeMS / 1000.0; //yes I realized deltaTime was a float in s after the fact sue me
+
+			 xSemaphoreGive(vnIMUResultMutex);
 
 			#endif
-
-
-
 
 			 // Apply calibration
 			 gyroscope = FusionCalibrationInertial(gyroscope, gyroscopeMisalignment, gyroscopeSensitivity, gyroscopeOffset);
@@ -126,13 +136,6 @@ void stateEstTask(void *arguments)
 		 	 // Update gyroscope offset correction algorithm
 		 	 gyroscope = FusionOffsetUpdate(&offset, gyroscope);
 
-		 	 // Calculate delta time (in seconds) to account for gyroscope sample clock error
-
-		 	 //TODO Replace anything to do with time.h with a FreeRTOS or HAL service
-		 	 static clock_t previousTimestamp;
-		 	 const clock_t timestamp = clock(); // replace this with actual gyroscope timestamp
-		 	 const float deltaTime = (float) (timestamp - previousTimestamp) / (float) CLOCKS_PER_SEC;
-		 	 previousTimestamp = timestamp;
 
 		 	 // Update gyroscope AHRS algorithm
 		 	 FusionAhrsUpdate(&ahrs, gyroscope, accelerometer, magnetometer, deltaTime);
