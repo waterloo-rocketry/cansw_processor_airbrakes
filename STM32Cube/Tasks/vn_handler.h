@@ -24,7 +24,7 @@ bool vnIMUSetup();
 
 void vnIMUHandler(void *argument);
 
-bool writeIMUData(FusionVector *gyroscope, FusionVector *accelerometer, FusionVector *magnetometer);
+bool writeIMUData(FusionVector *gyroscope, FusionVector *accelerometer, FusionVector *magnetometer, uint32_t *deltaTimems);
 
 
 #endif /* VN_HANDLER_H_ */
