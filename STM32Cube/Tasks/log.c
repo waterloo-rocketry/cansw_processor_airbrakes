@@ -120,7 +120,10 @@ void logTask(void *argument)
 		if (xQueueReceive(fullBuffersQueue, &bufferToPrint, 1000000) == pdPASS)
         {
             // TODO: do uart transmit better (use _IT?)
-			HAL_UART_Transmit(&huart4, bufferToPrint->buffer, MAX_MSG_LENGTH, 100);
+            // buffers fill from 0, so `index` conveniently indicates how many chars of data there are to print
+			HAL_UART_Transmit(&huart4, bufferToPrint->buffer, bufferToPrint->index, 100);
+
+            bufferToPrint->index = 0;
         }
     }
 }
