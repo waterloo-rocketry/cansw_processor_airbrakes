@@ -75,7 +75,7 @@ void logGeneric(LogDataSource_t source, LogLevel_t level, const char* msg, va_li
             CURRENT_BUFFER = (CURRENT_BUFFER + 1) % NUM_LOG_BUFFERS;
         }
         
-        xSemaphoreGive(currentBuffer->mutex);
+        xSemaphoreGive(logWriteMutex);
     }
 }
 
