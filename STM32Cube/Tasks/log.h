@@ -16,13 +16,11 @@ extern "C" {
 
 // TODO: determine optimal numbers for these
 /* max length of log data string (bytes) */
-#define MAX_MSG_LENGTH 64
-/* ticks to wait for sending/receiving queue */
-#define LOG_QUEUE_MAX_TIMEOUT 250
+#define MAX_MSG_LENGTH 128
 /* size of one log buffer (bytes) */
 #define LOG_BUFFER_SIZE 4096
 /* number of log buffers */
-#define NUM_LOG_BUFFERS
+#define NUM_LOG_BUFFERS 3
 
 /**
  * Log Level
@@ -51,11 +49,11 @@ typedef enum
 /**
  * Buffer holding one block of log msgs
 */
-struct log_buffer {
-    SemaphoreHandle_t bufferMutex;
-    uint16_t currentIndex;
+typedef struct log_buffer {
+    SemaphoreHandle_t mutex;
+    uint16_t index;
     char buffer[LOG_BUFFER_SIZE];
-};
+} log_buffer;
 
 /**
  * Create buffers, mutexes, etc
