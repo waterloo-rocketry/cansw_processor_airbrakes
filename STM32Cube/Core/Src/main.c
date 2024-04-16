@@ -1,20 +1,20 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2024 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2024 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -68,62 +68,60 @@ DMA_HandleTypeDef hdma_usart1_rx;
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+    .name = "defaultTask",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityNormal,
 };
 /* Definitions for stateEst */
 osThreadId_t stateEstHandle;
 const osThreadAttr_t stateEst_attributes = {
-  .name = "stateEst",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+    .name = "stateEst",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityNormal,
 };
 /* Definitions for control */
 osThreadId_t controlHandle;
 const osThreadAttr_t control_attributes = {
-  .name = "control",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+    .name = "control",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityNormal,
 };
 /* Definitions for trajectory */
 osThreadId_t trajectoryHandle;
 const osThreadAttr_t trajectory_attributes = {
-  .name = "trajectory",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+    .name = "trajectory",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityLow,
 };
 /* Definitions for sdLogWrite */
 osThreadId_t sdLogWriteHandle;
 const osThreadAttr_t sdLogWrite_attributes = {
-  .name = "sdLogWrite",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+    .name = "sdLogWrite",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityLow,
 };
 /* Definitions for healthCheck */
 osThreadId_t healthCheckHandle;
 const osThreadAttr_t healthCheck_attributes = {
-  .name = "healthCheck",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+    .name = "healthCheck",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityLow,
 };
 /* Definitions for flightPhase */
 osThreadId_t flightPhaseHandle;
 const osThreadAttr_t flightPhase_attributes = {
-  .name = "flightPhase",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+    .name = "flightPhase",
+    .stack_size = 128 * 4,
+    .priority = (osPriority_t)osPriorityLow,
 };
 /* Definitions for altitudeQueue */
 osMessageQueueId_t altitudeQueueHandle;
 const osMessageQueueAttr_t altitudeQueue_attributes = {
-  .name = "altitudeQueue"
-};
+    .name = "altitudeQueue"};
 /* Definitions for eventTest */
 osEventFlagsId_t eventTestHandle;
 const osEventFlagsAttr_t eventTest_attributes = {
-  .name = "eventTest"
-};
+    .name = "eventTest"};
 /* USER CODE BEGIN PV */
 uint32_t idx;
 /* USER CODE END PV */
@@ -152,7 +150,7 @@ void healthCheckTask(void *argument);
 void flightPhaseTask(void *argument);
 
 /* USER CODE BEGIN PFP */
-//void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs);
+// void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -161,9 +159,9 @@ void flightPhaseTask(void *argument);
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
 
@@ -183,7 +181,7 @@ int main(void)
   /* Configure the system clock */
   SystemClock_Config();
 
-/* Configure the peripherals common clocks */
+  /* Configure the peripherals common clocks */
   PeriphCommonClock_Config();
 
   /* USER CODE BEGIN SysInit */
@@ -225,7 +223,7 @@ int main(void)
 
   /* Create the queue(s) */
   /* creation of altitudeQueue */
-  altitudeQueueHandle = osMessageQueueNew (8, sizeof(int32_t), &altitudeQueue_attributes);
+  altitudeQueueHandle = osMessageQueueNew(8, sizeof(int32_t), &altitudeQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -282,28 +280,30 @@ int main(void)
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Supply configuration update enable
-  */
+   */
   HAL_PWREx_ConfigSupply(PWR_LDO_SUPPLY);
 
   /** Configure the main internal regulator output voltage
-  */
+   */
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
 
-  while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
+  while (!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY))
+  {
+  }
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSI;
+   * in the RCC_OscInitTypeDef structure.
+   */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI | RCC_OSCILLATORTYPE_LSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_DIV1;
   RCC_OscInitStruct.HSICalibrationValue = 64;
   RCC_OscInitStruct.LSIState = RCC_LSI_ON;
@@ -323,10 +323,8 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
-                              |RCC_CLOCKTYPE_D3PCLK1|RCC_CLOCKTYPE_D1PCLK1;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2 | RCC_CLOCKTYPE_D3PCLK1 | RCC_CLOCKTYPE_D1PCLK1;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV4;
@@ -342,17 +340,16 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief Peripherals Common Clock Configuration
-  * @retval None
-  */
+ * @brief Peripherals Common Clock Configuration
+ * @retval None
+ */
 void PeriphCommonClock_Config(void)
 {
   RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 
   /** Initializes the peripherals clock
-  */
-  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_ADC|RCC_PERIPHCLK_SDMMC
-                              |RCC_PERIPHCLK_FDCAN;
+   */
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_ADC | RCC_PERIPHCLK_SDMMC | RCC_PERIPHCLK_FDCAN;
   PeriphClkInitStruct.PLL2.PLL2M = 16;
   PeriphClkInitStruct.PLL2.PLL2N = 120;
   PeriphClkInitStruct.PLL2.PLL2P = 20;
@@ -371,10 +368,10 @@ void PeriphCommonClock_Config(void)
 }
 
 /**
-  * @brief ADC1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief ADC1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_ADC1_Init(void)
 {
 
@@ -390,7 +387,7 @@ static void MX_ADC1_Init(void)
   /* USER CODE END ADC1_Init 1 */
 
   /** Common config
-  */
+   */
   hadc1.Instance = ADC1;
   hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
   hadc1.Init.Resolution = ADC_RESOLUTION_16B;
@@ -412,7 +409,7 @@ static void MX_ADC1_Init(void)
   }
 
   /** Configure the ADC multi-mode
-  */
+   */
   multimode.Mode = ADC_MODE_INDEPENDENT;
   if (HAL_ADCEx_MultiModeConfigChannel(&hadc1, &multimode) != HAL_OK)
   {
@@ -420,7 +417,7 @@ static void MX_ADC1_Init(void)
   }
 
   /** Configure Regular Channel
-  */
+   */
   sConfig.Channel = ADC_CHANNEL_10;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
@@ -435,14 +432,13 @@ static void MX_ADC1_Init(void)
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
-
 }
 
 /**
-  * @brief CORDIC Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief CORDIC Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_CORDIC_Init(void)
 {
 
@@ -461,14 +457,13 @@ static void MX_CORDIC_Init(void)
   /* USER CODE BEGIN CORDIC_Init 2 */
 
   /* USER CODE END CORDIC_Init 2 */
-
 }
 
 /**
-  * @brief FDCAN1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief FDCAN1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_FDCAN1_Init(void)
 {
 
@@ -514,14 +509,13 @@ static void MX_FDCAN1_Init(void)
   /* USER CODE BEGIN FDCAN1_Init 2 */
 
   /* USER CODE END FDCAN1_Init 2 */
-
 }
 
 /**
-  * @brief FMAC Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief FMAC Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_FMAC_Init(void)
 {
 
@@ -540,14 +534,13 @@ static void MX_FMAC_Init(void)
   /* USER CODE BEGIN FMAC_Init 2 */
 
   /* USER CODE END FMAC_Init 2 */
-
 }
 
 /**
-  * @brief I2C4 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief I2C4 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_I2C4_Init(void)
 {
 
@@ -573,14 +566,14 @@ static void MX_I2C4_Init(void)
   }
 
   /** Configure Analogue filter
-  */
+   */
   if (HAL_I2CEx_ConfigAnalogFilter(&hi2c4, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
   {
     Error_Handler();
   }
 
   /** Configure Digital filter
-  */
+   */
   if (HAL_I2CEx_ConfigDigitalFilter(&hi2c4, 0) != HAL_OK)
   {
     Error_Handler();
@@ -588,14 +581,13 @@ static void MX_I2C4_Init(void)
   /* USER CODE BEGIN I2C4_Init 2 */
 
   /* USER CODE END I2C4_Init 2 */
-
 }
 
 /**
-  * @brief RTC Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief RTC Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_RTC_Init(void)
 {
 
@@ -608,7 +600,7 @@ static void MX_RTC_Init(void)
   /* USER CODE END RTC_Init 1 */
 
   /** Initialize RTC Only
-  */
+   */
   hrtc.Instance = RTC;
   hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
   hrtc.Init.AsynchPrediv = 127;
@@ -624,14 +616,13 @@ static void MX_RTC_Init(void)
   /* USER CODE BEGIN RTC_Init 2 */
 
   /* USER CODE END RTC_Init 2 */
-
 }
 
 /**
-  * @brief SDMMC1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief SDMMC1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_SDMMC1_SD_Init(void)
 {
 
@@ -651,14 +642,13 @@ static void MX_SDMMC1_SD_Init(void)
   /* USER CODE BEGIN SDMMC1_Init 2 */
 
   /* USER CODE END SDMMC1_Init 2 */
-
 }
 
 /**
-  * @brief TIM1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief TIM1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_TIM1_Init(void)
 {
 
@@ -748,14 +738,13 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 2 */
   HAL_TIM_MspPostInit(&htim1);
-
 }
 
 /**
-  * @brief UART4 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief UART4 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_UART4_Init(void)
 {
 
@@ -796,14 +785,13 @@ static void MX_UART4_Init(void)
   /* USER CODE BEGIN UART4_Init 2 */
 
   /* USER CODE END UART4_Init 2 */
-
 }
 
 /**
-  * @brief USART1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief USART1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_USART1_UART_Init(void)
 {
 
@@ -844,12 +832,11 @@ static void MX_USART1_UART_Init(void)
   /* USER CODE BEGIN USART1_Init 2 */
 
   /* USER CODE END USART1_Init 2 */
-
 }
 
 /**
-  * Enable DMA controller clock
-  */
+ * Enable DMA controller clock
+ */
 static void MX_DMA_Init(void)
 {
 
@@ -860,19 +847,18 @@ static void MX_DMA_Init(void)
   /* DMA1_Stream0_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
-
 }
 
 /**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-/* USER CODE BEGIN MX_GPIO_Init_1 */
-/* USER CODE END MX_GPIO_Init_1 */
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+  /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -885,7 +871,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0 | GPIO_PIN_1, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : PB5 */
   GPIO_InitStruct.Pin = GPIO_PIN_5;
@@ -895,147 +881,149 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PE0 PE1 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
+  GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-/* USER CODE BEGIN MX_GPIO_Init_2 */
-/* USER CODE END MX_GPIO_Init_2 */
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
+  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
 
-void can_handle_rx(const can_msg_t *message){
-	return;
+void can_handle_rx(const can_msg_t *message)
+{
+  return;
 }
 
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
 /**
-  * @brief  Function implementing the defaultTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
+ * @brief  Function implementing the defaultTask thread.
+ * @param  argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
-	can_init_stm(&hfdcan1, can_handle_rx);
-	uint32_t LED_state = 0;
-	idx = 0;
-	/* Infinite loop */
-	for(;;)
-	{
-		/*sprintf ((char *)TxData, "CANTX%d", indx++);
+  can_init_stm(&hfdcan1, can_handle_rx);
+  uint32_t LED_state = 0;
+  idx = 0;
+  /* Infinite loop */
+  for (;;)
+  {
+    /*sprintf ((char *)TxData, "CANTX%d", indx++);
 
-		if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, TxData)!= HAL_OK)
-		{
-		Error_Handler();
-		}*/
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, LED_state);
-		LED_state = !LED_state;
+    if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, TxData)!= HAL_OK)
+    {
+    Error_Handler();
+    }*/
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, LED_state);
+    LED_state = !LED_state;
 
-		can_msg_t message;
-		build_board_stat_msg(idx, E_NOMINAL, NULL, 0, &message);
-		can_send(&message);
+    can_msg_t message;
+    build_board_stat_msg(idx, E_NOMINAL, NULL, 0, &message);
+    can_send(&message);
 
-		osDelay(1000);
-	}
+    osDelay(1000);
+  }
   /* USER CODE END 5 */
 }
 
 /* USER CODE BEGIN Header_stateEstimationTask */
 /**
-* @brief Function implementing the stateEst thread.
-* @param argument: Not used
-* @retval None
-*/
+ * @brief Function implementing the stateEst thread.
+ * @param argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_stateEstimationTask */
 void stateEstimationTask(void *argument)
 {
   /* USER CODE BEGIN stateEstimationTask */
-    if (!ICM_20948_init())
-    {
-	    // handle i2c init failure?
-    }
+  if (!ICM_20948_init())
+  {
+    // handle i2c init failure?
+  }
 
-    if (!ICM_20948_check_sanity()) {
-		// handle i2c sanity check failure?
-    }
+  if (!ICM_20948_check_sanity())
+  {
+    // handle i2c sanity check failure?
+  }
 
-    float magData[3];
-    float accelData[3];
-    float gyroData[3];
-    //int len;
-    //char dataStr[50];
+  float magData[3];
+  float accelData[3];
+  float gyroData[3];
+  // int len;
+  // char dataStr[50];
 
   /* Infinite loop */
-    for(;;)
-    {
-        ICM_20948_get_mag_converted(magData, magData + 1, magData + 2);
-        ICM_20948_get_accel_converted(accelData, accelData + 1, accelData + 2);
-        ICM_20948_get_gyro_converted(gyroData, gyroData + 1, gyroData + 2);
+  for (;;)
+  {
+    ICM_20948_get_mag_converted(magData, magData + 1, magData + 2);
+    ICM_20948_get_accel_converted(accelData, accelData + 1, accelData + 2);
+    ICM_20948_get_gyro_converted(gyroData, gyroData + 1, gyroData + 2);
 
-        // TODO: look into how better manage snprintf to not cause death (esp with %f)
-		/*
+    // TODO: look into how better manage snprintf to not cause death (esp with %f)
+    /*
         // FOR TESTING: serial print data
         len = snprintf(dataStr, 50, "mag: %.3f, %.3f, %.3f\n", magData[0], magData[1], magData[2]);
         //HAL_UART_Transmit(&huart4, (uint8_t) dataStr, len, 500);
 
-		len = snprintf(dataStr, 50, "accel: %.3f, %.3f, %.3f\n", accelData[0], accelData[1], accelData[2]);
+    len = snprintf(dataStr, 50, "accel: %.3f, %.3f, %.3f\n", accelData[0], accelData[1], accelData[2]);
         //HAL_UART_Transmit(&huart4, dataStr, len, 500);
 
         len = snprintf(dataStr, 50, "gyro: %.3f, %.3f, %.3f\n", gyroData[0], gyroData[1], gyroData[2]);
-		//HAL_UART_Transmit(&huart4, dataStr, len, 500);
+    //HAL_UART_Transmit(&huart4, dataStr, len, 500);
         */
-	    idx++;
-        osDelay(100);
-    }
+    idx++;
+    osDelay(100);
+  }
   /* USER CODE END stateEstimationTask */
 }
 
 /* USER CODE BEGIN Header_controlTask */
 /**
-* @brief Function implementing the control thread.
-* @param argument: Not used
-* @retval None
-*/
+ * @brief Function implementing the control thread.
+ * @param argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_controlTask */
 void controlTask(void *argument)
 {
   /* USER CODE BEGIN controlTask */
-	//TODO: Ensure altitude estimate access is thread-safe, use mutex or queue as necessary
-	//TODO: Add controller gains and integral/derivative terms
-	//TODO: Add apogee target (and method to edit via CAN?)
-	uint32_t min_controller_frequency = 10; //10 Hz
-	uint32_t controller_delay_ticks = 1000 / min_controller_frequency / portTICK_RATE_MS; //equivalent FreeRTOS ticks
+  // TODO: Ensure altitude estimate access is thread-safe, use mutex or queue as necessary
+  // TODO: Add controller gains and integral/derivative terms
+  // TODO: Add apogee target (and method to edit via CAN?)
+  uint32_t min_controller_frequency = 10;                                               // 10 Hz
+  uint32_t controller_delay_ticks = 1000 / min_controller_frequency / portTICK_RATE_MS; // equivalent FreeRTOS ticks
   /* Infinite loop */
-  for(;;)
+  for (;;)
   {
-	 //TODO: Fetch updated apogee estimate
-	 //TODO: Check flight phase flag
-		 //TODO: Calculate updated control output and clamp btw 0 and 1
-		 //TODO: Push control output to CAN bus
-   // osDelayUntil(controller_delay_ticks); //Implements periodic behaviour (nominal delay - time spent running the loop code)
+    // TODO: Fetch updated apogee estimate
+    // TODO: Check flight phase flag
+    // TODO: Calculate updated control output and clamp btw 0 and 1
+    // TODO: Push control output to CAN bus
+    // osDelayUntil(controller_delay_ticks); //Implements periodic behaviour (nominal delay - time spent running the loop code)
   }
   /* USER CODE END controlTask */
 }
 
 /* USER CODE BEGIN Header_trajectoryEstimationTask */
 /**
-* @brief Function implementing the trajectory thread.
-* @param argument: Not used
-* @retval None
-*/
+ * @brief Function implementing the trajectory thread.
+ * @param argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_trajectoryEstimationTask */
 void trajectoryEstimationTask(void *argument)
 {
   /* USER CODE BEGIN trajectoryEstimationTask */
   /* Infinite loop */
-  for(;;)
+  for (;;)
   {
     osDelay(1000);
   }
@@ -1044,21 +1032,21 @@ void trajectoryEstimationTask(void *argument)
 
 /* USER CODE BEGIN Header_sdLogWriteTask */
 /**
-* @brief Function implementing the sdLogWrite thread.
-* @param argument: Not used
-* @retval None
-*/
+ * @brief Function implementing the sdLogWrite thread.
+ * @param argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_sdLogWriteTask */
 void sdLogWriteTask(void *argument)
 {
   /* USER CODE BEGIN sdLogWriteTask */
-	//TODO: Wait for state estimation to load drag table into RAM so we don't block that operation
+  // TODO: Wait for state estimation to load drag table into RAM so we don't block that operation
   /* Infinite loop */
-  for(;;)
+  for (;;)
   {
-	  //TODO: Open log file stream
-	  //TODO: Take data from log message buffer and write to SD card; figure out how to not get preempted
-	  //TODO: Close log file stream
+    // TODO: Open log file stream
+    // TODO: Take data from log message buffer and write to SD card; figure out how to not get preempted
+    // TODO: Close log file stream
     osDelay(1000);
   }
   /* USER CODE END sdLogWriteTask */
@@ -1066,20 +1054,49 @@ void sdLogWriteTask(void *argument)
 
 /* USER CODE BEGIN Header_healthCheckTask */
 /**
-* @brief Function implementing the healthCheck thread.
-* @param argument: Not used
-* @retval None
-*/
+ * @brief Function implementing the healthCheck thread.
+ * @param argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_healthCheckTask */
 void healthCheckTask(void *argument)
 {
   /* USER CODE BEGIN healthCheckTask */
+
+  /**
+
+  Note: Currently ADC1 has channels 10 and 11, polling both at a time
+  is very possible, through a variety of methods (DMA), however
+  for testing purposes until the ADC dudes can go in person to do it,
+  I recommend just using CubeMX. If you go to rank under ADC1 in CubeMX,
+  you will see Channel 10, once you are done testing channel 10, switch it
+  to channel 11 (can also be done in the CubeMX generated code on line ~420
+  in the config channel block), then the other channel can be tested.
+  */
+
+  // ADC Value Var
+  uint32_t adc1_val;
+
+  // Calibrate ADC
+  HAL_ADCEx_Calibration_Start(&hadc1);
+
   /* Infinite loop */
-  for(;;)
+  for (;;)
   {
-	//TODO: Read ADC channels
-	//TODO: convert ADC readings to target values
-	//TODO: push out of range errors to CAN bus; push values to bus in debug mode
+    // TODO: Read ADC channels
+    HAL_ADC_Start(&hadc1);
+    HAL_ADC_PollForConversion(&hadc1, 10);
+    adc_val = HAL_ADC_GetValue(&hadc1);
+    HAL_ADC_Stop(&hadc1);
+
+    // Sending ADC val over uart
+    int adc_txlength = sprintf(adc_strval, "%d\r\n", adc1_val);
+    HAL_UART_Transmit(&huart4, (uint8_t)adc_strval, adc_txlength, 10);
+
+    // TODO: convert ADC readings to target values
+    // adc_val = adc_val/655353.3 (can be done once adc tested, with bits)
+
+    // TODO: push out of range errors to CAN bus; push values to bus in debug mode
     osDelay(1000);
   }
   /* USER CODE END healthCheckTask */
@@ -1087,31 +1104,31 @@ void healthCheckTask(void *argument)
 
 /* USER CODE BEGIN Header_flightPhaseTask */
 /**
-* @brief Function implementing the flightPhase thread.
-* @param argument: Not used
-* @retval None
-*/
+ * @brief Function implementing the flightPhase thread.
+ * @param argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_flightPhaseTask */
 void flightPhaseTask(void *argument)
 {
   /* USER CODE BEGIN flightPhaseTask */
 
   /* Infinite loop */
-  for(;;)
+  for (;;)
   {
-	//TODO: Check injector valve message (actually do it this time)
-	//TODO: Start internal timer, check timer
-		//TODO: Set coast flag once timer has elapsed time from launch
-		//TODO: Set recovery flag once time has elapsed from launch
+    // TODO: Check injector valve message (actually do it this time)
+    // TODO: Start internal timer, check timer
+    // TODO: Set coast flag once timer has elapsed time from launch
+    // TODO: Set recovery flag once time has elapsed from launch
     osDelay(1000);
   }
   /* USER CODE END flightPhaseTask */
 }
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -1119,19 +1136,19 @@ void Error_Handler(void)
   __disable_irq();
   while (1)
   {
-	  //TODO: Report error condition over BUS, attempt to command airbrakes closed
+    // TODO: Report error condition over BUS, attempt to command airbrakes closed
   }
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
