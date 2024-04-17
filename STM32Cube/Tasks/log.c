@@ -22,6 +22,7 @@ bool logInit(void)
     {
         logBuffers[i].mutex = xSemaphoreCreateMutex();
         logBuffers[i].index = 0;
+        logBuffers[i].isFull = false;
     }
 
     return true;
@@ -51,6 +52,13 @@ void logGeneric(LogDataSource_t source, LogLevel_t level, const char* msg, va_li
     {
         // get the buffer here (only after taking writeMtx) since it's possible for a buffer to fill up while waiting for the writeMtx
         log_buffer* currentBuffer = &logBuffers[CURRENT_BUFFER];
+    
+    // if current buffer is full, all of them are full which should never happen. this will block loggers until one is emptied
+    if (currentBuffer->isFull)
+    {
+        xSemaphoreGive(logWriteMutex);
+        return;
+    }
         
         // format and append the default log header. Limit snprintf to `MAX_MSG_LENGTH - 1` to leave room for \n at the end
         // TODO: make actually readable formatting for lvl and source
@@ -67,6 +75,9 @@ void logGeneric(LogDataSource_t source, LogLevel_t level, const char* msg, va_li
         // check if space left in buffer can be guaranteed to fit another msg (which could be up to MAX_MSG_LENGTH chars)
         if (LOG_BUFFER_SIZE - currentBuffer->index > MAX_MSG_LENGTH) 
         {
+        // set this before, in case queue is full. then it prevents from writing at least
+        currentBuffer->isFull = true;
+
             // if full, send this buffer to output queue and move to next empty one
             if (xQueueSendToBack(fullBuffersQueue, &currentBuffer, 0) != pdPASS)
             {
