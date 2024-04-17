@@ -46,12 +46,12 @@ void logGeneric(LogDataSource_t source, LogLevel_t level, const char* msg, va_li
     // there can only be 1 log writer at once
     if (xSemaphoreTake(logWriteMutex, 50) != pdPASS)
     {
+        return;
         // timed out while waiting to log - maybe too many tasks are waiting to log. this should never happen?
     }
-    else
-    {
-        // get the buffer here (only after taking writeMtx) since it's possible for a buffer to fill up while waiting for the writeMtx
-        log_buffer* currentBuffer = &logBuffers[CURRENT_BUFFER];
+    
+    // get the buffer here (only after taking writeMtx) since it's possible for buffers to rotate while waiting for the writeMtx
+    log_buffer* currentBuffer = &logBuffers[CURRENT_BUFFER];
     
     // if current buffer is full, all of them are full which should never happen. this will block loggers until one is emptied
     if (currentBuffer->isFull)
