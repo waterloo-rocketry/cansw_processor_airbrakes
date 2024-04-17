@@ -15,7 +15,7 @@ QueueHandle_t fullBuffersQueue;
 
 bool logInit(void)
 {
-    fullBuffersQueue = xQueueCreate(NUM_LOG_BUFFERS - 1, sizeof(log_buffer));
+    fullBuffersQueue = xQueueCreate(NUM_LOG_BUFFERS - 1, sizeof(log_buffer*));
     logWriteMutex = xSemaphoreCreateMutex();
 
     for (int i = 0; i < NUM_LOG_BUFFERS; i++)
