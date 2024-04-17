@@ -53,41 +53,55 @@ void logGeneric(LogDataSource_t source, LogLevel_t level, const char* msg, va_li
     // get the buffer here (only after taking writeMtx) since it's possible for buffers to rotate while waiting for the writeMtx
     log_buffer* currentBuffer = &logBuffers[CURRENT_BUFFER];
     
-    // if current buffer is full, all of them are full which should never happen. this will block loggers until one is emptied
+    // if current buffer is full, then all of them must be full. ERROR!!! do not proceed
+    // TODO: should isFull be a mutex instead? issue w that is managing the give/take between log dump task and log users
     if (currentBuffer->isFull)
     {
         xSemaphoreGive(logWriteMutex);
         return;
     }
-        
-        // format and append the default log header. Limit snprintf to `MAX_MSG_LENGTH - 1` to leave room for \n at the end
-        // TODO: make actually readable formatting for lvl and source
-        int headerLength = snprintf(currentBuffer->buffer + currentBuffer->index, MAX_MSG_LENGTH - 1, "%d: [%ld][%d]", level, timestamp, source);
-        currentBuffer->index += headerLength;
+    
+    // format and append the default log header
+    // TODO: make actually readable formatting for lvl and source
+	int headerLength = snprintf(currentBuffer->buffer + currentBuffer->index, MAX_MSG_LENGTH, "%d: [%d] %d ", level, (int) timestamp, source);
+    currentBuffer->index += headerLength;
 
-        // limit this to `MAX_MSG_LENGTH - headerLength - 1` to account for the header and the \n at the end
-        currentBuffer->index += vsnprintf(currentBuffer->buffer + currentBuffer->index, MAX_MSG_LENGTH - headerLength - 1, msg, msgArgs);
+    // limit the actual msg to `MAX_MSG_LENGTH - headerLength` to account for the header we just printed
+    int msgLength = vsnprintf(currentBuffer->buffer + currentBuffer->index, MAX_MSG_LENGTH - headerLength, msg, msgArgs);
+    
+    // snprintf behaviour moment: it returns a larger number than the limit if it had to truncate
+	if (msgLength >= MAX_MSG_LENGTH - headerLength)
+    {
+        currentBuffer->index += MAX_MSG_LENGTH - headerLength - 1; // -1 cuz snprintf makes the last char \0
+    }
+    else
+    {
+        currentBuffer->index += msgLength; // no -1 here cuz snprintf normal return value doesn't count \0
+    }
 
-        // add \n in here instead of asking the sender to do it. This guarantees \n in case msg gets cut off
-        currentBuffer->buffer[currentBuffer->index] = '\n';
-        currentBuffer->index += 1;
+    // add \n in here instead of asking the sender to do it. This guarantees \n in all logs in case msg gets cut off
+    currentBuffer->buffer[currentBuffer->index] = '\n';
+    currentBuffer->index += 1;
 
-        // check if space left in buffer can be guaranteed to fit another msg (which could be up to MAX_MSG_LENGTH chars)
-        if (LOG_BUFFER_SIZE - currentBuffer->index > MAX_MSG_LENGTH) 
-        {
-        // set this before, in case queue is full. then it prevents from writing at least
+    // if buffer cannot be guaranteed to fit another msg, rotate buffers (which can be up to `MAX_MSG_LENGTH + \n` chars)
+    if (LOG_BUFFER_SIZE - currentBuffer->index < MAX_MSG_LENGTH + 1)
+    {
+        // do this before sending to queue in case queue is full. this prevents other loggers from writing to it
         currentBuffer->isFull = true;
 
-            // if full, send this buffer to output queue and move to next empty one
-            if (xQueueSendToBack(fullBuffersQueue, &currentBuffer, 0) != pdPASS)
-            {
-                // if queue does not have space, all n - 1 buffers are full which should not be possible!! ERROR!
-            }
+        // if full, send this buffer to output queue and move to next empty one
+        if (xQueueSendToBack(fullBuffersQueue, &currentBuffer, 0) != pdPASS)
+        {
+            // if queue does not have space, all n - 1 buffers are full which should not be possible!! ERROR!
+        }
+        else
+        {
+            // rotate only if the queue write was successful. otherwise, stay on this buffer until queue hopefully empties
             CURRENT_BUFFER = (CURRENT_BUFFER + 1) % NUM_LOG_BUFFERS;
         }
-        
-        xSemaphoreGive(logWriteMutex);
     }
+    
+    xSemaphoreGive(logWriteMutex);
 }
 
 // ----------------------------------------------------------------------------
@@ -132,7 +146,7 @@ void logTask(void *argument)
         {
             // TODO: do uart transmit better (use _IT?)
             // buffers fill from 0, so `index` conveniently indicates how many chars of data there are to print
-			HAL_UART_Transmit(&huart4, bufferToPrint->buffer, bufferToPrint->index, 100);
+			HAL_UART_Transmit(&huart4, bufferToPrint->buffer, bufferToPrint->index, 1000);
 
             bufferToPrint->index = 0;
         }
