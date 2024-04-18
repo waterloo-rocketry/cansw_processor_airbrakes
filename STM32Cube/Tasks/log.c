@@ -4,7 +4,7 @@
 
 extern UART_HandleTypeDef huart4;
 
-static struct log_buffer logBuffers[NUM_LOG_BUFFERS];
+static log_buffer logBuffers[NUM_LOG_BUFFERS];
 static int CURRENT_BUFFER = 0; // TODO: better way to store current buffer than literally a global var
 static SemaphoreHandle_t logWriteMutex;
 
@@ -26,6 +26,42 @@ bool logInit(void)
     }
 
     return true;
+}
+
+/**
+ * internal helper to convert source enum to string
+*/
+const char* sourceToString(LogDataSource_t source)
+{
+    switch (source)
+    {
+        case SOURCE_FLIGHT_EVENT:
+            return "FlightEvt";
+            break;
+        case SOURCE_HEALTH: 
+            return "Health";
+            break;
+        case SOURCE_CAN_RX:
+            return "CanRx";
+            break;
+        case SOURCE_CAN_TX:
+            return "CanTx";
+            break;
+        case SOURCE_SENSOR:
+            return "Sensor";
+            break;
+        case SOURCE_STATE_EST:
+            return "StateEst";
+            break;
+        case SOURCE_APOGEE_PRED:
+            return "TrajPred";
+            break;
+        case SOURCE_EXT_TARGET :
+            return "ExtTarget";
+            break;
+        default:
+            return "";
+    }
 }
 
 /**
@@ -63,7 +99,7 @@ void logGeneric(LogDataSource_t source, LogLevel_t level, const char* msg, va_li
     
     // format and append the default log header
     // TODO: make actually readable formatting for lvl and source
-	int headerLength = snprintf(currentBuffer->buffer + currentBuffer->index, MAX_MSG_LENGTH, "%d: [%d] %d ", level, (int) timestamp, source);
+	int headerLength = snprintf(currentBuffer->buffer + currentBuffer->index, MAX_MSG_LENGTH, "%c: [%d] %s ", level, (int) timestamp, sourceToString(source));
     currentBuffer->index += headerLength;
 
     // limit the actual msg to `MAX_MSG_LENGTH - headerLength` to account for the header we just printed
