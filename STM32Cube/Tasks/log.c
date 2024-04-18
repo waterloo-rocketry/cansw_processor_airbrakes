@@ -162,11 +162,12 @@ void logInfo(const LogDataSource_t source, const char* msg, ...)
 
 void logDebug(const LogDataSource_t source, const char* msg, ...)
 {
-    // TODO: wrap this in a if/else for if debugging is enabled
+#ifdef DEBUG
     va_list args;
     va_start(args, msg);
     logGeneric(source, LOG_LVL_DEBUG, msg, args);
     va_end(args);
+#endif
 }
 
 // ----------------------------------------------------------------------------
@@ -185,6 +186,7 @@ void logTask(void *argument)
 			HAL_UART_Transmit(&huart4, bufferToPrint->buffer, bufferToPrint->index, 1000);
 
             bufferToPrint->index = 0;
+            bufferToPrint->isFull = false;
         }
     }
 }
