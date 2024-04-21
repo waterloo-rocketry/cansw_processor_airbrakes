@@ -1136,16 +1136,16 @@ void flightPhaseTask(void *argument)
 * @retval None
 */
 /* USER CODE END Header_canHandlerTask */
-//void canHandlerTask(void *argument)
-//{
-//  /* USER CODE BEGIN canHandlerTask */
+void canHandlerTask(void *argument)
+{
+  /* USER CODE BEGIN canHandlerTask */
 //  /* Infinite loop */
 //  for(;;)
 //  {
 //    osDelay(1);
 //  }
-//  /* USER CODE END canHandlerTask */
-//}
+  /* USER CODE END canHandlerTask */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.
