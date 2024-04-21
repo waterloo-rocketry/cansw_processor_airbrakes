@@ -24,7 +24,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
-//#include "canlib.h"
+#include "canlib.h"
 //#include "ICM-20948.h"
 
 #include "vn_handler.h"
@@ -34,6 +34,7 @@
 #include "health_checks.h"
 #include "state_estimation.h"
 #include "trajectory.h"
+#include "can_handler.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -86,6 +87,7 @@ uint32_t idx;
 TaskHandle_t logTaskhandle = NULL;
 TaskHandle_t VNTaskHandle = NULL;
 TaskHandle_t stateEstTaskHandle = NULL;
+TaskHandle_t canhandlerhandle = NULL;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -190,10 +192,10 @@ int main(void)
   BaseType_t xReturned = pdPASS;
 
   //dunno if casting from CMSIS priorities is valid
-  xReturned &= xTaskCreate(vnIMUHandler, "VN Task", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
   //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
+  xReturned &= xTaskCreate(canHandlerTask, "CAN handler", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
   //xReturned &= xTaskCreate(stateEstTask, "StateEst", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
-  xReturned &= xTaskCreate(logTask, "Logging", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
+  //xReturned &= xTaskCreate(logTask, "Logging", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
 
   if(xReturned != pdPASS)
   {
@@ -923,46 +925,19 @@ static void MX_GPIO_Init(void)
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
-	//can_init_stm(&hfdcan1, can_handle_rx); //this needs to be in the CAN handler task if it isn't already?
-	uint32_t LED_state = 0;
 	idx = 0;
 	/* Infinite loop */
 	for(;;)
 	{
-		/*sprintf ((char *)TxData, "CANTX%d", indx++);
 
-		if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, TxData)!= HAL_OK)
+		can_msg_t message;
+		build_board_stat_msg(idx, E_NOMINAL, NULL, 0, &message);
+		idx++;
+
+		if(xQueueSend(busQueue, &message, 10) != pdTRUE)
 		{
-		Error_Handler();
-		}*/
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, LED_state);
-		LED_state = !LED_state;
-
-		//can_msg_t message;
-		//build_board_stat_msg(idx, E_NOMINAL, NULL, 0, &message);
-		//can_send(&message);
-
-//		FDCAN_TxHeaderTypeDef TxHeader;
-//		uint8_t TxData[8] = {0};
-//
-//		TxHeader.IdType = FDCAN_STANDARD_ID;
-//		TxHeader.TxFrameType = FDCAN_DATA_FRAME;
-//		TxHeader.FDFormat = FDCAN_CLASSIC_CAN;
-//		TxHeader.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
-//		TxHeader.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
-//		TxHeader.BitRateSwitch = FDCAN_BRS_OFF;
-//		TxHeader.DataLength = FDCAN_DLC_BYTES_8;
-//		TxHeader.MessageMarker = 0;
-//		TxHeader.Identifier = message.sid;
-//
-//		memcpy(TxData, message.data, message.data_len);
-//
-//		HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, TxData);
-
-//		if(xQueueSend(busQueue, &message, 10) != pdTRUE)
-//		{
-//			//Push a bus full error to the log queue
-//		}
+			//Push a bus full error to the log queue
+		}
 		osDelay(1000);
 	}
   /* USER CODE END 5 */
