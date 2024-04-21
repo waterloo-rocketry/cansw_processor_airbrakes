@@ -24,9 +24,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
-//#include "canlib.h"
-//#include "ICM-20948.h"
 
+//Include header file for each user task here
 #include "vn_handler.h"
 #include "log.h"
 #include "controller.h"
@@ -80,9 +79,8 @@ const osThreadAttr_t defaultTask_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
-uint32_t idx;
 
-//Task handles
+//Decalre task handles for all user tasks here
 TaskHandle_t logTaskhandle = NULL;
 TaskHandle_t VNTaskHandle = NULL;
 TaskHandle_t stateEstTaskHandle = NULL;
@@ -106,7 +104,6 @@ static void MX_USART1_UART_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
-//void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -189,11 +186,12 @@ int main(void)
   /* add threads, ... */
   BaseType_t xReturned = pdPASS;
 
+  //Add all user threads to scheduler here, using xTaskCreate
   //dunno if casting from CMSIS priorities is valid
-  xReturned &= xTaskCreate(vnIMUHandler, "VN Task", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
+  //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
   //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
   //xReturned &= xTaskCreate(stateEstTask, "StateEst", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
-  xReturned &= xTaskCreate(logTask, "Logging", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
+  //xReturned &= xTaskCreate(logTask, "Logging", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
 
   if(xReturned != pdPASS)
   {
@@ -205,6 +203,8 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
+  //Add all task intialization functions here
+  //...
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
@@ -861,24 +861,10 @@ static void MX_GPIO_Init(void)
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
-	//can_init_stm(&hfdcan1, can_handle_rx); //this needs to be in the CAN handler task if it isn't already?
-	uint32_t LED_state = 0;
-	idx = 0;
 	/* Infinite loop */
 	for(;;)
 	{
-		/*sprintf ((char *)TxData, "CANTX%d", indx++);
-
-		if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, TxData)!= HAL_OK)
-		{
-		Error_Handler();
-		}*/
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, LED_state);
-		LED_state = !LED_state;
-
-		//can_msg_t message;
-		//build_board_stat_msg(idx, E_NOMINAL, NULL, 0, &message);
-		//can_send(&message);
+		//TODO: kill this
 
 		osDelay(1000);
 	}
