@@ -9,7 +9,7 @@ void can_handle_rx(const can_msg_t *message, uint32_t timestamp){
 	{
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, 0);
 	}
-	else if (get_message_type(message) == MSG_LEDS_ON)
+	else if (get_message_type(message) == MSG_LEDS_OFF)
 	{
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, 1);
 	}
@@ -22,7 +22,7 @@ void canHandlerTask(void *argument)
   {
 	can_msg_t tx_msg;
 	//Block the thread until we see data in the bus queue or 5 ticks elapse
-	if(xQueueReceive(busQueue, &tx_msg, 5) == pdTRUE) //Returns pdTRUE if we got a message, pdFALSE if timed out
+	if(xQueueReceive(busQueue, &tx_msg, 10) == pdTRUE) //Returns pdTRUE if we got a message, pdFALSE if timed out
 	{
 		can_send(&tx_msg);
 		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_1, LED_state); //write and toggle D3 when we send a CAN message
