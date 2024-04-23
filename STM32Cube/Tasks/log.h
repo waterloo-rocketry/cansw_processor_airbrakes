@@ -65,17 +65,17 @@ bool logInit(void);
 /**
  * Log an error-level message
 */
-void logError(const LogDataSource_t source, const char* msg, ...);
+bool logError(const LogDataSource_t source, const char* msg, ...);
 
 /**
  * Log an info-level message
 */
-void logInfo(const LogDataSource_t source, const char* msg, ...);
+bool logInfo(const LogDataSource_t source, const char* msg, ...);
 
 /**
  * Log a debug-level message
 */
-void logDebug(const LogDataSource_t source, const char* msg, ...);
+bool logDebug(const LogDataSource_t source, const char* msg, ...);
 
 /**
  * FreeRTOS task for the logger

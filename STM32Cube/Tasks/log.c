@@ -39,7 +39,7 @@ bool logInit(void)
 /**
  * internal helper to convert source enum to string
 */
-const char* sourceToString(LogDataSource_t source)
+static const char* sourceToString(LogDataSource_t source)
 {
     switch (source)
     {
@@ -82,7 +82,7 @@ const char* sourceToString(LogDataSource_t source)
  * users don't have to manually do sprintf beforehand - instead, this function will handle formatting the string.
  * Should be safe since this is essentially a sprintf wrapper, where variable arguments are acceptable.
 */
-void logGeneric(LogDataSource_t source, LogLevel_t level, const char* msg, va_list msgArgs)
+bool logGeneric(LogDataSource_t source, LogLevel_t level, const char* msg, va_list msgArgs)
 {
     // get timestamp immediately so the following mutex wait time is irrelevant
     TickType_t timestamp = xTaskGetTickCount();
@@ -90,7 +90,7 @@ void logGeneric(LogDataSource_t source, LogLevel_t level, const char* msg, va_li
     // there can only be 1 log writer at once
     if (xSemaphoreTake(logWriteMutex, 50) != pdPASS)
     {
-        return;
+        return false;
         // timed out while waiting to log - maybe too many tasks are waiting to log. this should never happen?
     }
     
@@ -98,15 +98,19 @@ void logGeneric(LogDataSource_t source, LogLevel_t level, const char* msg, va_li
     log_buffer* currentBuffer = &logBuffers[CURRENT_BUFFER];
     
     // if current buffer is full, then all of them must be full. ERROR!!! do not proceed
-    // TODO: should isFull be a mutex instead? issue w that is managing the give/take between log dump task and log users
     if (currentBuffer->isFull)
     {
         xSemaphoreGive(logWriteMutex);
-        return;
+        return false;
+    }
+
+    // TODO: still not sure if this is necessary since isFull exists, but doesnt hurt (unless needs to be optimized out later idk) 
+    if (xSemaphoreTake(currentBuffer->mutex, 0) != pdPASS)
+    {
+        return false;
     }
     
     // format and append the default log header
-    // TODO: make actually readable formatting for lvl and source
 	int headerLength = snprintf(currentBuffer->buffer + currentBuffer->index, MAX_MSG_LENGTH, "%c: [%d] %s ", level, (int) timestamp, sourceToString(source));
     currentBuffer->index += headerLength;
 
@@ -137,6 +141,7 @@ void logGeneric(LogDataSource_t source, LogLevel_t level, const char* msg, va_li
         if (xQueueSendToBack(fullBuffersQueue, &currentBuffer, 0) != pdPASS)
         {
             // if queue does not have space, all n - 1 buffers are full which should not be possible!! ERROR!
+            return false;
         }
         else
         {
@@ -145,36 +150,42 @@ void logGeneric(LogDataSource_t source, LogLevel_t level, const char* msg, va_li
         }
     }
     
+    xSemaphoreGive(currentBuffer->mutex);
     xSemaphoreGive(logWriteMutex);
+
+    return true;
 }
 
 // ----------------------------------------------------------------------------
 // public log functions
 // ----------------------------------------------------------------------------
 
-void logError(const LogDataSource_t source, const char* msg, ...)
+bool logError(const LogDataSource_t source, const char* msg, ...)
 {
     va_list args;
     va_start(args, msg);
-    logGeneric(source, LOG_LVL_ERROR, msg, args);
+    bool success = logGeneric(source, LOG_LVL_ERROR, msg, args);
     va_end(args);
+    return success;
 }
 
-void logInfo(const LogDataSource_t source, const char* msg, ...)
+bool logInfo(const LogDataSource_t source, const char* msg, ...)
 {
     va_list args;
     va_start(args, msg);
-    logGeneric(source, LOG_LVL_INFO, msg, args);
+    bool success = logGeneric(source, LOG_LVL_INFO, msg, args);
     va_end(args);
+    return success;
 }
 
-void logDebug(const LogDataSource_t source, const char* msg, ...)
+bool logDebug(const LogDataSource_t source, const char* msg, ...)
 {
 #ifdef DEBUG
     va_list args;
     va_start(args, msg);
-    logGeneric(source, LOG_LVL_DEBUG, msg, args);
+    bool success = logGeneric(source, LOG_LVL_DEBUG, msg, args);
     va_end(args);
+    return success;
 #endif
 }
 
@@ -189,12 +200,16 @@ void logTask(void *argument)
     {
 		if (xQueueReceive(fullBuffersQueue, &bufferToPrint, 1000000) == pdPASS)
         {
-            // TODO: do uart transmit better (use _IT?)
-            // buffers fill from 0, so `index` conveniently indicates how many chars of data there are to print
-			HAL_UART_Transmit(&huart4, bufferToPrint->buffer, bufferToPrint->index, 1000);
+            if (xSemaphoreTake(bufferToPrint->mutex, 0) == pdPASS)
+            {
+                // TODO: do uart transmit better
+                // buffers fill from 0, so `index` conveniently indicates how many chars of data there are to print
+                HAL_UART_Transmit(&huart4, bufferToPrint->buffer, bufferToPrint->index, 1000);
 
-            bufferToPrint->index = 0;
-            bufferToPrint->isFull = false;
+                bufferToPrint->index = 0;
+                bufferToPrint->isFull = false;    
+                xSemaphoreGive(bufferToPrint->mutex);            
+            }
         }
     }
 }
