@@ -17,12 +17,22 @@ bool ICM_20948_check_sanity(void);
 // Perform magnetometer self-test procedure according to datasheet
 bool MAG_Self_Test(void);
 
-// Get IMU data: accelerometer, gyroscope, magnetometer, and temperature
+/**
+ * Get current accelerometer reading synchronously (blocking)
+ * @return (gravities)
+*/
+bool ICM_20948_get_accel_converted(float *x, float *y, float *z);
 
-bool ICM_20948_get_accel_raw(int16_t *x, int16_t *y, int16_t *z);
+/**
+ * Get current gyroscope reading synchronously (blocking)
+ * @return (deg/sec)
+*/
+bool ICM_20948_get_gyro_converted(float *x, float *y, float *z);
 
-bool ICM_20948_get_gyro_raw(int16_t *x, int16_t *y, int16_t *z);
-
-bool ICM_20948_get_mag_raw(int16_t *x, int16_t *y, int16_t *z);
+/**
+ * Get current magnetometer reading synchronously (blocking)
+ * @return (microteslas)
+*/
+bool ICM_20948_get_mag_converted(float *x, float *y, float *z);
 
 #endif	/* ICM_20948_H */

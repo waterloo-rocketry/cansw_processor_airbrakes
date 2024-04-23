@@ -5,6 +5,13 @@
 #include "ICM-20948_regmap.h"
 #include "cmsis_os.h"
 
+/* LSB / (deg/sec) */
+static const float GYRO_SENSITIVITY = 16.4;
+/* LSB / (gravities) */
+static const float ACCEL_SENSITIVITY = 2048;
+/* microteslas / LSB */
+static const float MAG_SENSITIVITY = 0.15;
+
 // This driver assumes that I2C is already initialized
 bool ICM_20948_init() {
     MY2C_init();
@@ -64,8 +71,8 @@ bool ICM_20948_check_sanity(void) {
 }
 
 /**
- * AK09916 self-test procedure
- * possibly not working
+ * Perform AK09916 self-test procedure according to datasheet
+ * @return true if the data passes the self-test thresholds 
 */
 bool MAG_Self_Test(void) {
     // reset to power-down mode
@@ -102,14 +109,15 @@ bool MAG_Self_Test(void) {
     // Must read ST2 register after measurement, see datasheet register 13.4 ST2
     MY2C_read1ByteRegister(AK09916_MAG_ADDR, ST2);
 
-    // partially validate data according to self-test thresholds
-    // view datasheet for full threshold
-    if (x <= 200 && y <= 200 && z <= -200) {
+    // validate data according to self-test thresholds on datasheet
+    if (-200 <= x && x <= 200  && -200 <= y && y <= 200 && -1000 <= z && z <= -200) { 
         return true;
     }
+    return false;
 }
 
-bool ICM_20948_get_accel_raw(int16_t *x, int16_t *y, int16_t *z) {
+bool ICM_20948_get_accel_raw(int16_t *x, int16_t *y, int16_t *z) 
+{
     if (!x || !y || !z) { return false; }
 
     // Accelerometer measurement data
@@ -128,7 +136,8 @@ bool ICM_20948_get_accel_raw(int16_t *x, int16_t *y, int16_t *z) {
     return true;
 }
 
-bool ICM_20948_get_gyro_raw(int16_t *x, int16_t *y, int16_t *z) {
+bool ICM_20948_get_gyro_raw(int16_t *x, int16_t *y, int16_t *z) 
+{
     if (!x || !y || !z) { return false; }
 
     uint8_t x_h = MY2C_read1ByteRegister(ICM_20948_ADDR, GYRO_XOUT_H);
@@ -146,7 +155,8 @@ bool ICM_20948_get_gyro_raw(int16_t *x, int16_t *y, int16_t *z) {
     return true;
 }
 
-bool ICM_20948_get_mag_raw(int16_t *x, int16_t *y, int16_t *z) {
+bool ICM_20948_get_mag_raw(int16_t *x, int16_t *y, int16_t *z) 
+{
     if (!x || !y || !z) { return false; }
 
      // Check if magnetometer data is ready, fail if it is not
@@ -172,5 +182,56 @@ bool ICM_20948_get_mag_raw(int16_t *x, int16_t *y, int16_t *z) {
     // Must read ST2 register after measurement, see datasheet register 13.4 ST2
     MY2C_read1ByteRegister(AK09916_MAG_ADDR, ST2);
 
+    return true;
+}
+
+bool ICM_20948_get_accel_converted(float *x, float *y, float *z)
+{
+    int16_t x_raw;
+    int16_t y_raw;
+    int16_t z_raw;
+
+    if (!ICM_20948_get_accel_raw(&x_raw, &y_raw, &z_raw))
+    {
+        return false;
+    }
+    
+    *x = (float) (x_raw / ACCEL_SENSITIVITY);
+    *y = (float) (y_raw / ACCEL_SENSITIVITY);
+    *z = (float) (z_raw / ACCEL_SENSITIVITY);
+    return true;
+}
+
+bool ICM_20948_get_gyro_converted(float *x, float *y, float *z)
+{
+    int16_t x_raw;
+    int16_t y_raw;
+    int16_t z_raw;
+
+    if (!ICM_20948_get_gyro_raw(&x_raw, &y_raw, &z_raw))
+    {
+        return false;
+    }
+    
+    *x = (float) (x_raw / GYRO_SENSITIVITY);
+    *y = (float) (y_raw / GYRO_SENSITIVITY);
+    *z = (float) (z_raw / GYRO_SENSITIVITY);
+    return true;
+}
+
+bool ICM_20948_get_mag_converted(float *x, float *y, float *z)
+{
+    int16_t x_raw;
+    int16_t y_raw;
+    int16_t z_raw;
+
+    if (!ICM_20948_get_mag_raw(&x_raw, &y_raw, &z_raw))
+    {
+        return false;
+    }
+    
+    *x = (float) (x_raw * MAG_SENSITIVITY);
+    *y = (float) (y_raw * MAG_SENSITIVITY);
+    *z = (float) (z_raw * MAG_SENSITIVITY);
     return true;
 }
