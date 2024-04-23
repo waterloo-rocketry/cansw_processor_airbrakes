@@ -18,7 +18,7 @@ extern "C" {
 /* max length of log data string (bytes) */
 #define MAX_MSG_LENGTH 128
 /* size of one log buffer (bytes) */
-#define LOG_BUFFER_SIZE 4096
+#define LOG_BUFFER_SIZE 8192
 /* number of log buffers */
 #define NUM_LOG_BUFFERS 3
 
