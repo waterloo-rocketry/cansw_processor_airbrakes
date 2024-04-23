@@ -26,7 +26,8 @@ extern "C" {
  * Log Level
 */
 typedef enum {
-    LOG_LVL_ERROR = 'E',  // Errors (non-recoverable) and warnings are combined into this
+    LOG_LVL_ERROR = 'E',  // Errors (non-recoverable)
+    LOG_LVL_WARN = 'W',   // Warnings (recoverable issues)
     LOG_LVL_INFO = 'I',   // Info (data from sensors, etc)
     LOG_LVL_DEBUG = 'D',  // Only for debugging on the ground
 } LogLevel_t;
