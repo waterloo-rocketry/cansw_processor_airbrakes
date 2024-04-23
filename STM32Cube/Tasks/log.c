@@ -18,11 +18,19 @@ bool logInit(void)
     fullBuffersQueue = xQueueCreate(NUM_LOG_BUFFERS - 1, sizeof(log_buffer*));
     logWriteMutex = xSemaphoreCreateMutex();
 
+    if (fullBuffersQueue == NULL || logWriteMutex == NULL) {
+        return false;
+    }
+
     for (int i = 0; i < NUM_LOG_BUFFERS; i++)
     {
         logBuffers[i].mutex = xSemaphoreCreateMutex();
         logBuffers[i].index = 0;
         logBuffers[i].isFull = false;
+
+        if (logBuffers[i].mutex == NULL) {
+            return false;
+        }
     }
 
     return true;
