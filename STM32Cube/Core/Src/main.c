@@ -68,60 +68,62 @@ DMA_HandleTypeDef hdma_usart1_rx;
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
-    .name = "defaultTask",
-    .stack_size = 128 * 4,
-    .priority = (osPriority_t)osPriorityNormal,
+  .name = "defaultTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for stateEst */
 osThreadId_t stateEstHandle;
 const osThreadAttr_t stateEst_attributes = {
-    .name = "stateEst",
-    .stack_size = 128 * 4,
-    .priority = (osPriority_t)osPriorityNormal,
+  .name = "stateEst",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for control */
 osThreadId_t controlHandle;
 const osThreadAttr_t control_attributes = {
-    .name = "control",
-    .stack_size = 128 * 4,
-    .priority = (osPriority_t)osPriorityNormal,
+  .name = "control",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for trajectory */
 osThreadId_t trajectoryHandle;
 const osThreadAttr_t trajectory_attributes = {
-    .name = "trajectory",
-    .stack_size = 128 * 4,
-    .priority = (osPriority_t)osPriorityLow,
+  .name = "trajectory",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for sdLogWrite */
 osThreadId_t sdLogWriteHandle;
 const osThreadAttr_t sdLogWrite_attributes = {
-    .name = "sdLogWrite",
-    .stack_size = 128 * 4,
-    .priority = (osPriority_t)osPriorityLow,
+  .name = "sdLogWrite",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for healthCheck */
 osThreadId_t healthCheckHandle;
 const osThreadAttr_t healthCheck_attributes = {
-    .name = "healthCheck",
-    .stack_size = 128 * 4,
-    .priority = (osPriority_t)osPriorityLow,
+  .name = "healthCheck",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for flightPhase */
 osThreadId_t flightPhaseHandle;
 const osThreadAttr_t flightPhase_attributes = {
-    .name = "flightPhase",
-    .stack_size = 128 * 4,
-    .priority = (osPriority_t)osPriorityLow,
+  .name = "flightPhase",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
 };
 /* Definitions for altitudeQueue */
 osMessageQueueId_t altitudeQueueHandle;
 const osMessageQueueAttr_t altitudeQueue_attributes = {
-    .name = "altitudeQueue"};
+  .name = "altitudeQueue"
+};
 /* Definitions for eventTest */
 osEventFlagsId_t eventTestHandle;
 const osEventFlagsAttr_t eventTest_attributes = {
-    .name = "eventTest"};
+  .name = "eventTest"
+};
 /* USER CODE BEGIN PV */
 uint32_t idx;
 /* USER CODE END PV */
@@ -159,9 +161,9 @@ void flightPhaseTask(void *argument);
 /* USER CODE END 0 */
 
 /**
- * @brief  The application entry point.
- * @retval int
- */
+  * @brief  The application entry point.
+  * @retval int
+  */
 int main(void)
 {
 
@@ -181,7 +183,7 @@ int main(void)
   /* Configure the system clock */
   SystemClock_Config();
 
-  /* Configure the peripherals common clocks */
+/* Configure the peripherals common clocks */
   PeriphCommonClock_Config();
 
   /* USER CODE BEGIN SysInit */
@@ -223,7 +225,7 @@ int main(void)
 
   /* Create the queue(s) */
   /* creation of altitudeQueue */
-  altitudeQueueHandle = osMessageQueueNew(8, sizeof(int32_t), &altitudeQueue_attributes);
+  altitudeQueueHandle = osMessageQueueNew (8, sizeof(int32_t), &altitudeQueue_attributes);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -234,22 +236,22 @@ int main(void)
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* creation of stateEst */
-  stateEstHandle = osThreadNew(stateEstimationTask, NULL, &stateEst_attributes);
+ // stateEstHandle = osThreadNew(stateEstimationTask, NULL, &stateEst_attributes);
 
   /* creation of control */
-  controlHandle = osThreadNew(controlTask, NULL, &control_attributes);
+ // controlHandle = osThreadNew(controlTask, NULL, &control_attributes);
 
   /* creation of trajectory */
-  trajectoryHandle = osThreadNew(trajectoryEstimationTask, NULL, &trajectory_attributes);
+  //trajectoryHandle = osThreadNew(trajectoryEstimationTask, NULL, &trajectory_attributes);
 
   /* creation of sdLogWrite */
-  sdLogWriteHandle = osThreadNew(sdLogWriteTask, NULL, &sdLogWrite_attributes);
+ // sdLogWriteHandle = osThreadNew(sdLogWriteTask, NULL, &sdLogWrite_attributes);
 
   /* creation of healthCheck */
   healthCheckHandle = osThreadNew(healthCheckTask, NULL, &healthCheck_attributes);
 
   /* creation of flightPhase */
-  flightPhaseHandle = osThreadNew(flightPhaseTask, NULL, &flightPhase_attributes);
+ // flightPhaseHandle = osThreadNew(flightPhaseTask, NULL, &flightPhase_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -280,30 +282,28 @@ int main(void)
 }
 
 /**
- * @brief System Clock Configuration
- * @retval None
- */
+  * @brief System Clock Configuration
+  * @retval None
+  */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Supply configuration update enable
-   */
+  */
   HAL_PWREx_ConfigSupply(PWR_LDO_SUPPLY);
 
   /** Configure the main internal regulator output voltage
-   */
+  */
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
 
-  while (!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY))
-  {
-  }
+  while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
 
   /** Initializes the RCC Oscillators according to the specified parameters
-   * in the RCC_OscInitTypeDef structure.
-   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI | RCC_OSCILLATORTYPE_LSI;
+  * in the RCC_OscInitTypeDef structure.
+  */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_DIV1;
   RCC_OscInitStruct.HSICalibrationValue = 64;
   RCC_OscInitStruct.LSIState = RCC_LSI_ON;
@@ -323,8 +323,10 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2 | RCC_CLOCKTYPE_D3PCLK1 | RCC_CLOCKTYPE_D1PCLK1;
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
+                              |RCC_CLOCKTYPE_D3PCLK1|RCC_CLOCKTYPE_D1PCLK1;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV4;
@@ -340,16 +342,17 @@ void SystemClock_Config(void)
 }
 
 /**
- * @brief Peripherals Common Clock Configuration
- * @retval None
- */
+  * @brief Peripherals Common Clock Configuration
+  * @retval None
+  */
 void PeriphCommonClock_Config(void)
 {
   RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 
   /** Initializes the peripherals clock
-   */
-  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_ADC | RCC_PERIPHCLK_SDMMC | RCC_PERIPHCLK_FDCAN;
+  */
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C4|RCC_PERIPHCLK_ADC
+                              |RCC_PERIPHCLK_SDMMC|RCC_PERIPHCLK_FDCAN;
   PeriphClkInitStruct.PLL2.PLL2M = 16;
   PeriphClkInitStruct.PLL2.PLL2N = 120;
   PeriphClkInitStruct.PLL2.PLL2P = 20;
@@ -358,9 +361,18 @@ void PeriphCommonClock_Config(void)
   PeriphClkInitStruct.PLL2.PLL2RGE = RCC_PLL2VCIRANGE_2;
   PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOWIDE;
   PeriphClkInitStruct.PLL2.PLL2FRACN = 0;
+  PeriphClkInitStruct.PLL3.PLL3M = 32;
+  PeriphClkInitStruct.PLL3.PLL3N = 128;
+  PeriphClkInitStruct.PLL3.PLL3P = 2;
+  PeriphClkInitStruct.PLL3.PLL3Q = 2;
+  PeriphClkInitStruct.PLL3.PLL3R = 32;
+  PeriphClkInitStruct.PLL3.PLL3RGE = RCC_PLL3VCIRANGE_1;
+  PeriphClkInitStruct.PLL3.PLL3VCOSEL = RCC_PLL3VCOWIDE;
+  PeriphClkInitStruct.PLL3.PLL3FRACN = 0;
   PeriphClkInitStruct.SdmmcClockSelection = RCC_SDMMCCLKSOURCE_PLL2;
   PeriphClkInitStruct.FdcanClockSelection = RCC_FDCANCLKSOURCE_PLL2;
-  PeriphClkInitStruct.AdcClockSelection = RCC_ADCCLKSOURCE_PLL2;
+  PeriphClkInitStruct.I2c4ClockSelection = RCC_I2C4CLKSOURCE_PLL3;
+  PeriphClkInitStruct.AdcClockSelection = RCC_ADCCLKSOURCE_PLL3;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -368,10 +380,10 @@ void PeriphCommonClock_Config(void)
 }
 
 /**
- * @brief ADC1 Initialization Function
- * @param None
- * @retval None
- */
+  * @brief ADC1 Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_ADC1_Init(void)
 {
 
@@ -387,7 +399,7 @@ static void MX_ADC1_Init(void)
   /* USER CODE END ADC1_Init 1 */
 
   /** Common config
-   */
+  */
   hadc1.Instance = ADC1;
   hadc1.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1;
   hadc1.Init.Resolution = ADC_RESOLUTION_16B;
@@ -409,7 +421,7 @@ static void MX_ADC1_Init(void)
   }
 
   /** Configure the ADC multi-mode
-   */
+  */
   multimode.Mode = ADC_MODE_INDEPENDENT;
   if (HAL_ADCEx_MultiModeConfigChannel(&hadc1, &multimode) != HAL_OK)
   {
@@ -417,7 +429,7 @@ static void MX_ADC1_Init(void)
   }
 
   /** Configure Regular Channel
-   */
+  */
   sConfig.Channel = ADC_CHANNEL_10;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
@@ -432,13 +444,14 @@ static void MX_ADC1_Init(void)
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
+
 }
 
 /**
- * @brief CORDIC Initialization Function
- * @param None
- * @retval None
- */
+  * @brief CORDIC Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_CORDIC_Init(void)
 {
 
@@ -457,13 +470,14 @@ static void MX_CORDIC_Init(void)
   /* USER CODE BEGIN CORDIC_Init 2 */
 
   /* USER CODE END CORDIC_Init 2 */
+
 }
 
 /**
- * @brief FDCAN1 Initialization Function
- * @param None
- * @retval None
- */
+  * @brief FDCAN1 Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_FDCAN1_Init(void)
 {
 
@@ -509,13 +523,14 @@ static void MX_FDCAN1_Init(void)
   /* USER CODE BEGIN FDCAN1_Init 2 */
 
   /* USER CODE END FDCAN1_Init 2 */
+
 }
 
 /**
- * @brief FMAC Initialization Function
- * @param None
- * @retval None
- */
+  * @brief FMAC Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_FMAC_Init(void)
 {
 
@@ -534,13 +549,14 @@ static void MX_FMAC_Init(void)
   /* USER CODE BEGIN FMAC_Init 2 */
 
   /* USER CODE END FMAC_Init 2 */
+
 }
 
 /**
- * @brief I2C4 Initialization Function
- * @param None
- * @retval None
- */
+  * @brief I2C4 Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_I2C4_Init(void)
 {
 
@@ -552,7 +568,7 @@ static void MX_I2C4_Init(void)
 
   /* USER CODE END I2C4_Init 1 */
   hi2c4.Instance = I2C4;
-  hi2c4.Init.Timing = 0x00707CBB;
+  hi2c4.Init.Timing = 0x2000090E;
   hi2c4.Init.OwnAddress1 = 0;
   hi2c4.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c4.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
@@ -566,14 +582,14 @@ static void MX_I2C4_Init(void)
   }
 
   /** Configure Analogue filter
-   */
+  */
   if (HAL_I2CEx_ConfigAnalogFilter(&hi2c4, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
   {
     Error_Handler();
   }
 
   /** Configure Digital filter
-   */
+  */
   if (HAL_I2CEx_ConfigDigitalFilter(&hi2c4, 0) != HAL_OK)
   {
     Error_Handler();
@@ -581,13 +597,14 @@ static void MX_I2C4_Init(void)
   /* USER CODE BEGIN I2C4_Init 2 */
 
   /* USER CODE END I2C4_Init 2 */
+
 }
 
 /**
- * @brief RTC Initialization Function
- * @param None
- * @retval None
- */
+  * @brief RTC Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_RTC_Init(void)
 {
 
@@ -600,7 +617,7 @@ static void MX_RTC_Init(void)
   /* USER CODE END RTC_Init 1 */
 
   /** Initialize RTC Only
-   */
+  */
   hrtc.Instance = RTC;
   hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
   hrtc.Init.AsynchPrediv = 127;
@@ -616,13 +633,14 @@ static void MX_RTC_Init(void)
   /* USER CODE BEGIN RTC_Init 2 */
 
   /* USER CODE END RTC_Init 2 */
+
 }
 
 /**
- * @brief SDMMC1 Initialization Function
- * @param None
- * @retval None
- */
+  * @brief SDMMC1 Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_SDMMC1_SD_Init(void)
 {
 
@@ -642,13 +660,14 @@ static void MX_SDMMC1_SD_Init(void)
   /* USER CODE BEGIN SDMMC1_Init 2 */
 
   /* USER CODE END SDMMC1_Init 2 */
+
 }
 
 /**
- * @brief TIM1 Initialization Function
- * @param None
- * @retval None
- */
+  * @brief TIM1 Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_TIM1_Init(void)
 {
 
@@ -738,13 +757,14 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 2 */
   HAL_TIM_MspPostInit(&htim1);
+
 }
 
 /**
- * @brief UART4 Initialization Function
- * @param None
- * @retval None
- */
+  * @brief UART4 Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_UART4_Init(void)
 {
 
@@ -785,13 +805,14 @@ static void MX_UART4_Init(void)
   /* USER CODE BEGIN UART4_Init 2 */
 
   /* USER CODE END UART4_Init 2 */
+
 }
 
 /**
- * @brief USART1 Initialization Function
- * @param None
- * @retval None
- */
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_USART1_UART_Init(void)
 {
 
@@ -832,11 +853,12 @@ static void MX_USART1_UART_Init(void)
   /* USER CODE BEGIN USART1_Init 2 */
 
   /* USER CODE END USART1_Init 2 */
+
 }
 
 /**
- * Enable DMA controller clock
- */
+  * Enable DMA controller clock
+  */
 static void MX_DMA_Init(void)
 {
 
@@ -847,18 +869,19 @@ static void MX_DMA_Init(void)
   /* DMA1_Stream0_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+
 }
 
 /**
- * @brief GPIO Initialization Function
- * @param None
- * @retval None
- */
+  * @brief GPIO Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-  /* USER CODE BEGIN MX_GPIO_Init_1 */
-  /* USER CODE END MX_GPIO_Init_1 */
+/* USER CODE BEGIN MX_GPIO_Init_1 */
+/* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -871,7 +894,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0 | GPIO_PIN_1, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_0|GPIO_PIN_1, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : PB5 */
   GPIO_InitStruct.Pin = GPIO_PIN_5;
@@ -881,14 +904,14 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PE0 PE1 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1;
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /* USER CODE BEGIN MX_GPIO_Init_2 */
-  /* USER CODE END MX_GPIO_Init_2 */
+/* USER CODE BEGIN MX_GPIO_Init_2 */
+/* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -910,7 +933,7 @@ void can_handle_rx(const can_msg_t *message)
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
-  can_init_stm(&hfdcan1, can_handle_rx);
+  //can_init_stm(&hfdcan1, can_handle_rx);
   uint32_t LED_state = 0;
   idx = 0;
   /* Infinite loop */
@@ -925,9 +948,9 @@ void StartDefaultTask(void *argument)
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, LED_state);
     LED_state = !LED_state;
 
-    can_msg_t message;
-    build_board_stat_msg(idx, E_NOMINAL, NULL, 0, &message);
-    can_send(&message);
+    //can_msg_t message;
+    //build_board_stat_msg(idx, E_NOMINAL, NULL, 0, &message);
+    //can_send(&message);
 
     osDelay(1000);
   }
@@ -1073,31 +1096,33 @@ void healthCheckTask(void *argument)
   to channel 11 (can also be done in the CubeMX generated code on line ~420
   in the config channel block), then the other channel can be tested.
   */
+  uint8_t adc_strval[20]; //tx string buffer
 
   // ADC Value Var
   uint32_t adc1_val;
 
   // Calibrate ADC
-  HAL_ADCEx_Calibration_Start(&hadc1);
 
+  HAL_ADCEx_Calibration_Start(&hadc1,ADC_CALIB_OFFSET,ADC_SINGLE_ENDED );
+  //HAL_ADC_Start(&hadc1);
   /* Infinite loop */
   for (;;)
   {
     // TODO: Read ADC channels
     HAL_ADC_Start(&hadc1);
     HAL_ADC_PollForConversion(&hadc1, 10);
-    adc_val = HAL_ADC_GetValue(&hadc1);
-    HAL_ADC_Stop(&hadc1);
+    adc1_val = HAL_ADC_GetValue(&hadc1);
+    //HAL_ADC_Stop(&hadc1);
 
     // Sending ADC val over uart
-    int adc_txlength = sprintf(adc_strval, "%d\r\n", adc1_val);
-    HAL_UART_Transmit(&huart4, (uint8_t)adc_strval, adc_txlength, 10);
+    int adc_txlength = sprintf((char*)adc_strval, "%lu\r\n", adc1_val);
+    HAL_UART_Transmit(&huart4, (uint8_t*)adc_strval, adc_txlength, 10);
 
     // TODO: convert ADC readings to target values
     // adc_val = adc_val/655353.3 (can be done once adc tested, with bits)
 
     // TODO: push out of range errors to CAN bus; push values to bus in debug mode
-    osDelay(1000);
+    osDelay(100);
   }
   /* USER CODE END healthCheckTask */
 }
@@ -1126,9 +1151,9 @@ void flightPhaseTask(void *argument)
 }
 
 /**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -1141,14 +1166,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef USE_FULL_ASSERT
+#ifdef  USE_FULL_ASSERT
 /**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
