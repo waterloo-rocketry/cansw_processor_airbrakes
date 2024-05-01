@@ -10,7 +10,7 @@
 #include "vn/protocol/upack.h"
 #include "FreeRTOS.h"
 #include "semphr.h"
-//#include "fake_logging.h"
+#include "log.h"
 #include "stm32h7xx_hal.h"
 #include <stdio.h>
 
