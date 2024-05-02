@@ -7,8 +7,10 @@
 
 #include "health_checks.h"
 
-voi
-d healthCheckTask(void *argument)
+extern ADC_HandleTypeDef hadc1;
+extern UART_HandleTypeDef huart4;
+
+void healthCheckTask(void *argument)
 {
 /*
   Note: Currently ADC1 has channels 10 and 11, polling both at a time
@@ -36,14 +38,14 @@ d healthCheckTask(void *argument)
     adc1_val = HAL_ADC_GetValue(&hadc1);
 
     // Sending ADC val over uart
-    int adc_txlength = sprintf((char*)adc_strval, "%u mV\r\n", (uint16_t) (ADC1_VOLTAGE(adc1_val) * 1000));
-    HAL_UART_Transmit(&huart4, (uint8_t*)adc_strval, adc_txlength, 10);
+    int adc_txlength = sprintf((char*) adc_strval, "%u mV\r\n", (uint16_t) (ADC1_VOLTAGE(adc1_val) * 1000));
+    HAL_UART_Transmit(&huart4, (uint8_t*) adc_strval, adc_txlength, 10);
 
 
     // TODO: push out of range errors to CAN bus; push values to bus in debug mode
 
 
-    osDelay(1000);
+    vTaskDelay(1000);
   }
   /* USER CODE END healthCheckTask */
 }
