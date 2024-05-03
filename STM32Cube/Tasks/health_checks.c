@@ -6,6 +6,8 @@
  */
 
 #include "health_checks.h"
+#include "log.h"
+#include "can_handler.h"
 
 extern ADC_HandleTypeDef hadc1;
 extern UART_HandleTypeDef huart4;
@@ -36,13 +38,24 @@ void healthCheckTask(void *argument)
     HAL_ADC_Start(&hadc1);
     HAL_ADC_PollForConversion(&hadc1, 10);
     adc1_val = HAL_ADC_GetValue(&hadc1);
+    uint16_t current = CURR_5V_mA(adc1_val);
 
     // Sending ADC val over uart
-    int adc_txlength = sprintf((char*) adc_strval, "%u mV\r\n", (uint16_t) (ADC1_VOLTAGE(adc1_val) * 1000));
-    HAL_UART_Transmit(&huart4, (uint8_t*) adc_strval, adc_txlength, 10);
+    //int adc_txlength = sprintf((char*) adc_strval, "%u mV\r\n", (uint16_t) (ADC1_VOLTAGE(adc1_val) * 1000));
+    //HAL_UART_Transmit(&huart4, (uint8_t*) adc_strval, adc_txlength, 10);
 
+    //Log current with logging api
+    logDebug(SOURCE_HEALTH, "5V Current: %u mA", current);
 
-    // TODO: push out of range errors to CAN bus; push values to bus in debug mode
+    if(current > MAX_CURR_5V_mA)
+    {
+    	can_msg_t msg;
+    	uint8_t current_data[2];
+    	current_data[0] = current >> 8 && 0xFF;
+    	current_data[1] = current && 0xFF;
+    	build_board_stat_msg(0, E_5V_OVER_CURRENT, current_data, 2, &msg);
+    	xQueueSend(busQueue, &msg, 10);
+    }
 
 
     vTaskDelay(1000);
