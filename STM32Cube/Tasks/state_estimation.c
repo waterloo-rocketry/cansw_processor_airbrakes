@@ -10,10 +10,12 @@
 #include "ICM-20948.h"
 #include "Fusion.h"
 #include "vn_handler.h"
+#include "log.h"
+#include "can_handler.h"
 #include <time.h>
 
 #define SAMPLE_RATE 100 // replace this with actual sample rate
-#define USE_ICM 0
+#define USE_ICM 1
 
 void stateEstTask(void *arguments)
 {
@@ -91,21 +93,28 @@ void stateEstTask(void *arguments)
 			 float zData;
 
 			 //TODO: wrap this operation in a single function call that populates Fusion Vectors and spits out a single bool
-			 ICM_20948_get_gyro_converted(&xData, &yData, &zData);
-			 gyroscope = {
-			 						.axis = {0.0f, 0.0f, 0.0f}
-			 				}; // gyroscope data in degrees/s
-			 ICM_20948_get_accel_converted(&xData, &yData, &zData);
-			 accelerometer = {
-			 						.axis = {0.0f, 0.0f, 0.0f}
-			 				}; // accelerometer data in g
-			 ICM_20948_get_mag_converted(&xData, &yData, &zData);
-			 magnetometer = {
-			 						.axis = {0.0f, 0.0f, 0.0f}
-			 				}; // magnetometer data in arbitrary units //TODO Figure out units
+			 // gyroscope data in degrees/s
+			 if(ICM_20948_get_gyro_converted(&xData, &yData, &zData)){
+				 gyroscope.axis.x = xData;
+				 gyroscope.axis.y = yData;
+				 gyroscope.axis.z = zData;
+			 }
+
+			 //accelerometer data in m/s^2
+			 if(ICM_20948_get_accel_converted(&xData, &yData, &zData)) {
+				 accelerometer.axis.x = xData;
+				 accelerometer.axis.y = yData;
+				 accelerometer.axis.z = zData;
+			 }
+
+			 // magnetometer data in arbitrary units //TODO Figure out units
+			 if(ICM_20948_get_mag_converted(&xData, &yData, &zData)) {
+				 magnetometer.axis.x = xData;
+				 magnetometer.axis.y = yData;
+				 magnetometer.axis.z = zData;
+			 }
 
 		 	 // Calculate delta time (in seconds) to account for gyroscope sample clock error
-
 			 //TODO Replace anything to do with time.h with a FreeRTOS or HAL service
 			 static clock_t previousTimestamp;
 			 const clock_t timestamp = clock(); // replace this with actual gyroscope timestamp
@@ -128,6 +137,7 @@ void stateEstTask(void *arguments)
 
 			#endif
 
+
 			 // Apply calibration
 			 gyroscope = FusionCalibrationInertial(gyroscope, gyroscopeMisalignment, gyroscopeSensitivity, gyroscopeOffset);
 		 	 accelerometer = FusionCalibrationInertial(accelerometer, accelerometerMisalignment, accelerometerSensitivity, accelerometerOffset);
@@ -142,23 +152,17 @@ void stateEstTask(void *arguments)
 
 		 	 //calculate algorithm outputs
 		 	 const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
-		 	 //we only care about attitude says joe but I'm outputting this anyways for now
-		 	 const FusionVector earth = FusionAhrsGetEarthAcceleration(&ahrs);
+		 	logInfo(SOURCE_STATE_EST, "EuRoll %d, EuPitch %d, EuYaw %d", (int) (euler.angle.roll * 1000), (int) (euler.angle.pitch * 1000), (int) (euler.angle.yaw * 1000));
 
-		 	 unsigned char dataStr[100];
-		 	 //this has an error even if you change the setting, but it will build
-		 	 //int  length = snprintf(dataStr, 100, "Roll %0.1f, Pitch %0.1f, Yaw %0.1f, X %lf, Y %lf, Z %lf\n",
-		 	//	               euler.angle.roll, euler.angle.pitch, euler.angle.yaw,
-		 	//	               earth.axis.x, earth.axis.y, earth.axis.z) ;
-		 	 //HAL_UART_Transmit(&huart4, dataStr, length, 500);
+		 	can_msg_t msg;
+		 	if(build_state_est_data_msg(69, &euler.angle.roll, STATE_ANGLE_ROLL, &msg)) xQueueSend(busQueue, &msg, 10);
+		 	if(build_state_est_data_msg(70, &euler.angle.pitch, STATE_ANGLE_PITCH, &msg)) xQueueSend(busQueue, &msg, 10);
+		 	if(build_state_est_data_msg(71, &euler.angle.yaw, STATE_ANGLE_YAW, &msg)) xQueueSend(busQueue, &msg, 10);
 
+		 	//Push accelerationv alues for debugging
+		 	const FusionVector earth = FusionAhrsGetEarthAcceleration(&ahrs);
+		 	logDebug(SOURCE_STATE_EST, "AccelX %d, AccelY %d, AccelZ %d", earth.axis.x, earth.axis.y, earth.axis.z);
 
-		 	 //put data somewhere, still not clear on what I'm meant to be doing with it tbh
-		 	 //sprintf(???, "Roll %0.1f, Pitch %e, Yaw %0.1f, X %0.1f, Y %0.1f, Z %0.1f\n",
-		               //euler.angle.roll, euler.angle.pitch, euler.angle.yaw,
-		               //earth.axis.x, earth.axis.y, earth.axis.z);
-
-		 	//printf(to_string(euler.angle.roll) + to_string(euler.angle.pitch) + to_string(euler.angle.yaw));
 		 	 vTaskDelay(1000); //TODO replace this with vTaskDelayUntil
 		 }
 }
