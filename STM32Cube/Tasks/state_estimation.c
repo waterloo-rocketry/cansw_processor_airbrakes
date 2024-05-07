@@ -163,6 +163,6 @@ void stateEstTask(void *arguments)
 		 	const FusionVector earth = FusionAhrsGetEarthAcceleration(&ahrs);
 		 	logDebug(SOURCE_STATE_EST, "AccelX %d, AccelY %d, AccelZ %d", earth.axis.x, earth.axis.y, earth.axis.z);
 
-		 	 vTaskDelay(1000); //TODO replace this with vTaskDelayUntil
+		 	 vTaskDelay(20); //TODO replace this with vTaskDelayUntil
 		 }
 }
