@@ -8,6 +8,8 @@
 #include "controller.h"
 #include "freertos.h"
 #include "cmsis_os.h" //TODO replace with xtaskDelayUntil
+#include "stm32h7xx_hal.h"
+extern UART_HandleTypeDef huart4;
 
 
 void controlTask(void *argument)
@@ -40,8 +42,8 @@ void controlTask(void *argument)
 
 		//Test Code
 		char buffer[16] = {0};
-		//sprintf(&buffer, "Target Ext: %f", extension);
-		//HAL_UART_Transmit(&buffer, &huart4, &buffer, 16, 10); //Blocking API, 10ms timeout
+		sprintf(&buffer, "Target Ext: %d\r\n", (int)(extension * 1000));
+		HAL_UART_Transmit(&huart4, &buffer, 16, 10); //Blocking API, 10ms timeout
 		osDelayUntil(CONTROLLER_DELAY_TICKS); //Implements periodic behaviour (nominal delay - time spent running the loop code)
 	}
   /* USER CODE END controlTask */
