@@ -76,6 +76,22 @@ void HAL_MspInit(void)
   /* PendSV_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(PendSV_IRQn, 15, 0);
 
+  /** Enable the VREF clock
+  */
+  __HAL_RCC_VREF_CLK_ENABLE();
+
+  /** Configure the internal voltage reference buffer voltage scale
+  */
+  HAL_SYSCFG_VREFBUF_VoltageScalingConfig(SYSCFG_VREFBUF_VOLTAGE_SCALE0);
+
+  /** Enable the Internal Voltage Reference buffer
+  */
+  HAL_SYSCFG_EnableVREFBUF();
+
+  /** Configure the internal voltage reference buffer high impedance mode
+  */
+  HAL_SYSCFG_VREFBUF_HighImpedanceConfig(SYSCFG_VREFBUF_HIGH_IMPEDANCE_DISABLE);
+
   /* USER CODE BEGIN MspInit 1 */
 
   /* USER CODE END MspInit 1 */
@@ -101,9 +117,8 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     __HAL_RCC_GPIOC_CLK_ENABLE();
     /**ADC1 GPIO Configuration
     PC0     ------> ADC1_INP10
-    PC1     ------> ADC1_INP11
     */
-    GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
+    GPIO_InitStruct.Pin = GPIO_PIN_0;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
@@ -133,9 +148,8 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
 
     /**ADC1 GPIO Configuration
     PC0     ------> ADC1_INP10
-    PC1     ------> ADC1_INP11
     */
-    HAL_GPIO_DeInit(GPIOC, GPIO_PIN_0|GPIO_PIN_1);
+    HAL_GPIO_DeInit(GPIOC, GPIO_PIN_0);
 
   /* USER CODE BEGIN ADC1_MspDeInit 1 */
 
