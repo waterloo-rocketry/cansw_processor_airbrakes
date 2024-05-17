@@ -9,9 +9,6 @@
 #define FLIGHT_PHASE_H_
 
 
-
-
-
 //init a timer that isn't timer 1
 //set the timer to trigger every Xus
 //on timer interrupt, increment a counter
