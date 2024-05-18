@@ -35,6 +35,8 @@
 #include "state_estimation.h"
 #include "trajectory.h"
 #include "can_handler.h"
+
+#include "printf.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -929,6 +931,15 @@ void StartDefaultTask(void *argument)
 	/* Infinite loop */
 	for(;;)
 	{
+		/******************** TESTING PRINTF ********************/
+        char testBuffer[20];
+
+        HAL_UART_Transmit(&huart4, (uint8_t *) "typical hal uart transmit\n", 27, 100);
+        printf_("testing printf\n");
+		int len = snprintf_(testBuffer, 10, "testing snprintf%d\n", 69);
+        HAL_UART_Transmit(&huart4, (uint8_t *) testBuffer, len, 100);
+
+		/********************************************************/
 
 		can_msg_t message;
 		build_board_stat_msg(idx, E_NOMINAL, NULL, 0, &message);
