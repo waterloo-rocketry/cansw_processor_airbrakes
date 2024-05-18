@@ -45,6 +45,8 @@
 
 #include <printf/printf.h>
 
+#include "stm32h7xx_hal.h"
+
 #ifdef __cplusplus
 #include <cstdint>
 #include <climits>
@@ -263,6 +265,8 @@ typedef union {
   double_uint_t U;
   double        F;
 } double_with_bit_access;
+
+extern UART_HandleTypeDef huart4;
 
 // This is unnecessary in C99, since compound initializers can be used,
 // but:
@@ -1422,3 +1426,9 @@ int fctprintf(void (*out)(char c, void* extra_arg), void* extra_arg, const char*
   va_end(args);
   return ret;
 }
+
+// Implement put char to use UART transmit
+void putchar_(char c) {
+    HAL_UART_Transmit(&huart4, (uint8_t *) c, 1, 50);
+}
+
