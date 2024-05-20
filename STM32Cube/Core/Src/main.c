@@ -85,10 +85,11 @@ const osThreadAttr_t defaultTask_attributes = {
 uint32_t idx;
 
 //Task handles
-TaskHandle_t logTaskhandle = NULL;
+TaskHandle_t logTaskHandle = NULL;
 TaskHandle_t VNTaskHandle = NULL;
 TaskHandle_t stateEstTaskHandle = NULL;
-TaskHandle_t canhandlerhandle = NULL;
+TaskHandle_t canHandlerTaskHandle = NULL;
+TaskHandle_t flightPhaseTaskHandle = NULL;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -184,6 +185,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_QUEUES */
   canHandlerInit(); //create bus queue
+  flight_phase_task_init(); //create event group for rocket state events (inj open, etc)
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -196,9 +198,11 @@ int main(void)
 
   //dunno if casting from CMSIS priorities is valid
   //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
-  xReturned &= xTaskCreate(canHandlerTask, "CAN handler", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
+  xReturned &= xTaskCreate(canHandlerTask, "CAN handler", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &canHandlerTaskHandle);
   //xReturned &= xTaskCreate(stateEstTask, "StateEst", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
-  xReturned &= xTaskCreate(logTask, "Logging", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
+  xReturned &= xTaskCreate(logTask, "Logging", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskHandle);
+  xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &flightPhaseTaskHandle);
+
 
   if(xReturned != pdPASS)
   {
