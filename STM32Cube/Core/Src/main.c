@@ -26,6 +26,16 @@
 #include <stdio.h>
 #include "canlib.h"
 #include "sdmmc.h"
+//#include "ICM-20948.h"
+
+#include "vn_handler.h"
+#include "log.h"
+#include "controller.h"
+#include "flight_phase.h"
+#include "health_checks.h"
+#include "state_estimation.h"
+#include "trajectory.h"
+#include "can_handler.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -35,7 +45,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define DEFAULT_STACKDEPTH_WORDS 128 * 4
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -73,6 +83,12 @@ const osThreadAttr_t defaultTask_attributes = {
 };
 /* USER CODE BEGIN PV */
 uint32_t idx;
+
+//Task handles
+TaskHandle_t logTaskhandle = NULL;
+TaskHandle_t VNTaskHandle = NULL;
+TaskHandle_t stateEstTaskHandle = NULL;
+TaskHandle_t canhandlerhandle = NULL;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -90,6 +106,9 @@ static void MX_TIM1_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_UART4_Init(void);
+static void MX_TIM1_Init(void);
+static void MX_ADC1_Init(void);
+static void MX_USART1_UART_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
@@ -144,7 +163,6 @@ int main(void)
   MX_TIM1_Init();
   MX_ADC1_Init();
   MX_USART1_UART_Init();
-  MX_UART4_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -165,7 +183,7 @@ int main(void)
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
+  canHandlerInit(); //create bus queue
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -174,12 +192,29 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  /* USER CODE END RTOS_THREADS */
+  BaseType_t xReturned = pdPASS;
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
 //  xTaskCreate(sdmmcTask, "SDMMCTestingTask", 1000, NULL, 1, NULL);
   xTaskCreate(sdmmcTask, "SDMMCTestingTask", 1000, (void *)&huart4, 5, NULL);
+  //dunno if casting from CMSIS priorities is valid
+  //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
+  xReturned &= xTaskCreate(canHandlerTask, "CAN handler", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
+  //xReturned &= xTaskCreate(stateEstTask, "StateEst", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
+  xReturned &= xTaskCreate(logTask, "Logging", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
+
+  if(xReturned != pdPASS)
+  {
+	  //one or more tasks failed to be created
+	  Error_Handler();
+  }
+
+  /* USER CODE END RTOS_THREADS */
+
+  /* USER CODE BEGIN RTOS_EVENTS */
+  /* add events, ... */
+
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
@@ -682,7 +717,7 @@ static void MX_UART4_Init(void)
 
   /* USER CODE END UART4_Init 1 */
   huart4.Instance = UART4;
-  huart4.Init.BaudRate = 115200;
+  huart4.Init.BaudRate = 2000000;
   huart4.Init.WordLength = UART_WORDLENGTH_8B;
   huart4.Init.StopBits = UART_STOPBITS_1;
   huart4.Init.Parity = UART_PARITY_NONE;
@@ -831,17 +866,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOH, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA0 PA2 PA3 PA4
-                           PA5 PA6 PA7 PA15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_2|GPIO_PIN_3|GPIO_PIN_4
-                          |GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_15;
+  /*Configure GPIO pins : PA0 PA1 PA2 PA3
+                           PA4 PA5 PA6 PA7
+                           PA15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3
+                          |GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7
+                          |GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : PA1 */
-  GPIO_InitStruct.Pin = GPIO_PIN_1;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
@@ -887,10 +918,6 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-void can_handle_rx(const can_msg_t *message){
-	return;
-}
-
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -903,25 +930,19 @@ void can_handle_rx(const can_msg_t *message){
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
-	can_init_stm(&hfdcan1, can_handle_rx);
-	uint32_t LED_state = 0;
 	idx = 0;
 	/* Infinite loop */
 	for(;;)
 	{
-		/*sprintf ((char *)TxData, "CANTX%d", indx++);
-
-		if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, TxData)!= HAL_OK)
-		{
-		Error_Handler();
-		}*/
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, LED_state);
-		LED_state = !LED_state;
 
 		can_msg_t message;
 		build_board_stat_msg(idx, E_NOMINAL, NULL, 0, &message);
-		can_send(&message);
+		idx++;
 
+		if(xQueueSend(busQueue, &message, 10) != pdTRUE)
+		{
+			//Push a bus full error to the log queue
+		}
 		osDelay(1000);
 	}
   /* USER CODE END 5 */

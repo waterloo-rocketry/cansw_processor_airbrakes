@@ -36,9 +36,19 @@
 			<locationURI>PROJECT_LOC/Fusion</locationURI>
 		</link>
 		<link>
+			<name>Tasks</name>
+			<type>2</type>
+			<locationURI>PROJECT_LOC/Tasks</locationURI>
+		</link>
+		<link>
 			<name>canlib</name>
 			<type>2</type>
 			<locationURI>PROJECT_LOC/canlib</locationURI>
+		</link>
+		<link>
+			<name>vnproglib</name>
+			<type>2</type>
+			<locationURI>PROJECT_LOC/vnproglib</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>
