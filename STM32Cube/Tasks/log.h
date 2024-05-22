@@ -5,25 +5,31 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
+
 #include "stm32h7xx_hal.h"
+
 #include "FreeRTOS.h"
 #include "queue.h"
+#include "semphr.h"
+
 
 // TODO: determine optimal numbers for these
-#define MAX_MSG_LENGTH 32 // max length of log data string (bytes)
-#define QUEUE_TIMEOUT_TICKS 50 // ticks to wait for sending/receiving queue
-
-extern xQueueHandle logErrorQueue;
-extern xQueueHandle logInfoQueue;
-extern xQueueHandle logDebugQueue;
+/* max length of log data string (bytes) */
+#define MAX_MSG_LENGTH 128
+/* size of one log buffer (bytes) */
+#define LOG_BUFFER_SIZE 8192
+/* number of log buffers */
+#define NUM_LOG_BUFFERS 3
 
 /**
  * Log Level
 */
 typedef enum {
-    LOG_LVL_ERROR,  // Errors (non-recoverable) and warnings are combined into this
-    LOG_LVL_INFO,   // Info (data from sensors, etc)
-    LOG_LVL_DEBUG,  // Only for debugging on the ground
+    LOG_LVL_ERROR = 'E',  // Errors (non-recoverable)
+    LOG_LVL_WARN = 'W',   // Warnings (recoverable issues)
+    LOG_LVL_INFO = 'I',   // Info (data from sensors, etc)
+    LOG_LVL_DEBUG = 'D',  // Only for debugging on the ground
 } LogLevel_t;
 
 /**
@@ -42,40 +48,38 @@ typedef enum
 } LogDataSource_t;
 
 /**
- * Data to log, only used internally by log functions and queue
+ * Buffer holding one block of log msgs
 */
-typedef struct
-{
-    uint32_t timestamp;
-    LogLevel_t level;
-    LogDataSource_t dataSource;
-    uint8_t* dataBuffer; // can contain empty chars; uart/sd will ignore those, only read up to len
-    uint8_t dataLength; // will never exceed MAX_MSG_LENGTH
-} LogData_t;
+typedef struct log_buffer {
+    SemaphoreHandle_t mutex;
+    uint16_t index;
+    char buffer[LOG_BUFFER_SIZE];
+    bool isFull;
+} log_buffer;
 
 /**
- * Create queues, etc
+ * Create buffers, mutexes, etc
 */
-void logInit(void);
+bool logInit(void);
 
 /**
- * Log an error-level message to error queue
+ * Log an error-level message
 */
-void logError(uint8_t* msg, LogDataSource_t source);
+bool logError(const LogDataSource_t source, const char* msg, ...);
 
 /**
- * Log an info-level message to info queue
+ * Log an info-level message
 */
-void logInfo(uint8_t* msg, LogDataSource_t source);
+bool logInfo(const LogDataSource_t source, const char* msg, ...);
 
 /**
- * Log a debug-level message to debug queue
+ * Log a debug-level message
 */
-void logDebug(uint8_t* msg, LogDataSource_t source);
+bool logDebug(const LogDataSource_t source, const char* msg, ...);
 
 /**
  * FreeRTOS task for the logger
- * Continuously read queues, format data, and send to uart/SD
+ * Wait on buffers to become full, then dump buffer to SD/uart
 */
 void logTask(void *argument);
 
