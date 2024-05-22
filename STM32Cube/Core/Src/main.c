@@ -102,9 +102,6 @@ static void MX_FMAC_Init(void);
 static void MX_I2C4_Init(void);
 static void MX_RTC_Init(void);
 static void MX_SDMMC1_SD_Init(void);
-static void MX_TIM1_Init(void);
-static void MX_ADC1_Init(void);
-static void MX_USART1_UART_Init(void);
 static void MX_UART4_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_ADC1_Init(void);
@@ -159,6 +156,7 @@ int main(void)
   MX_I2C4_Init();
   MX_RTC_Init();
   MX_SDMMC1_SD_Init();
+  MX_UART4_Init();
   MX_FATFS_Init();
   MX_TIM1_Init();
   MX_ADC1_Init();
@@ -183,7 +181,8 @@ int main(void)
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  canHandlerInit(); //create bus queue
+  //canHandlerInit(); //create bus queue
+  logInit();
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -196,13 +195,13 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
-//  xTaskCreate(sdmmcTask, "SDMMCTestingTask", 1000, NULL, 1, NULL);
-  xTaskCreate(sdmmcTask, "SDMMCTestingTask", 1000, (void *)&huart4, 5, NULL);
+//  xTaskCreate(sdmmcTask, "SDMMCTestingTask", 1000, (void *)&huart4, 5, NULL);
   //dunno if casting from CMSIS priorities is valid
+
   //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
   //xReturned &= xTaskCreate(canHandlerTask, "CAN handler", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
   //xReturned &= xTaskCreate(stateEstTask, "StateEst", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
-  //xReturned &= xTaskCreate(logTask, "Logging", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
+  xReturned &= xTaskCreate(logTask, "Logging", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
 
   if(xReturned != pdPASS)
   {
@@ -211,6 +210,7 @@ int main(void)
   }
 
   /* USER CODE END RTOS_THREADS */
+
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
@@ -935,10 +935,22 @@ void StartDefaultTask(void *argument)
 	/* Infinite loop */
 	for(;;)
 	{
-		uint8_t buffer[] = "hello world!\r\n";
-		HAL_UART_Transmit(&huart4, buffer, sizeof(buffer), 10);
+
+		logDebug(0, "test message var five %d\n", 5);
+		/*uint8_t buffer[] = "hello world!\r\n";*/
+		/*HAL_UART_Transmit(&huart4, buffer, sizeof(buffer), 10);*/
+
+		//can_msg_t message;
+		//build_board_stat_msg(idx, E_NOMINAL, NULL, 0, &message);
+		//idx++;
+
+//		if(xQueueSend(busQueue, &message, 10) != pdTRUE)
+//		{
+//			//Push a bus full error to the log queue
+//		}
+
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
-		osDelay(1000);
+		osDelay(10);
 	}
   /* USER CODE END 5 */
 }
