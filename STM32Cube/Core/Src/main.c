@@ -89,6 +89,7 @@ TaskHandle_t logTaskhandle = NULL;
 TaskHandle_t VNTaskHandle = NULL;
 TaskHandle_t stateEstTaskHandle = NULL;
 TaskHandle_t canhandlerhandle = NULL;
+TaskHandle_t controllerHandle = NULL;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -199,6 +200,7 @@ int main(void)
   //xReturned &= xTaskCreate(canHandlerTask, "CAN handler", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
   //xReturned &= xTaskCreate(stateEstTask, "StateEst", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
   //xReturned &= xTaskCreate(logTask, "Logging", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
+  xReturned &= xTaskCreate(controlTask, "Controller", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
 
   if(xReturned != pdPASS)
   {
@@ -979,7 +981,7 @@ void StartDefaultTask(void *argument)
 	for(;;)
 	{
 		uint8_t buffer[] = "hello world!\r\n";
-		HAL_UART_Transmit(&huart4, buffer, sizeof(buffer), 10);
+		//HAL_UART_Transmit(&huart4, buffer, sizeof(buffer), 10); //kindly shtfu so I can read my serial data in peace
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 		osDelay(1000);
 	}

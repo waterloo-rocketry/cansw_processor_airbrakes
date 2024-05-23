@@ -30,18 +30,15 @@ void controlTask(void *argument)
 	float altitudeEstimate;
 	controller_t airbrakesController;
 	TickType_t last_ticks = xTaskGetTickCount();
-	//printf("Timer return code: %d\r\n",millisInit());
 
 	float startTime = millis();
-	HAL_Delay(1000);
+	osDelay(1000);
 	float measuredDelay = millis()-startTime;
 	printf("1000ms HAL_Delay is: %lu ms\r\n",(unsigned long)(round(measuredDelay)));
-
 
   /* Infinite loop */
 	for(;;)
 	{
-
 		//TODO get altitude message from queue
 		altitudeEstimate = 1000; //Test code
 
@@ -63,7 +60,7 @@ void controlTask(void *argument)
 		//Test Code
 		char buffer[16] = {0};
 		sprintf(&buffer, "Target Ext: %d\r\n", (int)(extension * 1000));
-		HAL_UART_Transmit(&huart4, &buffer, 16, 10); //Blocking API, 10ms timeout
+		//HAL_UART_Transmit(&huart4, &buffer, 16, 10); //Blocking API, 10ms timeout
 		osDelayUntil(CONTROLLER_DELAY_TICKS); //Implements periodic behaviour (nominal delay - time spent running the loop code)
 	}
   /* USER CODE END controlTask */
