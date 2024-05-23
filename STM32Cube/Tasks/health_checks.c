@@ -40,12 +40,13 @@ void healthCheckTask(void *argument)
     adc1_val = HAL_ADC_GetValue(&hadc1);
     uint16_t current = CURR_5V_mA(adc1_val);
 
-    // Sending ADC val over uart
-    //int adc_txlength = sprintf((char*) adc_strval, "%u mV\r\n", (uint16_t) (ADC1_VOLTAGE(adc1_val) * 1000));
-    //HAL_UART_Transmit(&huart4, (uint8_t*) adc_strval, adc_txlength, 10);
-
-    //Log current with logging api
+    //Log current
     logDebug(SOURCE_HEALTH, "5V Current: %u mA", current);
+
+    //hack because logging hasn't implementing fwding to uart
+    uint8_t buffer[20];
+    uint32_t len = sprintf(buffer, "current %u mA", current);
+    HAL_UART_Transmit(&huart4, buffer, len, 10);
 
     if(current > MAX_CURR_5V_mA)
     {
@@ -58,7 +59,7 @@ void healthCheckTask(void *argument)
     }
 
 
-    vTaskDelay(1000);
+    vTaskDelay(100);
   }
   /* USER CODE END healthCheckTask */
 }

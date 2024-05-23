@@ -88,6 +88,7 @@ TaskHandle_t logTaskhandle = NULL;
 TaskHandle_t VNTaskHandle = NULL;
 TaskHandle_t stateEstTaskHandle = NULL;
 TaskHandle_t canhandlerhandle = NULL;
+TaskHandle_t healthChecksTaskHandle = NULL;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -196,6 +197,7 @@ int main(void)
   //xReturned &= xTaskCreate(canHandlerTask, "CAN handler", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
   //xReturned &= xTaskCreate(stateEstTask, "StateEst", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
   //xReturned &= xTaskCreate(logTask, "Logging", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
+  xReturned &= xTaskCreate(healthCheckTask, "health checks", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
 
   if(xReturned != pdPASS)
   {
@@ -930,7 +932,7 @@ void StartDefaultTask(void *argument)
 	/* Infinite loop */
 	for(;;)
 	{
-		uint8_t buffer[] = "hello world!\r\n";
+		uint8_t buffer[] = "defaultTask running!\r\n";
 		HAL_UART_Transmit(&huart4, buffer, sizeof(buffer), 10);
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 		osDelay(1000);
