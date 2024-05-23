@@ -196,10 +196,10 @@ int main(void)
   BaseType_t xReturned = pdPASS;
 
   //dunno if casting from CMSIS priorities is valid
-  //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
-  //xReturned &= xTaskCreate(canHandlerTask, "CAN handler", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
-  //xReturned &= xTaskCreate(stateEstTask, "StateEst", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
-  //xReturned &= xTaskCreate(logTask, "Logging", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
+  xReturned &= xTaskCreate(vnIMUHandler, "VN Task", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
+  xReturned &= xTaskCreate(canHandlerTask, "CAN handler", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
+  xReturned &= xTaskCreate(stateEstTask, "StateEst", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
+  xReturned &= xTaskCreate(logTask, "Logging", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
   xReturned &= xTaskCreate(controlTask, "Controller", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
 
   if(xReturned != pdPASS)
