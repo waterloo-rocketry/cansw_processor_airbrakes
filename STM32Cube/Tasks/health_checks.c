@@ -38,26 +38,30 @@ void healthCheckTask(void *argument)
     HAL_ADC_Start(&hadc1);
     HAL_ADC_PollForConversion(&hadc1, 10);
     adc1_val = HAL_ADC_GetValue(&hadc1);
-    uint16_t current = CURR_5V_mA(adc1_val);
+    uint16_t adc1_voltage_mV = ADC1_VOLTAGE_V(adc1_val)*1000;
+    uint16_t adc1_current_mA = ADC1_CURR_mA(adc1_voltage_mV);
 
     //Log current
-    logDebug(SOURCE_HEALTH, "5V Current: %u mA", current);
+    //logDebug(SOURCE_HEALTH, "5V Current: %u mA", current);
 
-    //hack because logging hasn't implementing fwding to uart
-    uint8_t buffer[20];
-    uint32_t len = sprintf(buffer, "current %u mA", current);
-    HAL_UART_Transmit(&huart4, buffer, len, 10);
+    //Transmitting voltage
+    int adc_txlength = sprintf((char*) adc_strval, "%u mV\r\n", (uint16_t) (adc1_voltage_mV));
+    HAL_UART_Transmit(&huart4, (uint8_t*) adc_strval, adc_txlength, 10);
 
-    if(current > MAX_CURR_5V_mA)
+    //Transmitting current
+    adc_txlength = sprintf((char*) adc_strval, "%u mA\r\n", (uint16_t) (adc1_current_mA) );
+    HAL_UART_Transmit(&huart4, (uint8_t*) adc_strval, adc_txlength, 10);
+
+    //Checking for over current
+    if(adc1_current_mA > MAX_CURR_5V_mA)
     {
-    	can_msg_t msg;
-    	uint8_t current_data[2];
-    	current_data[0] = current >> 8 && 0xFF;
-    	current_data[1] = current && 0xFF;
-    	build_board_stat_msg(0, E_5V_OVER_CURRENT, current_data, 2, &msg);
-    	xQueueSend(busQueue, &msg, 10);
+    can_msg_t msg;
+    uint8_t current_data[2];
+    current_data[0] = adc1_current_mA >> 8 && 0xFF;
+    current_data[1] = adc1_current_mA && 0xFF;
+    build_board_stat_msg(0, E_BUS_OVER_CURRENT, current_data, 2, &msg);
+    xQueueSend(busQueue, &msg, 10);
     }
-
 
     vTaskDelay(100);
   }
