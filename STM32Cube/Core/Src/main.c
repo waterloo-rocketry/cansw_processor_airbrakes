@@ -23,7 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
+#include "printf.h"
 #include "canlib.h"
 //#include "ICM-20948.h"
 
@@ -932,24 +932,9 @@ void StartDefaultTask(void *argument)
 	/* Infinite loop */
 	for(;;)
 	{
-		/******************** TESTING PRINTF ********************/
-        char testBuffer[20];
-
-        HAL_UART_Transmit(&huart4, (uint8_t *) "typical hal uart transmit\n", 27, 100);
-        printf_("testing printf\n");
-		int len = snprintf_(testBuffer, 10, "testing snprintf%d\n", 69);
-        HAL_UART_Transmit(&huart4, (uint8_t *) testBuffer, len, 100);
-
-		/********************************************************/
-        HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
-//		can_msg_t message;
-//		build_board_stat_msg(idx, E_NOMINAL, NULL, 0, &message);
-//		idx++;
-//
-//		if(xQueueSend(busQueue, &message, 10) != pdTRUE)
-//		{
-//			//Push a bus full error to the log queue
-//		}
+		char buffer[] = "hello world!\r\n";
+		printf_(buffer);
+		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 		osDelay(1000);
 	}
   /* USER CODE END 5 */

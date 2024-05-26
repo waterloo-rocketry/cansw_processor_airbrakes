@@ -1429,6 +1429,8 @@ int fctprintf(void (*out)(char c, void* extra_arg), void* extra_arg, const char*
 
 // Implement put char to use UART transmit
 void putchar_(char c) {
+#ifdef DEBUG
     HAL_UART_Transmit(&huart4, (uint8_t *) &c, 1, 50);
+#endif
 }
 
