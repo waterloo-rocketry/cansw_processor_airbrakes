@@ -42,6 +42,13 @@ In addition to targeting a more modern CPU, the project is made significantly mo
 - ```extern``` the queue handle inside the queue reader's header file, if other tasks using this module will need to write to that queue. This ensures that any writing tasks that includes the header file will have access to the queue.
 - The task that reads from a queue is responsible for initializing it. This means write an intialization function in your source file, and call it in ```main``` prior to beginning the scheduler. You can't do this inside your task funcion because you can't guarantee your task will run and initialize your queue before another task tries to put data into it
 
+### Logging
+- Use the logging methods described in `Tasks/log.h` to send logs to SD card.
+- `logDebug()` calls will not run in production! Only for debugging.
+- *DO NOT USE STDIO PRINTF* Instead, add `#include printf.h` to use this safer printf library.
+  - The methods are identical but with _ at the end (`snprintf_("hi")` instead of `snprintf("hi")`).
+- Use `printf_()` for printing debug msgs to UART4 (console). This method is ifdef'd out in production.
+
 ### Misc
 - Do not use magic numbers. Any constant in your code should be delcared at the top of the respective: source file, if the constant does not need to be used elsewhere or header file if it does
 - When you delcare a constant, either put the units (if applicable) in the name or in an inline comment with the definition
