@@ -25,7 +25,6 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "canlib.h"
-#include "sdmmc.h"
 //#include "ICM-20948.h"
 
 #include "vn_handler.h"
