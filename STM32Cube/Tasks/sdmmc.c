@@ -1,12 +1,11 @@
 #include "sdmmc.h"
-#include <stdio.h>
 
-UART_HandleTypeDef *sdmmcHuart;
+extern UART_HandleTypeDef huart4;
 
-const char *logsPath = "/LOGS"; // DO NOT CHANGE
+const char *logsPath = "/LOGS";
 char logFileName[500];
 
-void print(const char *formatter, ...) {
+static void print(const char *formatter, ...) {
 	va_list args;
 	va_start(args, formatter);
 
@@ -15,10 +14,10 @@ void print(const char *formatter, ...) {
 	vsnprintf(output, 1024, formatter, args);
 	va_end(args);
 
-	HAL_UART_Transmit(sdmmcHuart, (uint8_t *)output, strlen(output), 10);
+	HAL_UART_Transmit(&huart4, (uint8_t *)output, strlen(output), 10);
 }
 
-FRESULT list_dir(char *path) {
+static FRESULT list_dir(char *path) {
 	print("READING DIR '%s'\n", path);
 	FRESULT res;
 	DIR dir;
@@ -49,7 +48,7 @@ FRESULT list_dir(char *path) {
 	return res;
 }
 
-int computeFolderSize(const char *path) {
+static int computeFolderSize(const char *path) {
 	DIR dir;
 	FILINFO fno;
 	int nfile = 0;
@@ -65,7 +64,7 @@ int computeFolderSize(const char *path) {
 	return nfile;
 }
 
-void initUniqueLogFileName(const char *logsPath) {
+void initUniqueLogFileName() {
 	int nextValidFileNumber = computeFolderSize(logsPath) - 1;
 	while (snprintf(logFileName, sizeof(logFileName), "%s/%d.txt", logsPath,
 				 ++nextValidFileNumber) > 0 &&
@@ -73,8 +72,8 @@ void initUniqueLogFileName(const char *logsPath) {
 		;
 }
 
-void sdmmcTask(void *argument) {
-	sdmmcHuart = (UART_HandleTypeDef *)argument;
+static void sdmmcTestingTask() {
+	/*huart4 = (UART_HandleTypeDef *)argument;*/
 
 	print("\n----- STARTING SDMMC TESTING -----\n");
 

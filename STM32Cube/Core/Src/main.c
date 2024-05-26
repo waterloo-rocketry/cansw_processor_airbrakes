@@ -195,11 +195,9 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
-//  xTaskCreate(sdmmcTask, "SDMMCTestingTask", 1000, (void *)&huart4, 5, NULL);
-  //dunno if casting from CMSIS priorities is valid
+//  xTaskCreate(sdmmcTestingTask, "SDMMCTestingTask", 1000, (void *)&huart4, 5, NULL);
 
-  //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
-  //xReturned &= xTaskCreate(canHandlerTask, "CAN handler", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
+  //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle); xReturned &= xTaskCreate(canHandlerTask, "CAN handler", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
   //xReturned &= xTaskCreate(stateEstTask, "StateEst", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
   xReturned &= xTaskCreate(logTask, "Logging", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
 

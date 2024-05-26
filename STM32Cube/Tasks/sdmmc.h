@@ -14,8 +14,11 @@ extern "C" {
 #include "ff.h"
 
 // function declarations
-void sdmmcTask(void* arguments);
+void initUniqueLogFileName();
 
+// variable declarations
+extern const char *logsPath;
+extern char logFileName[500];
 
 #ifdef __cplusplus
 }

@@ -1,16 +1,19 @@
+#include "sdmmc.h"
 #include "log.h"
+
 #include <stdio.h>
 #include <stdarg.h>
-#include "ff.h" 
+
 
 extern UART_HandleTypeDef huart4;
+/*extern const char* logsPath;*/
+/*extern char* logFileName;*/
+/**/
+/*extern initUniqueLogFileName()*/
 
 static log_buffer logBuffers[NUM_LOG_BUFFERS];
 static int CURRENT_BUFFER = 0; // TODO: better way to store current buffer than literally a global var
 static SemaphoreHandle_t logWriteMutex;
-
-static const char *logsPath = "/LOGS"; // DO NOT CHANGE
-static char logFileName[500];
 
 // Queue of full buffers ready for output. Length of `n - 1` because all `n` buffers can never be full at once.
 // Most extreme case: `n - 1` buffers are in queue, and the `nth` buffer is currently being dumped to output (already
@@ -193,29 +196,6 @@ bool logDebug(const LogDataSource_t source, const char* msg, ...)
 #endif
 }
 
-static int computeFolderSize(const char *path) {
-	DIR dir;
-	FILINFO fno;
-	int nfile = 0;
-
-	if (f_opendir(&dir, path) == FR_OK) {
-		while (f_readdir(&dir, &fno) == FR_OK && fno.fname[0]) {
-			if (!(fno.fattrib & AM_DIR))
-				++nfile;
-		}
-		f_closedir(&dir);
-	}
-
-	return nfile;
-}
-
-static void initUniqueLogFileName(const char *logsPath) {
-	int nextValidFileNumber = computeFolderSize(logsPath) - 1;
-	while (snprintf(logFileName, sizeof(logFileName), "%s/%d.txt", logsPath,
-				 ++nextValidFileNumber) > 0 &&
-		f_stat(logFileName, NULL) == FR_OK);
-}
-
 // ----------------------------------------------------------------------------
 
 void logTask(void *argument)
@@ -226,7 +206,7 @@ void logTask(void *argument)
 
 	(void)f_mkdir(logsPath);
 
-	(void)initUniqueLogFileName(logsPath);
+	(void)initUniqueLogFileName();
 
 	FIL logfile;
 	(void)f_open(&logfile, logFileName, FA_CREATE_ALWAYS);
