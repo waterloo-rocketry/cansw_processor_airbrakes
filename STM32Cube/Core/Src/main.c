@@ -35,8 +35,6 @@
 #include "state_estimation.h"
 #include "trajectory.h"
 #include "can_handler.h"
-
-#include "printf.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
