@@ -18,7 +18,7 @@ void initUniqueLogFileName();
 
 // variable declarations
 
-#define LOG_FILE_NAME_SIZE 500
+#define LOG_FILE_NAME_SIZE 19 // LOGS/2147483647.txt
 
 extern const char *logsPath;
 extern char logFileName[LOG_FILE_NAME_SIZE];
