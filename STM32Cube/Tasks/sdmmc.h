@@ -17,8 +17,11 @@ extern "C" {
 void initUniqueLogFileName();
 
 // variable declarations
+
+#define LOG_FILE_NAME_SIZE 500;
+
 extern const char *logsPath;
-extern char logFileName[500];
+extern char logFileName[LOG_FILE_NAME_SIZE];
 
 #ifdef __cplusplus
 }

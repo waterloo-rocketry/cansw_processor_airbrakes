@@ -3,7 +3,7 @@
 extern UART_HandleTypeDef huart4;
 
 const char *logsPath = "/LOGS";
-char logFileName[500];
+char logFileName[LOG_FILE_NAME_SIZE];
 
 static void print(const char *formatter, ...) {
 	va_list args;
@@ -66,7 +66,7 @@ static int computeFolderSize(const char *path) {
 
 void initUniqueLogFileName() {
 	int nextValidFileNumber = computeFolderSize(logsPath) - 1;
-	while (snprintf(logFileName, sizeof(logFileName), "%s/%d.txt", logsPath,
+	while (snprintf(logFileName, LOG_FILE_NAME_SIZE, "%s/%d.txt", logsPath,
 				 ++nextValidFileNumber) > 0 &&
 		f_stat(logFileName, NULL) == FR_OK)
 		;
@@ -94,7 +94,7 @@ static void sdmmcTestingTask() {
 
 	// init unique log file name
 	initUniqueLogFileName(logsPath);
-	snprintf(logFileName, sizeof(logFileName), "%s/%d.txt", logsPath, 68); // todo : REMOVE THIS
+	snprintf(logFileName, LOG_FILE_NAME_SIZE, "%s/%d.txt", logsPath, 68); // todo : REMOVE THIS
 	print("unique file name is %s\n", logFileName);
 	/**/
 	// create log file
