@@ -980,8 +980,8 @@ void StartDefaultTask(void *argument)
 	/* Infinite loop */
 	for(;;)
 	{
-		uint8_t buffer[] = "hello world!\r\n";
-		//HAL_UART_Transmit(&huart4, buffer, sizeof(buffer), 10); //kindly shtfu so I can read my serial data in peace
+		char buffer[] = "hello world!\r\n";
+		printf_(buffer);
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 		osDelay(1000);
 	}
