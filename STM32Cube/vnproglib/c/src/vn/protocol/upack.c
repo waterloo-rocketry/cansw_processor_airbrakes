@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include "vn/util.h"
+#include "printf.h"
 
 /*#define MAXIMUM_REGISTER_ID		255
 #define ASCII_START_CHAR		'$'
@@ -1374,7 +1375,7 @@ VnError VnUartPacket_genWrite(
 	#endif
 
 	/* Add the message header and register number. */
-	curOutputLoc += sprintf((char*) curOutputLoc, "$VNWRG,%d", registerId);
+	curOutputLoc += sprintf_((char*) curOutputLoc, "$VNWRG,%d", registerId);
 
 	va_start(ap, format);
 
@@ -1389,16 +1390,16 @@ VnError VnUartPacket_genWrite(
 			{
 			case '1':
 				/* 'uint8_t' is promoted to 'int' when passed through '...'. */
-				curOutputLoc += sprintf((char*) curOutputLoc, ",%d", va_arg(ap, int));
+				curOutputLoc += sprintf_((char*) curOutputLoc, ",%d", va_arg(ap, int));
 				break;
 
 			case '2':
 				/* 'uint16_t' is promoted to 'int' when passed through '...'. */
-				curOutputLoc += sprintf((char*) curOutputLoc, ",%d", va_arg(ap, int));
+				curOutputLoc += sprintf_((char*) curOutputLoc, ",%d", va_arg(ap, int));
 				break;
 
 			case '4':
-				curOutputLoc += sprintf((char*) curOutputLoc, ",%d", va_arg(ap, uint32_t));
+				curOutputLoc += sprintf_((char*) curOutputLoc, ",%d", va_arg(ap, uint32_t));
 				break;
 			}
 
@@ -1410,18 +1411,18 @@ VnError VnUartPacket_genWrite(
 			{
 			case '4':
 				/* 'float' is promoted to 'double' when passed through '...'. */
-				curOutputLoc += sprintf((char*) curOutputLoc, ",%f", va_arg(ap, double));
+				curOutputLoc += sprintf_((char*) curOutputLoc, ",%f", va_arg(ap, double));
 				break;
 
 			case '8':
-				curOutputLoc += sprintf((char*) curOutputLoc, ",%f", va_arg(ap, double));
+				curOutputLoc += sprintf_((char*) curOutputLoc, ",%f", va_arg(ap, double));
 				break;
 			}
 
 			break;
 			
 		case 'S':
-			curOutputLoc += sprintf((char*) curOutputLoc,",%s",va_arg(ap,char *));
+			curOutputLoc += sprintf_((char*) curOutputLoc,",%s",va_arg(ap,char *));
 			break;
 		}
 	}
@@ -1476,7 +1477,7 @@ VnError VnUartPacket_genReadBinaryOutput1(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s((char*)buffer, bufferSize, "$VNRRG,75");
 	#else
-	*cmdSize = sprintf((char*) buffer, "$VNRRG,75");
+	*cmdSize = sprintf_((char*) buffer, "$VNRRG,75");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, buffer, cmdSize);
@@ -1491,7 +1492,7 @@ VnError VnUartPacket_genReadBinaryOutput2(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s((char*)buffer, bufferSize, "$VNRRG,76");
 	#else
-	*cmdSize = sprintf((char*) buffer, "$VNRRG,76");
+	*cmdSize = sprintf_((char*) buffer, "$VNRRG,76");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, buffer, cmdSize);
@@ -1506,7 +1507,7 @@ VnError VnUartPacket_genReadBinaryOutput3(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s((char*)buffer, bufferSize, "$VNRRG,77");
 	#else
-	*cmdSize = sprintf((char*) buffer, "$VNRRG,77");
+	*cmdSize = sprintf_((char*) buffer, "$VNRRG,77");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, buffer, cmdSize);
@@ -1523,7 +1524,7 @@ VnError VnUartPacket_genReadBinaryOutput4(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,78");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,78");
+	*cmdSize = sprintf_(buffer, "$VNRRG,78");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, buffer, cmdSize);
@@ -1538,7 +1539,7 @@ VnError VnUartPacket_genReadBinaryOutput5(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,79");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,79");
+	*cmdSize = sprintf_(buffer, "$VNRRG,79");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, buffer, cmdSize);
@@ -1556,15 +1557,15 @@ VnError VnUartPacket_finalizeCommand(VnErrorDetectionMode errorDetectionMode, ui
 
 	if (errorDetectionMode == VNERRORDETECTIONMODE_CHECKSUM)
 	{
-		*length += sprintf((char*) (packet + *length), "*%02X\r\n", VnChecksum8_compute((char*) packet + 1, *length - 1));
+		*length += sprintf_((char*) (packet + *length), "*%02X\r\n", VnChecksum8_compute((char*) packet + 1, *length - 1));
 	}
 	else if (errorDetectionMode == VNERRORDETECTIONMODE_CRC)
 	{
-		*length += sprintf((char*) (packet + *length), "*%04X\r\n", VnCrc16_compute((char*) packet + 1, *length - 1));
+		*length += sprintf_((char*) (packet + *length), "*%04X\r\n", VnCrc16_compute((char*) packet + 1, *length - 1));
 	}
 	else
 	{
-		*length += sprintf((char*) (packet + *length), "*XX\r\n");
+		*length += sprintf_((char*) (packet + *length), "*XX\r\n");
 	}
 
 	#if defined(_MSC_VER)
@@ -1583,7 +1584,7 @@ VnError VnUartPacket_genCmdWriteSettings(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s((char*)buffer, bufferSize, "$VNWNV");
 	#else
-	*cmdSize = sprintf((char*) buffer, "$VNWNV");
+	*cmdSize = sprintf_((char*) buffer, "$VNWNV");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, buffer, cmdSize);
@@ -1598,7 +1599,7 @@ VnError VnUartPacket_genCmdRestoreFactorySettings(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s((char*)buffer, bufferSize, "$VNRFS");
 	#else
-	*cmdSize = sprintf((char*) buffer, "$VNRFS");
+	*cmdSize = sprintf_((char*) buffer, "$VNRFS");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, buffer, cmdSize);
@@ -1613,7 +1614,7 @@ VnError VnUartPacket_genCmdReset(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s((char*)buffer, bufferSize, "$VNRST");
 	#else
-	*cmdSize = sprintf((char*) buffer, "$VNRST");
+	*cmdSize = sprintf_((char*) buffer, "$VNRST");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, buffer, cmdSize);
@@ -1628,7 +1629,7 @@ VnError VnUartPacket_genCmdFirmwareUpdate(
 #if VN_HAVE_SECURE_CRT
 	* cmdSize = sprintf_s((char*)buffer, bufferSize, "$VNFWU");
 #else
-	* cmdSize = sprintf((char*)buffer, "$VNFWU");
+	* cmdSize = sprintf_((char*)buffer, "$VNFWU");
 #endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, buffer, cmdSize);
@@ -1644,7 +1645,7 @@ VnError VnUartPacket_genCmdTare(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s((char*)buffer, bufferSize, "$VNTAR");
 	#else
-	*cmdSize = sprintf((char*) buffer, "$VNTAR");
+	*cmdSize = sprintf_((char*) buffer, "$VNTAR");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, buffer, cmdSize);
@@ -1659,7 +1660,7 @@ VnError VnUartPacket_genCmdSetGyroBias(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s((char*)buffer, bufferSize, "$VNSGB");
 	#else
-	*cmdSize = sprintf((char*) buffer, "$VNSGB");
+	*cmdSize = sprintf_((char*) buffer, "$VNSGB");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, buffer, cmdSize);
@@ -1675,7 +1676,7 @@ VnError VnUartPacket_genCmdKnownMagneticDisturbance(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s((char*)buffer, bufferSize, "$VNKMD,%d", disturbancePresent ? 1 : 0);
 	#else
-	*cmdSize = sprintf((char*) buffer, "$VNKMD,%d", disturbancePresent ? 1 : 0);
+	*cmdSize = sprintf_((char*) buffer, "$VNKMD,%d", disturbancePresent ? 1 : 0);
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, buffer, cmdSize);
@@ -1691,7 +1692,7 @@ VnError VnUartPacket_genCmdKnownAccelerationDisturbance(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s((char*)buffer, bufferSize, "$VNKAD,%d", disturbancePresent ? 1 : 0);
 	#else
-	*cmdSize = sprintf((char*) buffer, "$VNKAD,%d", disturbancePresent ? 1 : 0);
+	*cmdSize = sprintf_((char*) buffer, "$VNKAD,%d", disturbancePresent ? 1 : 0);
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, buffer, cmdSize);
@@ -1706,7 +1707,7 @@ VnError VnUartPacket_genReadUserTag(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,00");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,00");
+	*cmdSize = sprintf_(buffer, "$VNRRG,00");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -1721,7 +1722,7 @@ VnError VnUartPacket_genReadModelNumber(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,01");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,01");
+	*cmdSize = sprintf_(buffer, "$VNRRG,01");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -1736,7 +1737,7 @@ VnError VnUartPacket_genReadHardwareRevision(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,02");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,02");
+	*cmdSize = sprintf_(buffer, "$VNRRG,02");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -1751,7 +1752,7 @@ VnError VnUartPacket_genReadSerialNumber(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,03");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,03");
+	*cmdSize = sprintf_(buffer, "$VNRRG,03");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -1766,7 +1767,7 @@ VnError VnUartPacket_genReadFirmwareVersion(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,04");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,04");
+	*cmdSize = sprintf_(buffer, "$VNRRG,04");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -1781,7 +1782,7 @@ VnError VnUartPacket_genReadSerialBaudRate(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,05");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,05");
+	*cmdSize = sprintf_(buffer, "$VNRRG,05");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -1796,7 +1797,7 @@ VnError VnUartPacket_genReadAsyncDataOutputType(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,06");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,06");
+	*cmdSize = sprintf_(buffer, "$VNRRG,06");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -1811,7 +1812,7 @@ VnError VnUartPacket_genReadAsyncDataOutputFrequency(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,07");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,07");
+	*cmdSize = sprintf_(buffer, "$VNRRG,07");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -1826,7 +1827,7 @@ VnError VnUartPacket_genReadYawPitchRoll(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,08");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,08");
+	*cmdSize = sprintf_(buffer, "$VNRRG,08");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -1841,7 +1842,7 @@ VnError VnUartPacket_genReadAttitudeQuaternion(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,09");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,09");
+	*cmdSize = sprintf_(buffer, "$VNRRG,09");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -1856,7 +1857,7 @@ VnError VnUartPacket_genReadQuaternionMagneticAccelerationAndAngularRates(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,15");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,15");
+	*cmdSize = sprintf_(buffer, "$VNRRG,15");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -1871,7 +1872,7 @@ VnError VnUartPacket_genReadMagneticMeasurements(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,17");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,17");
+	*cmdSize = sprintf_(buffer, "$VNRRG,17");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -1886,7 +1887,7 @@ VnError VnUartPacket_genReadAccelerationMeasurements(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,18");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,18");
+	*cmdSize = sprintf_(buffer, "$VNRRG,18");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -1901,7 +1902,7 @@ VnError VnUartPacket_genReadAngularRateMeasurements(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,19");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,19");
+	*cmdSize = sprintf_(buffer, "$VNRRG,19");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -1916,7 +1917,7 @@ VnError VnUartPacket_genReadMagneticAccelerationAndAngularRates(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,20");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,20");
+	*cmdSize = sprintf_(buffer, "$VNRRG,20");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -1931,7 +1932,7 @@ VnError VnUartPacket_genReadMagneticAndGravityReferenceVectors(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,21");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,21");
+	*cmdSize = sprintf_(buffer, "$VNRRG,21");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -1946,7 +1947,7 @@ VnError VnUartPacket_genReadMagnetometerCompensation(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,23");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,23");
+	*cmdSize = sprintf_(buffer, "$VNRRG,23");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -1961,7 +1962,7 @@ VnError VnUartPacket_genReadAccelerationCompensation(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,25");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,25");
+	*cmdSize = sprintf_(buffer, "$VNRRG,25");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -1976,7 +1977,7 @@ VnError VnUartPacket_genReadReferenceFrameRotation(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,26");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,26");
+	*cmdSize = sprintf_(buffer, "$VNRRG,26");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -1991,7 +1992,7 @@ VnError VnUartPacket_genReadYawPitchRollMagneticAccelerationAndAngularRates(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,27");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,27");
+	*cmdSize = sprintf_(buffer, "$VNRRG,27");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2006,7 +2007,7 @@ VnError VnUartPacket_genReadCommunicationProtocolControl(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,30");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,30");
+	*cmdSize = sprintf_(buffer, "$VNRRG,30");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2021,7 +2022,7 @@ VnError VnUartPacket_genReadSynchronizationControl(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,32");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,32");
+	*cmdSize = sprintf_(buffer, "$VNRRG,32");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2036,7 +2037,7 @@ VnError VnUartPacket_genReadSynchronizationStatus(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,33");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,33");
+	*cmdSize = sprintf_(buffer, "$VNRRG,33");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2051,7 +2052,7 @@ VnError VnUartPacket_genReadVpeBasicControl(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,35");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,35");
+	*cmdSize = sprintf_(buffer, "$VNRRG,35");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2066,7 +2067,7 @@ VnError VnUartPacket_genReadVpeMagnetometerBasicTuning(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,36");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,36");
+	*cmdSize = sprintf_(buffer, "$VNRRG,36");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2081,7 +2082,7 @@ VnError VnUartPacket_genReadVpeAccelerometerBasicTuning(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,38");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,38");
+	*cmdSize = sprintf_(buffer, "$VNRRG,38");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2096,7 +2097,7 @@ VnError VnUartPacket_genReadMagnetometerCalibrationControl(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,44");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,44");
+	*cmdSize = sprintf_(buffer, "$VNRRG,44");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2111,7 +2112,7 @@ VnError VnUartPacket_genReadCalculatedMagnetometerCalibration(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,47");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,47");
+	*cmdSize = sprintf_(buffer, "$VNRRG,47");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2126,7 +2127,7 @@ VnError VnUartPacket_genReadVelocityCompensationMeasurement(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,50");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,50");
+	*cmdSize = sprintf_(buffer, "$VNRRG,50");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2141,7 +2142,7 @@ VnError VnUartPacket_genReadVelocityCompensationControl(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,51");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,51");
+	*cmdSize = sprintf_(buffer, "$VNRRG,51");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2156,7 +2157,7 @@ VnError VnUartPacket_genReadImuMeasurements(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,54");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,54");
+	*cmdSize = sprintf_(buffer, "$VNRRG,54");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2171,7 +2172,7 @@ VnError VnUartPacket_genReadGpsConfiguration(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,55");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,55");
+	*cmdSize = sprintf_(buffer, "$VNRRG,55");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2186,7 +2187,7 @@ VnError VnUartPacket_genReadGpsAntennaOffset(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,57");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,57");
+	*cmdSize = sprintf_(buffer, "$VNRRG,57");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2201,7 +2202,7 @@ VnError VnUartPacket_genReadGpsSolutionLla(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,58");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,58");
+	*cmdSize = sprintf_(buffer, "$VNRRG,58");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2216,7 +2217,7 @@ VnError VnUartPacket_genReadGpsSolutionEcef(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,59");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,59");
+	*cmdSize = sprintf_(buffer, "$VNRRG,59");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2231,7 +2232,7 @@ VnError VnUartPacket_genReadInsSolutionLla(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,63");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,63");
+	*cmdSize = sprintf_(buffer, "$VNRRG,63");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2246,7 +2247,7 @@ VnError VnUartPacket_genReadInsSolutionEcef(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,64");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,64");
+	*cmdSize = sprintf_(buffer, "$VNRRG,64");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2261,7 +2262,7 @@ VnError VnUartPacket_genReadInsBasicConfiguration(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,67");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,67");
+	*cmdSize = sprintf_(buffer, "$VNRRG,67");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2276,7 +2277,7 @@ VnError VnUartPacket_genReadInsStateLla(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,72");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,72");
+	*cmdSize = sprintf_(buffer, "$VNRRG,72");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2291,7 +2292,7 @@ VnError VnUartPacket_genReadInsStateEcef(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,73");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,73");
+	*cmdSize = sprintf_(buffer, "$VNRRG,73");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2306,7 +2307,7 @@ VnError VnUartPacket_genReadStartupFilterBiasEstimate(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,74");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,74");
+	*cmdSize = sprintf_(buffer, "$VNRRG,74");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2321,7 +2322,7 @@ VnError VnUartPacket_genReadDeltaThetaAndDeltaVelocity(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,80");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,80");
+	*cmdSize = sprintf_(buffer, "$VNRRG,80");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2336,7 +2337,7 @@ VnError VnUartPacket_genReadDeltaThetaAndDeltaVelocityConfiguration(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,82");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,82");
+	*cmdSize = sprintf_(buffer, "$VNRRG,82");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2351,7 +2352,7 @@ VnError VnUartPacket_genReadReferenceVectorConfiguration(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,83");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,83");
+	*cmdSize = sprintf_(buffer, "$VNRRG,83");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2366,7 +2367,7 @@ VnError VnUartPacket_genReadGyroCompensation(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,84");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,84");
+	*cmdSize = sprintf_(buffer, "$VNRRG,84");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2381,7 +2382,7 @@ VnError VnUartPacket_genReadImuFilteringConfiguration(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,85");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,85");
+	*cmdSize = sprintf_(buffer, "$VNRRG,85");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2396,7 +2397,7 @@ VnError VnUartPacket_genReadGpsCompassBaseline(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,93");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,93");
+	*cmdSize = sprintf_(buffer, "$VNRRG,93");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2411,7 +2412,7 @@ VnError VnUartPacket_genReadGpsCompassEstimatedBaseline(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,97");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,97");
+	*cmdSize = sprintf_(buffer, "$VNRRG,97");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2426,7 +2427,7 @@ VnError VnUartPacket_genReadYawPitchRollTrueBodyAccelerationAndAngularRates(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,239");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,239");
+	*cmdSize = sprintf_(buffer, "$VNRRG,239");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2441,7 +2442,7 @@ VnError VnUartPacket_genReadYawPitchRollTrueInertialAccelerationAndAngularRates(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s(buffer, bufferSize, "$VNRRG,240");
 	#else
-	*cmdSize = sprintf(buffer, "$VNRRG,240");
+	*cmdSize = sprintf_(buffer, "$VNRRG,240");
 	#endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, (uint8_t*)buffer, cmdSize);
@@ -2487,50 +2488,50 @@ VnError VnUartPacket_genWriteBinaryOutput(
 	#if VN_HAVE_SECURE_CRT
 	*cmdSize = sprintf_s((char*)buffer, bufferSize, "$VNWRG,%u,%u,%u,%X", 74 + binaryOutputNumber, asyncMode, rateDivisor, groups);
 	#else
-	*cmdSize = sprintf(cbp, "$VNWRG,%u,%u,%u,%X", 74 + binaryOutputNumber, asyncMode, rateDivisor, groups);
+	*cmdSize = sprintf_(cbp, "$VNWRG,%u,%u,%u,%X", 74 + binaryOutputNumber, asyncMode, rateDivisor, groups);
 	#endif
 
 	if (commonField)
 		#if VN_HAVE_SECURE_CRT
 		*cmdSize += sprintf_s((char*)(buffer + *cmdSize), bufferSize - *cmdSize, ",%X", commonField);
 		#else
-		*cmdSize += sprintf(cbp + *cmdSize, ",%X", commonField);
+		*cmdSize += sprintf_(cbp + *cmdSize, ",%X", commonField);
 		#endif
 	if (timeField)
 		#if VN_HAVE_SECURE_CRT
 		*cmdSize += sprintf_s((char*)(buffer + *cmdSize), bufferSize - *cmdSize, ",%X", timeField);
 		#else
-		*cmdSize += sprintf(cbp + *cmdSize, ",%X", timeField);
+		*cmdSize += sprintf_(cbp + *cmdSize, ",%X", timeField);
 		#endif
 	if (imuField)
 		#if VN_HAVE_SECURE_CRT
 		*cmdSize += sprintf_s((char*)(buffer + *cmdSize), bufferSize - *cmdSize, ",%X", imuField);
 		#else
-		*cmdSize += sprintf(cbp + *cmdSize, ",%X", imuField);
+		*cmdSize += sprintf_(cbp + *cmdSize, ",%X", imuField);
 		#endif
 	if (gpsField)
 		#if VN_HAVE_SECURE_CRT
 		*cmdSize += sprintf_s((char*)(buffer + *cmdSize), bufferSize - *cmdSize, ",%X", gpsField);
 		#else
-		*cmdSize += sprintf(cbp + *cmdSize, ",%X", gpsField);
+		*cmdSize += sprintf_(cbp + *cmdSize, ",%X", gpsField);
 		#endif
 	if (attitudeField)
 		#if VN_HAVE_SECURE_CRT
 		*cmdSize += sprintf_s((char*)(buffer + *cmdSize), bufferSize - *cmdSize, ",%X", attitudeField);
 		#else
-		*cmdSize += sprintf(cbp + *cmdSize, ",%X", attitudeField);
+		*cmdSize += sprintf_(cbp + *cmdSize, ",%X", attitudeField);
 		#endif
 	if (insField)
 		#if VN_HAVE_SECURE_CRT
 		*cmdSize += sprintf_s((char*)(buffer + *cmdSize), bufferSize - *cmdSize, ",%X", insField);
 		#else
-		*cmdSize += sprintf(cbp + *cmdSize, ",%X", insField);
+		*cmdSize += sprintf_(cbp + *cmdSize, ",%X", insField);
 		#endif
   if (gps2Field)
     #if VN_HAVE_SECURE_CRT
     *cmdSize += sprintf_s((char*)(buffer + *cmdSize), bufferSize - *cmdSize, ",%X", gps2Field);
     #else
-    *cmdSize += sprintf(cbp + *cmdSize, ",%X", gps2Field);
+    *cmdSize += sprintf_(cbp + *cmdSize, ",%X", gps2Field);
     #endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, buffer, cmdSize);
@@ -2710,7 +2711,7 @@ VnError VnUartPacket_genWriteFirmwareUpdate(
 #if VN_HAVE_SECURE_CRT
 	* cmdSize = sprintf_s((char*)buffer, bufferSize, "$VNBLD,%s",record);
 #else
-	* cmdSize = sprintf((char*)buffer, "$VNBLD,%s", record);
+	* cmdSize = sprintf_((char*)buffer, "$VNBLD,%s", record);
 #endif
 
 	return VnUartPacket_finalizeCommand(errorDetectionMode, buffer, cmdSize);
