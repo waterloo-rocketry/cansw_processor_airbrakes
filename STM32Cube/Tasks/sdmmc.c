@@ -1,5 +1,6 @@
 #include "sdmmc.h"
 
+const char *logsPath = "/LOGS";
 char logFileName[LOG_FILE_NAME_SIZE];
 
 static int computeFolderSize(const char *path) {
