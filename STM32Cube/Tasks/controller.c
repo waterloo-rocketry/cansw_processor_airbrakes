@@ -21,15 +21,7 @@ void controlTask(void *argument)
 {
 	float altitudeEstimate;
 	controller_t airbrakesController;
-	TickType_t last_ticks = millis();
-
-	/*
-	//Timer test code
-	float startTime = millis();
-	osDelay(1000);
-	float measuredDelay = millis()-startTime;
-	printf("1000ms HAL_Delay is: %lu ms\r\n",(unsigned long)(round(measuredDelay)));
-	*/
+	float last_ticks = millis();
 
   /* Infinite loop */
 	for(;;)
@@ -57,12 +49,6 @@ void controlTask(void *argument)
 			build_actuator_cmd_analog( (uint32_t) millis(), extension, ACTUATOR_AIRBRAKES_SERVO, &msg);
 			xQueueSend(busQueue, &msg, 5);
 		}
-
-		//Test Code
-		char buffer[16] = {0};
-		sprintf(&buffer, "Target Ext: %d\r\n", (int)(extension * 1000));
-		//HAL_UART_Transmit(&huart4, &buffer, 16, 10); //Blocking API, 10ms timeout
-		osDelayUntil(CONTROLLER_DELAY_TICKS); //Implements periodic behaviour (nominal delay - time spent running the loop code)
+		printf_("extension: %f", extension);
 	}
-  /* USER CODE END controlTask */
 }
