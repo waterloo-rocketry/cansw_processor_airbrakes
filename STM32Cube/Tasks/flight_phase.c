@@ -10,6 +10,7 @@
 
 #define BOOST_TIME_MS 15000 //time from inj valve open to motor bunout
 #define RECOVERY_DELAY_MS 30000 //time from inj valve open to recovery deployment
+
 enum FLIGHT_PHASE flight_state = PHASE_PRELAUNCH;
 float injOpenTime;
 float deploymentTime;
@@ -19,7 +20,7 @@ EventGroupHandle_t flightPhaseEventsHandle = NULL;
 #define RECOVERY_DEPLOYMENT (xEventGroupGetBits(flightPhaseEventsHandle) && RECOVERY_DEPLOYMENT_BIT)
 
 
-void flight_phase_task_init()
+void flightPhaseInit()
 {
 	flightPhaseEventsHandle = xEventGroupCreate();
 	xEventGroupClearBits(flightPhaseEventsHandle, 0xFFFF); //clear out the enitire group since API doesn't specify if values are initialized to 0

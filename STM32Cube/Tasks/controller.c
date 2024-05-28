@@ -7,10 +7,12 @@
 
 #include "controller.h"
 #include "freertos.h"
+#include "queue.h"
 #include "cmsis_os.h" //TODO replace with xtaskDelayUntil
 #include "stm32h7xx_hal.h"
 #include <math.h>
 #include "millis.h"
+#include "flight_phase.h"
 
 extern UART_HandleTypeDef huart4;
 
@@ -48,7 +50,13 @@ void controlTask(void *argument)
 		if(extension > CONTROLLER_MAX_EXTENSION) extension = CONTROLLER_MAX_EXTENSION;
 		if(extension < CONTROLLER_MIN_EXTENSION) extension = CONTROLLER_MIN_EXTENSION;
 
-		//TODO log to queue and send to CAN
+
+		if(extensionAllowed())
+		{
+			can_msg_t msg;
+			build_actuator_cmd_analog( (uint32_t) millis(), extension, ACTUATOR_AIRBRAKES_SERVO, &msg);
+			xQueueSend(busQueue, &msg, 5);
+		}
 
 		//Test Code
 		char buffer[16] = {0};
