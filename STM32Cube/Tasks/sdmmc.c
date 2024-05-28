@@ -20,7 +20,7 @@ static int computeFolderSize(const char *path) {
 
 void initUniqueLogFileName() {
 	int nextValidFileNumber = computeFolderSize(logsPath) - 1;
-	while (snprintf(logFileName, LOG_FILE_NAME_SIZE, "%s/%d.txt", logsPath, ++nextValidFileNumber) > 0 &&
+	while (snprintf_(logFileName, LOG_FILE_NAME_SIZE, "%s/%d.txt", logsPath, ++nextValidFileNumber) > 0 &&
 		f_stat(logFileName, NULL) == FR_OK);
 }
 
