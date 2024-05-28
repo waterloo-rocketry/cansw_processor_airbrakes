@@ -1,9 +1,9 @@
 #include "sdmmc.h"
 #include "log.h"
 
-#include <stdio.h>
 #include <stdarg.h>
 
+#include "printf.h"
 
 extern UART_HandleTypeDef huart4;
 /*extern const char* logsPath;*/
@@ -86,8 +86,8 @@ static const char* sourceToString(LogDataSource_t source)
  * @param level
  * @param msg a formatted msg
  * @param msgArgs variable list of arguments for the msg format. Use variable arguments here so that log
- * users don't have to manually do sprintf beforehand - instead, this function will handle formatting the string.
- * Should be safe since this is essentially a sprintf wrapper, where variable arguments are acceptable.
+ * users don't have to manually do sprintf_ beforehand - instead, this function will handle formatting the string.
+ * Should be safe since this is essentially a sprintf_ wrapper, where variable arguments are acceptable.
 */
 bool logGeneric(LogDataSource_t source, LogLevel_t level, const char* msg, va_list msgArgs)
 {
@@ -118,20 +118,20 @@ bool logGeneric(LogDataSource_t source, LogLevel_t level, const char* msg, va_li
     }
     
     // format and append the default log header
-	int headerLength = snprintf(currentBuffer->buffer + currentBuffer->index, MAX_MSG_LENGTH, "%c: [%d] %s ", level, (int) timestamp, sourceToString(source));
+	int headerLength = snprintf_(currentBuffer->buffer + currentBuffer->index, MAX_MSG_LENGTH, "%c: [%d] %s ", level, (int) timestamp, sourceToString(source));
     currentBuffer->index += headerLength;
 
     // limit the actual msg to `MAX_MSG_LENGTH - headerLength` to account for the header we just printed
-    int msgLength = vsnprintf(currentBuffer->buffer + currentBuffer->index, MAX_MSG_LENGTH - headerLength, msg, msgArgs);
+    int msgLength = vsnprintf_(currentBuffer->buffer + currentBuffer->index, MAX_MSG_LENGTH - headerLength, msg, msgArgs);
     
-    // snprintf behaviour moment: it returns a larger number than the limit if it had to truncate
+    // snprintf_ behaviour moment: it returns a larger number than the limit if it had to truncate
 	if (msgLength >= MAX_MSG_LENGTH - headerLength)
     {
-        currentBuffer->index += MAX_MSG_LENGTH - headerLength - 1; // -1 cuz snprintf makes the last char \0
+        currentBuffer->index += MAX_MSG_LENGTH - headerLength - 1; // -1 cuz snprintf_ makes the last char \0
     }
     else
     {
-        currentBuffer->index += msgLength; // no -1 here cuz snprintf normal return value doesn't count \0
+        currentBuffer->index += msgLength; // no -1 here cuz snprintf_ normal return value doesn't count \0
     }
 
     // add \n in here instead of asking the sender to do it. This guarantees \n in all logs in case msg gets cut off
