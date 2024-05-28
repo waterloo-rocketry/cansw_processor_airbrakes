@@ -6,23 +6,18 @@
  */
 
 #include "flight_phase.h"
+#include "millis.h"
 
 #define BOOST_TIME_MS 15000 //time from inj valve open to motor bunout
 #define RECOVERY_DELAY_MS 30000 //time from inj valve open to recovery deployment
 enum FLIGHT_PHASE flight_state = PHASE_PRELAUNCH;
-uint32_t injOpenTime;
-uint32_t deploymentTime;
+float injOpenTime;
+float deploymentTime;
 
 EventGroupHandle_t flightPhaseEventsHandle = NULL;
 #define INJ_OPEN (xEventGroupGetBits(flightPhaseEventsHandle) && INJ_OPEN_BIT)
 #define RECOVERY_DEPLOYMENT (xEventGroupGetBits(flightPhaseEventsHandle) && RECOVERY_DEPLOYMENT_BIT)
 
-
-uint32_t millis() //TODO: replace with actual millis() function
-{
-#warning fake millis() function, replace with actual timing function
-	return 0;
-}
 
 void flight_phase_task_init()
 {
@@ -45,7 +40,7 @@ void flightPhaseTask(void * argument)
 			flight_state = PHASE_COAST;
 		}
 
-		else if((flight_state == PHASE_BOOST && (millis() - injOpenTime) > RECOVERY_DELAY_MS) || RECOVERY_DEPLOYMENT)
+		else if((flight_state == PHASE_COAST && (millis() - injOpenTime) > RECOVERY_DELAY_MS) || RECOVERY_DEPLOYMENT)
 		{
 			flight_state = PHASE_DESCENT;
 		}

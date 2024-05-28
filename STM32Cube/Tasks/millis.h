@@ -9,6 +9,5 @@
 #define MILLIS_H_
 
 float millis(void);
-int millisInit();
 
 #endif /* MILLIS_H_ */
