@@ -1,8 +1,5 @@
 #include "sdmmc.h"
 
-extern UART_HandleTypeDef huart4;
-
-const char *logsPath = "/LOGS";
 char logFileName[LOG_FILE_NAME_SIZE];
 
 static int computeFolderSize(const char *path) {
