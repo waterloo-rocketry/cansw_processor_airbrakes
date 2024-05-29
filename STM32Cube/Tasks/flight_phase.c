@@ -32,16 +32,16 @@ void flightPhaseTask(void * argument)
 	{
 		if(flight_state == PHASE_PRELAUNCH && INJ_OPEN)
 		{
-			injOpenTime = millis();
+			injOpenTime = millis_();
 			flight_state = 	PHASE_BOOST;
 		}
 
-		else if(flight_state == PHASE_BOOST && (millis() - injOpenTime) > BOOST_TIME_MS)
+		else if(flight_state == PHASE_BOOST && (millis_() - injOpenTime) > BOOST_TIME_MS)
 		{
 			flight_state = PHASE_COAST;
 		}
 
-		else if((flight_state == PHASE_COAST && (millis() - injOpenTime) > RECOVERY_DELAY_MS) || RECOVERY_DEPLOYMENT)
+		else if((flight_state == PHASE_COAST && (millis_() - injOpenTime) > RECOVERY_DELAY_MS) || RECOVERY_DEPLOYMENT)
 		{
 			flight_state = PHASE_DESCENT;
 		}
