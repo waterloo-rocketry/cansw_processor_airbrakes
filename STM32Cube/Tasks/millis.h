@@ -8,7 +8,6 @@
 #ifndef MILLIS_H_
 #define MILLIS_H_
 
-float millis(void);
-int millisInit();
+float millis_(void);
 
 #endif /* MILLIS_H_ */
