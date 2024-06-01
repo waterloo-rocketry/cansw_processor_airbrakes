@@ -33,7 +33,7 @@ float rocket_area(float extension) {
  *  @param mass (kg)
  *  @return acceleration (m/s^2)
  */
-float velocity_derivative(float force, float mass) {
+float acceleration(float force, float mass) {
     return force/mass;
 }
 
@@ -138,33 +138,61 @@ float interpolate_cd(float extension, float velocity, float altitude){
     return 2 * drag_force / (air_density(altitude) * rocket_area(extension) * (velocity * velocity)); //Cd
 }
 
+/**
+    * @param airbrake_ext extension of airbrakes, 0-1
+    * @param mass of rocket (kg)
+    * @param velX, velocity in X direction (m/s)
+    * @param velY, velocity in Y direction (m/s)
+    * @param alt, altitude (m)
+    * @return forces acting on rocket in the X and Y directions (N)
+*/
+Forces get_forces(float extension, float mass, float velX, float velY, float alt){
+    Forces forces;
+    float angle = atan(velX/velY);
+    float Fd = -interpolate_drag(extension, sqrt(velY*velY+ velX*velX), alt); // force of drag (N)
+    float Fg = -gravitational_acceleration(alt) * mass; // force of gravity (N)
+    forces.Fy = Fd * cos(angle) + Fg;
+    forces.Fx = Fd * sin(angle);
+    return forces;
+}
 
 /**
     * rk4 method to integrate altitude from velocity, and integrate velocity from acceleration (force/mass)
     * @param h time step
-    * @param force sum of forces acting on rocket at given time (N)
+    * @param extension extension of airbrakes, 0-1
     * @param mass of rocket (kg)
-    * @param integrals, altitude (m) and velocity (m/s)
+    * @param state, including altitude (m) and velocity in X and Y directions (m/s)
     * @return updated altitude and velocity integrals after one rk4 step
 */
-RK4Integrals rk4(float h, float force, float mass, RK4Integrals integrals) {
-    float ka1 = h * integrals.vel;
-    float kv1 = h * velocity_derivative(force, mass);
+RK4State rk4(float h, float mass, float extension, RK4State state) {
+    Forces forces;
 
-    float ka2 = h * (integrals.vel + h*ka1/2);
-    float kv2 = h * velocity_derivative(force + h*kv1/2, mass);
+    forces = get_forces(extension, mass, state.velX, state.velY, state.alt);
+    float ka1 = h * state.velY;
+    float kvY1 = h * acceleration(forces.Fy, mass);
+    float kvX1 = h * acceleration(forces.Fx, mass);
 
-    float ka3 = h * (integrals.vel + h*ka2/2);
-    float kv3 = h * velocity_derivative(force + h*kv2/2, mass);
+    forces = get_forces(extension, mass, state.velX + kvX1/2, state.velY + kvY1/2, state.alt + ka1/2);
+    float ka2 = h * (state.velY + h*kvY1/2);
+    float kvY2 = h * acceleration(forces.Fy, mass);
+    float kvX2 = h * acceleration(forces.Fx, mass);
 
-    float ka4 = h * (integrals.vel + h*ka3);
-    float kv4 = h * velocity_derivative(force + h*kv3, mass);
+    forces = get_forces(extension, mass, state.velX + kvX2/2, state.velY + kvY2/2, state.alt + ka2/2);
+    float ka3 = h * (state.velY + h*kvY2/2);
+    float kvY3 = h * acceleration(forces.Fy, mass);
+    float kvX3 = h * acceleration(forces.Fx, mass);
 
-    RK4Integrals updatedIntegrals;
-    updatedIntegrals.alt = (integrals.alt + (ka1 + 2*ka2 + 2*ka3 + ka4)/6);
-    updatedIntegrals.vel = (integrals.vel + (kv1 + 2*kv2 + 2*kv3 + kv4)/6);
-    
-    return updatedIntegrals;
+    forces = get_forces(extension, mass, state.velX + kvX3, state.velY + kvY3, state.alt + ka3);
+    float ka4 = h * (state.velY + h*kvY3);
+    float kvY4 = h * acceleration(forces.Fy, mass);
+    float kvX4 = h * acceleration(forces.Fx, mass);
+
+    RK4State updatedState;
+    updatedState.alt = (state.alt + (ka1 + 2*ka2 + 2*ka3 + ka4)/6);
+    updatedState.velY = (state.velY + (kvY1 + 2*kvY2 + 2*kvY3 + kvY4)/6);
+    updatedState.velX = (state.velX + (kvX1 + 2*kvX2 + 2*kvX3 + kvX4)/6);
+
+    return updatedState;
 }
 
 /** @return max apogee
@@ -173,47 +201,47 @@ RK4Integrals rk4(float h, float force, float mass, RK4Integrals integrals) {
 * @param airbrake_ext extension of airbrakes, 0-1
 * @param mass (kg)
 */
-float get_max_altitude(float velocity, float altitude, float airbrake_ext, float mass) {
+float get_max_altitude(float velY, float velX, float altitude, float airbrake_ext, float mass) {
 
-    float h = 0.05; // interval of change for rk4
+    const float h = 0.05; // interval of change for rk4
     float prevAlt = 0.0; // variable to store previous altitude
         
-    RK4Integrals states;
+    RK4State states;
     
     states.alt = altitude;
-    states.vel = velocity;
-    
-    RK4Integrals updatedIntegrals;
+    states.velY = velY;
+    states.velX = velX;
+
     while (states.alt >= prevAlt) {
-        // update forces of drag and gravity from new altitude
-        float Fg = -gravitational_acceleration(states.alt) * mass; // force of gravity (N)
-        float Fd = -interpolate_drag(airbrake_ext, states.vel, states.alt); // force of drag (N)
-        // to check if altitude is decreasing to exit the loop
-        prevAlt = states.alt;
+        prevAlt = states.alt; //to check if altitude is decreasing to exit the loop
+        states = rk4(h, mass, airbrake_ext, states);  // update velocity and altitude
 
-        // update velocity and altitude
-        states = rk4(h, Fg+Fd, mass, states);
-
-        // System.out.println("pred alt: " + states.alt + "m");
     }
 
     return states.alt;
 }
 
 void trajectory_task(){
-    altQueue = xQueueCreate(1, sizeof(uint16_t));
     structQueue = xQueueCreate(1, sizeof(Data));
+    
+    altQueue = xQueueCreate(1, sizeof(uint16_t));
+    angleQueue = xQueueCreate(1, sizeof(uint16_t));
+    int time;
     float prev_alt;
     for(;;)
     {
         uint16_t alt;
-        //Block the thread until we see data in the bus queue or 5 ticks elapse
-        if(xQueueReceive(busQueue, &alt, 10) == pdTRUE) //Returns pdTRUE if we got a message, pdFALSE if timed out
-        {
-            float vel = (prev_alt - alt);
+        uint16_t angle;
         
+        if(xQueueReceive(altQueue, &alt, 10) == pdTRUE) {
+            if(xQueueReceive(angleQueue, &angle, 10) == pdTRUE) {
+                float vely = (alt-prev_alt)/(time-prev_time);
+                float velx = vely*tan(angle);
 
-            prev_alt = alt;
+                prev_alt = alt;
+                prev_time = time;
+                get_max_altitude(vely,velx, alt, 0.5, 1); //Put this in another queue?
+            }
         }
     }
 }

@@ -21,14 +21,15 @@ float air_density(float altitude);
 float lookup_drag(float velocity, float altitude, float extension);
 float interpolate_drag(float velocity, float altitude, float extension);
 float interpolate_cd(float extension, float velocity, float altitude);
-RK4Integrals RK4Integrate(RK4Integrals initial, float dt, float mass, float extension);
+RK4State RK4State(RK4State initial, float dt, float mass, float extension);
 float get_max_altitude(float velocity, float altitude, float airbrake_ext, float mass);
 void trajectoryTask(void);
 
-typedef struct  RK4IntegralsStruct{
-    float vel;
+typedef struct  RK4StateStruct{
+    float velY;
+    float velX;
     float alt;
-} RK4Integrals;
+} RK4State;
 
 typedef struct  DataStruct{
     float ext;
@@ -37,6 +38,10 @@ typedef struct  DataStruct{
 } Data;
 
 
+typedef struct ForceStruct{
+    float Fy;
+    float Fx;
+} Forces;
 
 
 
