@@ -221,7 +221,7 @@ float get_max_altitude(float velY, float velX, float altitude, float airbrake_ex
 
     }
 
-    return states.alt;
+    return prevAlt;
 }
 
 void trajectory_task(){    
