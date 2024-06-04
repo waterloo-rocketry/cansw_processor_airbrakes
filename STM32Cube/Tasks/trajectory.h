@@ -12,7 +12,9 @@
 #include "queue.h"
 
 extern xQueueHandle altQueue;
-extern xQueueHandle structQueue;
+extern xQueueHandle angleQueue;
+extern xQueueHandle extQueue;
+extern xQueueHandle apogeeQueue;
 
 float rocket_area(float extension);
 float velocity_derivative(float force, float mass);
@@ -25,28 +27,26 @@ RK4State RK4State(RK4State initial, float dt, float mass, float extension);
 float get_max_altitude(float velocity, float altitude, float airbrake_ext, float mass);
 void trajectoryTask(void);
 
+//Struct with the data iterated in RK4 method
 typedef struct  RK4StateStruct{
     float velY;
     float velX;
     float alt;
 } RK4State;
 
-typedef struct  DataStruct{
-    float ext;
-    float vel;
-    float alt;
-} Data;
-
+//Struct with the forces acting on the rocket
 typedef struct ForceStruct{
     float Fy;
     float Fx;
 } Forces;
 
+//Struct for recieving altitude data, could replace with import
 typedef struct AltStruct{
     uint16_t alt;
     float time;
 } AltTime;
 
+// Remove this and just import it from Fusion
 typedef union {
     float array[3];
 
