@@ -2,10 +2,7 @@
 #include "log.h"
 
 #include <stdarg.h>
-
 #include "printf.h"
-
-extern UART_HandleTypeDef huart4;
 
 static log_buffer logBuffers[NUM_LOG_BUFFERS];
 static int CURRENT_BUFFER = 0; // TODO: better way to store current buffer than literally a global var
@@ -223,8 +220,6 @@ void logTask(void *argument)
             	(void)f_open(&logfile, logFileName, FA_OPEN_APPEND | FA_WRITE);
             	(void)f_write(&logfile, bufferToPrint->buffer, bufferToPrint->index, NULL);
             	(void)f_close(&logfile);
-
-            	HAL_UART_Transmit(&huart4, bufferToPrint->buffer, bufferToPrint->index, 100);
 
                 bufferToPrint->index = 0;
                 bufferToPrint->isFull = false;    
