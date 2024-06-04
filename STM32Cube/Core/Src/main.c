@@ -78,7 +78,7 @@ DMA_HandleTypeDef hdma_usart1_rx;
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
-  .stack_size = 1000,
+  .stack_size = 2000,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
@@ -200,7 +200,7 @@ int main(void)
   //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
   //xReturned &= xTaskCreate(canHandlerTask, "CAN handler", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
   //xReturned &= xTaskCreate(stateEstTask, "StateEst", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
-  xReturned &= xTaskCreate(logTask, "Logging", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
+  xReturned &= xTaskCreate(logTask, "Logging", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
   //xReturned &= xTaskCreate(controlTask, "Controller", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
 
   if(xReturned != pdPASS)
@@ -210,7 +210,6 @@ int main(void)
   }
 
   /* USER CODE END RTOS_THREADS */
-
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
@@ -996,7 +995,7 @@ void StartDefaultTask(void *argument)
 		//printf_(buffer);
 		logDebug(0, "test message");
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
-		osDelay(100);
+		osDelay(10);
 	}
   /* USER CODE END 5 */
 }

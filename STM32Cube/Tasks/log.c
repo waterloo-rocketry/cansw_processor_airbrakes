@@ -224,7 +224,7 @@ void logTask(void *argument)
             	(void)f_write(&logfile, bufferToPrint->buffer, bufferToPrint->index, NULL);
             	(void)f_close(&logfile);
 
-            	HAL_UART_Transmit(&huart4, bufferToPrint->buffer, bufferToPrint->index, 50);
+            	HAL_UART_Transmit(&huart4, bufferToPrint->buffer, bufferToPrint->index, 100);
 
                 bufferToPrint->index = 0;
                 bufferToPrint->isFull = false;    
