@@ -8,24 +8,12 @@
 #include "health_checks.h"
 #include "log.h"
 #include "can_handler.h"
+#include "printf.h"
 
 extern ADC_HandleTypeDef hadc1;
-extern UART_HandleTypeDef huart4;
 
 void healthCheckTask(void *argument)
 {
-/*
-  Note: Currently ADC1 has channels 10 and 11, polling both at a time
-  is very possible, through a variety of methods (DMA), however
-  for testing purposes until the ADC dudes can go in person to do it,
-  I recommend just using CubeMX. If you go to rank under ADC1 in CubeMX,
-  you will see Channel 10, once you are done testing channel 10, switch it
-  to channel 11 (can also be done in the CubeMX generated code on line ~420
-  in the config channel block), then the other channel can be tested.
-  */
-
-  uint8_t adc_strval[20]; //tx string buffer
-  uint32_t adc1_val;
 
   // Calibrate ADC
   HAL_ADC_Stop(&hadc1);
@@ -37,20 +25,15 @@ void healthCheckTask(void *argument)
   {
     HAL_ADC_Start(&hadc1);
     HAL_ADC_PollForConversion(&hadc1, 10);
-    adc1_val = HAL_ADC_GetValue(&hadc1);
+    uint32_t adc1_val = HAL_ADC_GetValue(&hadc1);
     uint16_t adc1_voltage_mV = ADC1_VOLTAGE_V(adc1_val)*1000;
     uint16_t adc1_current_mA = ADC1_CURR_mA(adc1_voltage_mV);
 
-    //Log current
-    //logDebug(SOURCE_HEALTH, "5V Current: %u mA", current);
-
     //Transmitting voltage
-    int adc_txlength = sprintf((char*) adc_strval, "%u mV\r\n", (uint16_t) (adc1_voltage_mV));
-    HAL_UART_Transmit(&huart4, (uint8_t*) adc_strval, adc_txlength, 10);
+    printf_( "%u mV\r\n", (uint16_t) (adc1_voltage_mV));
 
     //Transmitting current
-    adc_txlength = sprintf((char*) adc_strval, "%u mA\r\n", (uint16_t) (adc1_current_mA) );
-    HAL_UART_Transmit(&huart4, (uint8_t*) adc_strval, adc_txlength, 10);
+    printf_("%u mA\r\n", (uint16_t) (adc1_current_mA) );;
 
     //Checking for over current
     if(adc1_current_mA > MAX_CURR_5V_mA)

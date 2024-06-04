@@ -9,6 +9,7 @@ extern "C" {
 #include "stm32h7xx_hal.h"
 #include "FreeRTOS.h"
 #include "queue.h"
+#include "log.h"
 
 extern FDCAN_HandleTypeDef hfdcan1;
 extern xQueueHandle busQueue;

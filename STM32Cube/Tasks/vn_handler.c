@@ -5,7 +5,7 @@
  *      Author: joedo
  */
 
-
+/*
 #include "vn_handler.h"
 #include "vn/protocol/upack.h"
 #include "FreeRTOS.h"
@@ -24,7 +24,7 @@
 #define RATE1_DIVISOR VN_200_IMURATE / BINARY1_OUT_RATE
 
 //See "vnenum.h" and the ICD for parameter definitions
-/*
+
 #define COMMONGROUP_PARAMS COMMONGROUP_QUATERNION | COMMONGROUP_POSITION | COMMONGROUP_VELOCITY | COMMONGROUP_ACCEL
 #define TIMEGROUP_PARAMS TIMEGROUP_TIMEUTC | TIMEGROUP_TIMEUTC
 #define IMUGROUP_PARAMS IMUGROUP_IMUSTATUS | IMUGROUP_SENSSAT | IMUGROUP_UNCOMPMAG | IMUGROUP_UNCOMPACCEL | IMUGROUP_UNCOMPGYRO | IMUGROUP_TEMP | IMUGROUP_PRES
@@ -34,6 +34,7 @@
 */
 
 //Minimize binary output contents for initial testing
+/*
 #define COMMONGROUP_PARAMS COMMONGROUP_NONE
 #define TIMEGROUP_PARAMS TIMEGROUP_TIMEUTC
 #define IMUGROUP_PARAMS IMUGROUP_NONE
@@ -142,5 +143,5 @@ void vnIMUHandler(void *argument)
 	}
 
 }
-
+*/
 
