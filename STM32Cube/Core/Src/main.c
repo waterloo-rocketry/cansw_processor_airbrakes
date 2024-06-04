@@ -79,7 +79,7 @@ DMA_HandleTypeDef hdma_usart1_rx;
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
-  .stack_size = 128 * 4,
+  .stack_size = 2000,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
@@ -90,7 +90,9 @@ TaskHandle_t logTaskhandle = NULL;
 TaskHandle_t VNTaskHandle = NULL;
 TaskHandle_t stateEstTaskHandle = NULL;
 TaskHandle_t canhandlerhandle = NULL;
+TaskHandle_t healthChecksTaskHandle = NULL;
 TaskHandle_t controllerHandle = NULL;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -186,7 +188,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_QUEUES */
   canHandlerInit(); //create bus queue
-  flightPhaseInit();
+  //flightPhaseInit();
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -202,8 +204,10 @@ int main(void)
   xReturned &= xTaskCreate(canHandlerTask, "CAN handler", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
   //xReturned &= xTaskCreate(stateEstTask, "StateEst", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
   //xReturned &= xTaskCreate(logTask, "Logging", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
+  xReturned &= xTaskCreate(healthCheckTask, "health checks", 2000, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
   //xReturned &= xTaskCreate(controlTask, "Controller", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
-  xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityAboveNormal, &controllerHandle);
+  //xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityAboveNormal, &controllerHandle);
+
 
   if(xReturned != pdPASS)
   {
@@ -996,7 +1000,6 @@ void StartDefaultTask(void *argument)
 		char buffer[] = "hello world!\r\n";
 		printf_(buffer);
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
-		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_13);
 		osDelay(1000);
 	}
   /* USER CODE END 5 */
