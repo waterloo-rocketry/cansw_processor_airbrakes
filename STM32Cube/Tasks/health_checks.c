@@ -57,9 +57,9 @@ void healthCheckTask(void *argument)
     {
     can_msg_t msg;
     uint8_t current_data[2];
-    current_data[0] = adc1_current_mA >> 8 && 0xFF;
-    current_data[1] = adc1_current_mA && 0xFF;
-    build_board_stat_msg(0, E_BUS_OVER_CURRENT, current_data, 2, &msg);
+    current_data[0] = adc1_current_mA >> 8 & 0xFF;
+    current_data[1] = adc1_current_mA & 0xFF;
+    build_board_stat_msg(0, E_5V_OVER_CURRENT, current_data, 2, &msg);
     xQueueSend(busQueue, &msg, 10);
     }
 
