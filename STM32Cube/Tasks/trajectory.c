@@ -14,9 +14,12 @@
 #define ROCKET_BASE_AREA 0.0182412538 //m^2
 #define SIM_ALTITUDE 1000 //All drag sims conducted at 1000m above sea level
 #define TOL 0.00001
+#define ROCKET_BURNOUT_MASS = 39.564 //kg
 
 xQueueHandle altQueue;
-xQueueHandle structQueue;
+xQueueHandle angleQueue;
+xQueueHandle extQueue;
+xQueueHandle apogeeQueue;
 
 
 /**
@@ -221,26 +224,32 @@ float get_max_altitude(float velY, float velX, float altitude, float airbrake_ex
     return states.alt;
 }
 
-void trajectory_task(){
-    structQueue = xQueueCreate(1, sizeof(Data));
-    
-    altQueue = xQueueCreate(1, sizeof(uint16_t));
-    angleQueue = xQueueCreate(1, sizeof(uint16_t));
-    int time;
-    float prev_alt;
+void trajectory_task(){    
+    altQueue = xQueueCreate(1, sizeof(AltTime));
+    angleQueue = xQueueCreate(1, sizeof(AnglesUnion));
+    apogeeQueue = xQueueCreate(1, sizeof(float));
+    extQueue = xQueueCreate(1, sizeof(float));
+
+    float prev_time = -1;
+    uint16_t prev_alt = -1;
     for(;;)
     {
-        uint16_t alt;
-        uint16_t angle;
-        
-        if(xQueueReceive(altQueue, &alt, 10) == pdTRUE) {
-            if(xQueueReceive(angleQueue, &angle, 10) == pdTRUE) {
-                float vely = (alt-prev_alt)/(time-prev_time);
-                float velx = vely*tan(angle);
+        AltTime altTime;
+        AnglesUnion angles;
+        float ext;
+        if(xQueueReceive(altQueue, &altTime, 10) == pdTRUE) {
+            if(xQueueReceive(angleQueue, &angles, 10) == pdTRUE) {
+                if(xQueueReceive(extQueue, &ext, 10) == pdTRUE) {
+                    if(prev_alt != -1) {
+                        float vely = (altTime.alt-prev_alt)*1000.0/(altTime.time-prev_time);
+                        float velx = sqrt(vely*tan(angles.angle.pitch)*vely*tan(angles.angle.pitch) +  vely*tan(angles.angle.yaw)*vely*tan(angles.angle.yaw));
 
-                prev_alt = alt;
-                prev_time = time;
-                get_max_altitude(vely,velx, alt, 0.5, 1); //Put this in another queue?
+                        float apogee = get_max_altitude(vely,velx, alt, ext, ROCKET_BURNOUT_MASS);
+                        xQueueSend(apogeeQueue, &apogee, 10);
+                    }
+                    prev_alt = alt;
+                    prev_time = time;
+                }
             }
         }
     }

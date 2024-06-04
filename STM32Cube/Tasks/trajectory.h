@@ -37,12 +37,25 @@ typedef struct  DataStruct{
     float alt;
 } Data;
 
-
 typedef struct ForceStruct{
     float Fy;
     float Fx;
 } Forces;
 
+typedef struct AltStruct{
+    uint16_t alt;
+    float time;
+} AltTime;
+
+typedef union {
+    float array[3];
+
+    struct {
+        float roll;
+        float pitch;
+        float yaw;
+    } angle;
+} AnglesUnion;
 
 
 #endif /* TRAJECTORY_H_ */
