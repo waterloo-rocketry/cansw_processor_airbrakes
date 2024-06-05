@@ -14,7 +14,6 @@
 extern xQueueHandle altQueue;
 extern xQueueHandle angleQueue;
 extern xQueueHandle extQueue;
-extern xQueueHandle apogeeQueue;
 
 void trajectory_task(void * argument);
 void trajectory_init(void);
@@ -37,17 +36,6 @@ typedef struct AltStruct{
     int32_t alt;
     float time;
 } AltTime;
-
-// Remove this and just import it from Fusion
-typedef union {
-    float array[3];
-
-    struct {
-        float roll;
-        float pitch;
-        float yaw;
-    } angle;
-} AnglesUnion;
 
 
 #endif /* TRAJECTORY_H_ */

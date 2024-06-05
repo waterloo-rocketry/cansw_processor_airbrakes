@@ -25,7 +25,7 @@ void can_handle_rx(const can_msg_t *message, uint32_t timestamp){
 		AltTime result;
 		get_altitude_data(message, &result.alt);
 		result.time = (float) timestamp;
-		xQueueOverwriteFromISR(apogeeQueue, &result, &isr_thing);
+		xQueueOverwriteFromISR(altQueue, &result, &isr_thing);
 		portYIELD_FROM_ISR(isr_thing);
 	}
 	return;

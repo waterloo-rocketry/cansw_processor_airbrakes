@@ -6,7 +6,9 @@
  */
 
 #include "trajectory.h"
+#include "controller.h"
 #include <math.h>
+#include "Fusion.h"
 
 #define GRAV_AT_SEA_LVL 9.80665 //m/s^2
 #define EARTH_MEAN_RADIUS 6371009 //m
@@ -20,7 +22,6 @@
 xQueueHandle altQueue;
 xQueueHandle angleQueue;
 xQueueHandle extQueue;
-xQueueHandle apogeeQueue;
 
 float rocket_area(float extension);
 float velocity_derivative(float force, float mass);
@@ -228,10 +229,10 @@ float get_max_altitude(float velY, float velX, float altitude, float airbrake_ex
 
 void trajectory_task(void * argument){    
     float prev_time = -1;
-    uint16_t prev_alt = 0xFFFFFFFF;
+    uint16_t prev_alt = 0xFFFF;
     
     //TEST CODE
-    AltTime altTimeTEST;
+    /*AltTime altTimeTEST;
     altTimeTEST.alt = 5000;
     altTimeTEST.time = 12.34;
    AnglesUnion anglesTEST;
@@ -243,17 +244,17 @@ void trajectory_task(void * argument){
     xQueueOverwrite(altQueue, &altTimeTEST);
     xQueueOverwrite(angleQueue, &anglesTEST);
     xQueueOverwrite(extQueue, &extTEST);
-
+*/
 
     for(;;)
     {
         AltTime altTime;
-        AnglesUnion angles;
+        FusionEuler angles;
         float ext;
         if(xQueueReceive(altQueue, &altTime, 10) == pdTRUE) {
             if(xQueuePeek(extQueue, &ext, 10)== pdTRUE) {
                 if(xQueuePeek(angleQueue, &angles, 100) == pdTRUE) {
-                    if(prev_alt != 0xFFFFFFFF) {
+                    if(prev_alt != 0xFFFF) {
                         float vely = (altTime.alt-prev_alt)*1000.0/(altTime.time-prev_time);
                         float velx = vely*tan(angles.angle.pitch);
                         float apogee = get_max_altitude(vely,velx, altTime.alt, ext, ROCKET_BURNOUT_MASS);
@@ -269,7 +270,6 @@ void trajectory_task(void * argument){
 }
 void trajectory_init(){
     altQueue = xQueueCreate(1, sizeof(AltTime));
-    angleQueue = xQueueCreate(1, sizeof(AnglesUnion));
-    apogeeQueue = xQueueCreate(1, sizeof(float));
+    angleQueue = xQueueCreate(1, sizeof(FusionEuler));
     extQueue = xQueueCreate(1, sizeof(float));
 }
