@@ -15,12 +15,21 @@
 #define SIM_ALTITUDE 1000 //All drag sims conducted at 1000m above sea level
 #define TOL 0.00001
 #define ROCKET_BURNOUT_MASS = 39.564 //kg
-
+#define TIME_STEP = 0.05 //s
 xQueueHandle altQueue;
 xQueueHandle angleQueue;
 xQueueHandle extQueue;
 xQueueHandle apogeeQueue;
 
+float rocket_area(float extension);
+float velocity_derivative(float force, float mass);
+float gravitational_acceleration(float altitude);
+float air_density(float altitude);
+float lookup_drag(float velocity, float altitude, float extension);
+float interpolate_drag(float velocity, float altitude, float extension);
+float interpolate_cd(float extension, float velocity, float altitude);
+RK4State RK4State(RK4State initial, float dt, float mass, float extension);
+float get_max_altitude(float velocity, float altitude, float airbrake_ext, float mass);
 
 /**
  * Does not take into account fins
@@ -31,14 +40,7 @@ float rocket_area(float extension) {
 	return (AIRBRAKES_MAX_AREA * extension) + ROCKET_BASE_AREA;
 }
 
-/**
- *  @param force (N)
- *  @param mass (kg)
- *  @return acceleration (m/s^2)
- */
-float acceleration(float force, float mass) {
-    return force/mass;
-}
+
 
 /**
  * @param altitude (m)
@@ -169,26 +171,26 @@ Forces get_forces(float extension, float mass, float velX, float velY, float alt
 */
 RK4State rk4(float h, float mass, float extension, RK4State state) {
     Forces forces;
-
+    //Force / mass = acceleration
     forces = get_forces(extension, mass, state.velX, state.velY, state.alt);
     float ka1 = h * state.velY;
-    float kvY1 = h * acceleration(forces.Fy, mass);
-    float kvX1 = h * acceleration(forces.Fx, mass);
+    float kvY1 = h * forces.Fy / mass;
+    float kvX1 = h * forces.Fx / mass;
 
     forces = get_forces(extension, mass, state.velX + kvX1/2, state.velY + kvY1/2, state.alt + ka1/2);
     float ka2 = h * (state.velY + h*kvY1/2);
-    float kvY2 = h * acceleration(forces.Fy, mass);
-    float kvX2 = h * acceleration(forces.Fx, mass);
+    float kvY2 = h * forces.Fy / mass;
+    float kvX2 = h * forces.Fx / mass;
 
     forces = get_forces(extension, mass, state.velX + kvX2/2, state.velY + kvY2/2, state.alt + ka2/2);
     float ka3 = h * (state.velY + h*kvY2/2);
-    float kvY3 = h * acceleration(forces.Fy, mass);
-    float kvX3 = h * acceleration(forces.Fx, mass);
+    float kvY3 = h * forces.Fy / mass;
+    float kvX3 = h * forces.Fx / mass;
 
     forces = get_forces(extension, mass, state.velX + kvX3, state.velY + kvY3, state.alt + ka3);
     float ka4 = h * (state.velY + h*kvY3);
-    float kvY4 = h * acceleration(forces.Fy, mass);
-    float kvX4 = h * acceleration(forces.Fx, mass);
+    float kvY4 = h * forces.Fy / mass;
+    float kvX4 = h * forces.Fx / mass;
 
     RK4State updatedState;
     updatedState.alt = (state.alt + (ka1 + 2*ka2 + 2*ka3 + ka4)/6);
@@ -206,7 +208,6 @@ RK4State rk4(float h, float mass, float extension, RK4State state) {
 */
 float get_max_altitude(float velY, float velX, float altitude, float airbrake_ext, float mass) {
 
-    const float h = 0.05; // interval of change for rk4
     float prevAlt = 0.0; // variable to store previous altitude
         
     RK4State states;
@@ -217,7 +218,7 @@ float get_max_altitude(float velY, float velX, float altitude, float airbrake_ex
 
     while (states.alt >= prevAlt) {
         prevAlt = states.alt; //to check if altitude is decreasing to exit the loop
-        states = rk4(h, mass, airbrake_ext, states);  // update velocity and altitude
+        states = rk4(TIME_STEP, mass, airbrake_ext, states);  // update velocity and altitude
 
     }
 
@@ -225,32 +226,36 @@ float get_max_altitude(float velY, float velX, float altitude, float airbrake_ex
 }
 
 void trajectory_task(){    
-    altQueue = xQueueCreate(1, sizeof(AltTime));
-    angleQueue = xQueueCreate(1, sizeof(AnglesUnion));
-    apogeeQueue = xQueueCreate(1, sizeof(float));
-    extQueue = xQueueCreate(1, sizeof(float));
-
     float prev_time = -1;
     uint16_t prev_alt = -1;
+    
+    float old_ext = -1
     for(;;)
     {
         AltTime altTime;
         AnglesUnion angles;
         float ext;
         if(xQueueReceive(altQueue, &altTime, 10) == pdTRUE) {
-            if(xQueueReceive(angleQueue, &angles, 10) == pdTRUE) {
-                if(xQueueReceive(extQueue, &ext, 10) == pdTRUE) {
+            if(xQueuePeek(extQueue, &ext, 10)== pdTRUE) {
+                if(xQueuePeek(angleQueue, &angles, 100) == pdTRUE) {
                     if(prev_alt != -1) {
                         float vely = (altTime.alt-prev_alt)*1000.0/(altTime.time-prev_time);
                         float velx = sqrt(vely*tan(angles.angle.pitch)*vely*tan(angles.angle.pitch) +  vely*tan(angles.angle.yaw)*vely*tan(angles.angle.yaw));
 
                         float apogee = get_max_altitude(vely,velx, alt, ext, ROCKET_BURNOUT_MASS);
-                        xQueueSend(apogeeQueue, &apogee, 10);
+                        xQueueOverwrite(apogeeQueue, &apogee, 10);
                     }
                     prev_alt = alt;
                     prev_time = time;
                 }
             }
+
         }
     }
+}
+void trajectory_init(){
+    altQueue = xQueueCreate(1, sizeof(AltTime));
+    angleQueue = xQueueCreate(1, sizeof(AnglesUnion));
+    apogeeQueue = xQueueCreate(1, sizeof(float));
+    extQueue = xQueueCreate(1, sizeof(float));
 }

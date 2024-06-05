@@ -16,16 +16,8 @@ extern xQueueHandle angleQueue;
 extern xQueueHandle extQueue;
 extern xQueueHandle apogeeQueue;
 
-float rocket_area(float extension);
-float velocity_derivative(float force, float mass);
-float gravitational_acceleration(float altitude);
-float air_density(float altitude);
-float lookup_drag(float velocity, float altitude, float extension);
-float interpolate_drag(float velocity, float altitude, float extension);
-float interpolate_cd(float extension, float velocity, float altitude);
-RK4State RK4State(RK4State initial, float dt, float mass, float extension);
-float get_max_altitude(float velocity, float altitude, float airbrake_ext, float mass);
-void trajectoryTask(void);
+void trajectory_task(void);
+void trajectory_init(void);
 
 //Struct with the data iterated in RK4 method
 typedef struct  RK4StateStruct{
