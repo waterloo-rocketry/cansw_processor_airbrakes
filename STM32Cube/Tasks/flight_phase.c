@@ -50,7 +50,7 @@ void flightPhaseTask(void * argument)
 			flight_state = PHASE_DESCENT;
 		}
 		printf_("[%f] flight phase: %d\n", time/1000, flight_state);
-		osDelay(1000);
+		osDelay(10);
 	}
 }
 
