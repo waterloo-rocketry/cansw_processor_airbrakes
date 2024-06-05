@@ -226,9 +226,9 @@ float get_max_altitude(float velY, float velX, float altitude, float airbrake_ex
     return prevAlt;
 }
 
-void trajectory_task(){    
+void trajectory_task(void * argument){    
     float prev_time = -1;
-    uint16_t prev_alt = -1;
+    uint16_t prev_alt = 0xFFFFFFFF;
     
     //TEST CODE
     AltTime altTimeTEST;
@@ -253,9 +253,9 @@ void trajectory_task(){
         if(xQueueReceive(altQueue, &altTime, 10) == pdTRUE) {
             if(xQueuePeek(extQueue, &ext, 10)== pdTRUE) {
                 if(xQueuePeek(angleQueue, &angles, 100) == pdTRUE) {
-                    if(prev_alt != -1) {
+                    if(prev_alt != 0xFFFFFFFF) {
                         float vely = (altTime.alt-prev_alt)*1000.0/(altTime.time-prev_time);
-                        float velx = sqrt(vely*tan(angles.angle.pitch)*vely*tan(angles.angle.pitch) +  vely*tan(angles.angle.yaw)*vely*tan(angles.angle.yaw));
+                        float velx = vely*tan(angles.angle.pitch);
                         float apogee = get_max_altitude(vely,velx, altTime.alt, ext, ROCKET_BURNOUT_MASS);
                         xQueueOverwrite(apogeeQueue, &apogee);
                     }
