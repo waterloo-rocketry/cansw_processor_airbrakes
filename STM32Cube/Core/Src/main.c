@@ -73,13 +73,14 @@ TIM_HandleTypeDef htim2;
 
 UART_HandleTypeDef huart4;
 UART_HandleTypeDef huart1;
+DMA_HandleTypeDef hdma_uart4_rx;
 DMA_HandleTypeDef hdma_usart1_rx;
 
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
-  .stack_size = 2000,
+  .stack_size = 512 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
@@ -877,6 +878,9 @@ static void MX_DMA_Init(void)
   /* DMA1_Stream0_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream0_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream0_IRQn);
+  /* DMA1_Stream1_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
 
 }
 
@@ -1001,18 +1005,31 @@ void StartDefaultTask(void *argument)
 	uint32_t index = 0;
 	uint8_t temp_buf[1];
 	uint8_t rx_buf[100] = {0};
-	HAL_UART_Receive_IT(&huart4, temp_buf, 1);
+	int isSizeRxed = 0;
+	uint16_t size = 0;
+
+	HAL_UART_Receive_DMA(&huart4, rx_buf, 1);
 	for(;;)
 	{
 		if(flag == 1)
 		{
+			flag = 0;
 			printf_("interrupted!\n");
-			rx_buf[index] = temp_buf[0];
-			index++;
 			printf_(rx_buf); //print out the full buffer
 			printf_("\n");
-			flag = 0;
-			HAL_UART_Receive_IT(&huart4, temp_buf, 1);
+
+			if (isSizeRxed == 0)
+			{
+				size = rx_buf[0]-48;
+				isSizeRxed = 1;
+				HAL_UART_Receive_DMA(&huart4, rx_buf, size);
+			}
+			else if (isSizeRxed == 1)
+			{
+				isSizeRxed = 0;
+				HAL_UART_Receive_DMA(&huart4, rx_buf, 1);
+			}
+
 		}
 		//HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 
