@@ -33,7 +33,7 @@ float get_max_altitude(float velocity, float altitude, float airbrake_ext, float
 
 /**
  * Does not take into account fins
- * @param extension extension of the airbrakes (0-1)
+ * @param extension of the airbrakes (0-1)
  * @return rocket's cross-sectional area from airbrake extension
  */
 float rocket_area(float extension) {
@@ -153,18 +153,18 @@ float interpolate_cd(float extension, float velocity, float altitude){
 */
 Forces get_forces(float extension, float mass, float velX, float velY, float alt){
     Forces forces;
-    float angle = atan(velX/velY);
-    float Fd = -interpolate_drag(extension, sqrt(velY*velY+ velX*velX), alt); // force of drag (N)
+    float velT = sqrt(velY*velY+ velX*velX)
+    float Fd = -interpolate_drag(extension, velT, alt); // force of drag (N)
     float Fg = -gravitational_acceleration(alt) * mass; // force of gravity (N)
-    forces.Fy = Fd * cos(angle) + Fg;
-    forces.Fx = Fd * sin(angle);
+    forces.Fy = Fd * velY/velT + Fg;
+    forces.Fx = Fd * velX/velT;
     return forces;
 }
 
 /**
     * rk4 method to integrate altitude from velocity, and integrate velocity from acceleration (force/mass)
     * @param h time step
-    * @param extension extension of airbrakes, 0-1
+    * @param extension of airbrakes, 0-1
     * @param mass of rocket (kg)
     * @param state, including altitude (m) and velocity in X and Y directions (m/s)
     * @return updated altitude and velocity integrals after one rk4 step
