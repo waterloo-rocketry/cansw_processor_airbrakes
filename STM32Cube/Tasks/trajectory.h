@@ -16,7 +16,7 @@ extern xQueueHandle angleQueue;
 extern xQueueHandle extQueue;
 extern xQueueHandle apogeeQueue;
 
-void trajectory_task(void);
+void trajectory_task(void * argument);
 void trajectory_init(void);
 
 //Struct with the data iterated in RK4 method
