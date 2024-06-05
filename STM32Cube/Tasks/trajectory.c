@@ -15,7 +15,7 @@
 #define SIM_ALTITUDE 1000 //All drag sims conducted at 1000m above sea level
 #define TOL 0.00001
 #define ROCKET_BURNOUT_MASS = 39.564 //kg
-#define TIME_STEP = 0.05 //s
+#define TIME_STEP 0.05 //s
 xQueueHandle altQueue;
 xQueueHandle angleQueue;
 xQueueHandle extQueue;
