@@ -34,7 +34,7 @@ typedef struct ForceStruct{
 
 //Struct for recieving altitude data, could replace with import
 typedef struct AltStruct{
-    uint16_t alt;
+    int32_t alt;
     float time;
 } AltTime;
 
