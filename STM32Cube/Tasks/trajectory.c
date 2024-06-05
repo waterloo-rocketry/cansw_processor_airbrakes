@@ -14,8 +14,9 @@
 #define ROCKET_BASE_AREA 0.0182412538 //m^2
 #define SIM_ALTITUDE 1000 //All drag sims conducted at 1000m above sea level
 #define TOL 0.00001
-#define ROCKET_BURNOUT_MASS = 39.564 //kg
+#define ROCKET_BURNOUT_MASS 39.564 //kg
 #define TIME_STEP 0.05 //s
+
 xQueueHandle altQueue;
 xQueueHandle angleQueue;
 xQueueHandle extQueue;
@@ -25,11 +26,11 @@ float rocket_area(float extension);
 float velocity_derivative(float force, float mass);
 float gravitational_acceleration(float altitude);
 float air_density(float altitude);
-float lookup_drag(float velocity, float altitude, float extension);
+float lookup_drag(float fixed_extension, float velocity);
 float interpolate_drag(float velocity, float altitude, float extension);
 float interpolate_cd(float extension, float velocity, float altitude);
-RK4State RK4State(RK4State initial, float dt, float mass, float extension);
-float get_max_altitude(float velocity, float altitude, float airbrake_ext, float mass);
+RK4State rk4(float h, float mass, float extension, RK4State state);
+float get_max_altitude(float velY, float velX, float altitude, float airbrake_ext, float mass);
 
 /**
  * Does not take into account fins
@@ -153,7 +154,7 @@ float interpolate_cd(float extension, float velocity, float altitude){
 */
 Forces get_forces(float extension, float mass, float velX, float velY, float alt){
     Forces forces;
-    float velT = sqrt(velY*velY+ velX*velX)
+    float velT = sqrt(velY*velY+ velX*velX);
     float Fd = -interpolate_drag(extension, velT, alt); // force of drag (N)
     float Fg = -gravitational_acceleration(alt) * mass; // force of gravity (N)
     forces.Fy = Fd * velY/velT + Fg;
@@ -229,7 +230,6 @@ void trajectory_task(){
     float prev_time = -1;
     uint16_t prev_alt = -1;
     
-    float old_ext = -1
     for(;;)
     {
         AltTime altTime;
@@ -241,12 +241,11 @@ void trajectory_task(){
                     if(prev_alt != -1) {
                         float vely = (altTime.alt-prev_alt)*1000.0/(altTime.time-prev_time);
                         float velx = sqrt(vely*tan(angles.angle.pitch)*vely*tan(angles.angle.pitch) +  vely*tan(angles.angle.yaw)*vely*tan(angles.angle.yaw));
-
-                        float apogee = get_max_altitude(vely,velx, alt, ext, ROCKET_BURNOUT_MASS);
-                        xQueueOverwrite(apogeeQueue, &apogee, 10);
+                        float apogee = get_max_altitude(vely,velx, altTime.alt, ext, ROCKET_BURNOUT_MASS);
+                        xQueueOverwrite(apogeeQueue, &apogee);
                     }
-                    prev_alt = alt;
-                    prev_time = time;
+                    prev_alt = altTime.alt;
+                    prev_time = altTime.time;
                 }
             }
 
