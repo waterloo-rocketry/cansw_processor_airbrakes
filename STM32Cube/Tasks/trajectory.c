@@ -230,6 +230,21 @@ void trajectory_task(){
     float prev_time = -1;
     uint16_t prev_alt = -1;
     
+    //TEST CODE
+    AltTime altTimeTEST;
+    altTimeTEST.alt = 5000;
+    altTimeTEST.time = 12.34;
+   AnglesUnion anglesTEST;
+   anglesTEST.array[0] = 45;
+   anglesTEST.array[1] = 45;
+   anglesTEST.array[2] = 45;
+   float extTEST = 0.5;
+
+    xQueueOverwrite(altQueue, &altTimeTEST);
+    xQueueOverwrite(angleQueue, &anglesTEST);
+    xQueueOverwrite(extQueue, &extTEST);
+
+
     for(;;)
     {
         AltTime altTime;
