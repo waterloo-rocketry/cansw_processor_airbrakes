@@ -119,7 +119,11 @@ void StartDefaultTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+uint8_t flag = 0;
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+	flag = 1;
+}
 /* USER CODE END 0 */
 
 /**
@@ -187,7 +191,7 @@ int main(void)
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  canHandlerInit(); //create bus queue
+  //canHandlerInit(); //create bus queue
   //flightPhaseInit();
   /* USER CODE END RTOS_QUEUES */
 
@@ -201,10 +205,10 @@ int main(void)
 
   //dunno if casting from CMSIS priorities is valid
   //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
-  xReturned &= xTaskCreate(canHandlerTask, "CAN handler", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
+  //xReturned &= xTaskCreate(canHandlerTask, "CAN handler", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
   //xReturned &= xTaskCreate(stateEstTask, "StateEst", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
   //xReturned &= xTaskCreate(logTask, "Logging", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
-  xReturned &= xTaskCreate(healthCheckTask, "health checks", 2000, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
+  //xReturned &= xTaskCreate(healthCheckTask, "health checks", 2000, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
   //xReturned &= xTaskCreate(controlTask, "Controller", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
   //xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityAboveNormal, &controllerHandle);
 
@@ -993,14 +997,25 @@ static void MX_GPIO_Init(void)
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
-	idx = 0;
 	/* Infinite loop */
+	uint32_t index = 0;
+	uint8_t temp_buf[1];
+	uint8_t rx_buf[100] = {0};
+	HAL_UART_Receive_IT(&huart4, temp_buf, 1);
 	for(;;)
 	{
-		char buffer[] = "hello world!\r\n";
-		printf_(buffer);
-		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
-		osDelay(1000);
+		if(flag == 1)
+		{
+			printf_("interrupted!\n");
+			rx_buf[index] = temp_buf[0];
+			index++;
+			printf_(rx_buf); //print out the full buffer
+			printf_("\n");
+			flag = 0;
+			HAL_UART_Receive_IT(&huart4, temp_buf, 1);
+		}
+		//HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
+
 	}
   /* USER CODE END 5 */
 }
