@@ -47,11 +47,14 @@ extern UART_HandleTypeDef huart4;
 uint8_t USART1_Rx_Buffer[MAX_BINARY_OUTPUT_LENGTH];
 SemaphoreHandle_t USART1_DMA_Sempahore;
 
-void USART1_DMA_Rx_Complete_Callback(UART_HandleTypeDef *huart)
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 {
-	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-	xSemaphoreGiveFromISR(USART1_DMA_Sempahore, &xHigherPriorityTaskWoken);
-	portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+	if(huart == &huart4)
+		{
+			BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+			xSemaphoreGiveFromISR(USART1_DMA_Sempahore, &xHigherPriorityTaskWoken);
+			portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+		}
 }
 
 bool vnIMUSetup(){
@@ -74,7 +77,7 @@ bool vnIMUSetup(){
 //	{
 //		//TODO: Log error to logQueue
 //	}
-//	return false;
+	return false;
 }
 
 
@@ -86,6 +89,7 @@ void vnIMUHandler(void *argument)
 	{
 		//Begin a receive, until we read MAX_BINARY_OUTPUT_LENGTH or the line goes idle, indicating a shorter message
 		HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(&huart4, USART1_Rx_Buffer, MAX_BINARY_OUTPUT_LENGTH);
+		//HAL_StatusTypeDef status = HAL_UART_Receive_DMA(&huart4, USART1_Rx_Buffer, MAX_BINARY_OUTPUT_LENGTH);
 		if(status != HAL_OK)
 		{
 			//yikes, log an error and try again
@@ -103,43 +107,46 @@ void vnIMUHandler(void *argument)
 				packet.curExtractLoc = 0;
 				packet.data = USART1_Rx_Buffer;
 				packet.length = MAX_BINARY_OUTPUT_LENGTH;
-				uint16_t dump = 0;
-				uint16_t time_group;
-				uint16_t imu_group;
-				uint16_t gps_group;
-				uint16_t ins_group;
 
-//				if(VnUartPacket_type(&packet) == PACKETTYPE_BINARY)
-//				{
-//					//TODO: Detect message type properly
-//					VnUartPacket_parseBinaryOutput(&packet, &dump, &dump, &dump, &dump, &time_group, &imu_group, &gps_group, &dump, &ins_group, dump);
-//					if(time_group & TIMEGROUP_TIMEUTC)
-//					{
-//						//logMsg_t msg;
-//						//TimeUtc timestamp = VnUartPacket_extractTimeUtc(&packet);
-//						//sprintf(msg.data, "%d:%d:%d", timestamp.hour, timestamp.min, timestamp.sec);
-//						//xQueueSend(logQueue, &msg, 10);
-//					}
-//					if(imu_group != IMUGROUP_NONE)
-//					{
-//						//assume this is the IMU type message we expect
-//						//TODO: Build a valid IMU message for state est and push it to queue
-//					}
-//					if(gps_group != GPSGROUP_NONE)
-//					{
-//						//decode the GPS data and push it to log
-//						//Every so often, build GPS canlib messages and send them over the bus as well
-//						//also we have 2 GPSs... no provisions in canlib for THAT
-//					}
-//					if(ins_group != INSGROUP_NONE)
-//					{
-//						//fancy state estimation results!
-//						//dump these to the logging queue
-//					}
-//
-//				}
-				printf_(USART1_Rx_Buffer);
-				vTaskDelay(10000);
+
+					if(VnUartPacket_type(&packet) == PACKETTYPE_BINARY)
+					{
+						uint64_t time_startup;
+						switch(VnUartPacket_computeBinaryPacketLength(packet.data)){
+						case 14: //TimeStartup only - this packet format will fail the checksum above,
+							time_startup = VnUartPacket_extractUint64(&packet);
+							printf_("%f\n", time_startup / 1000000000.0);
+							break;
+
+						case 38: //time and raw IMU accel and gyro
+							if(VnUartPacket_isValid(&packet)) //if the checksum is bad
+							{
+								time_startup = VnUartPacket_extractUint64(&packet); //time in ns -> s
+								printf_("%f\n", time_startup / 1000000000.0);
+								float accel_x = VnUartPacket_extractFloat(&packet);
+								float accel_y = VnUartPacket_extractFloat(&packet);
+								float accel_z = VnUartPacket_extractFloat(&packet);
+
+								float gyro_x = VnUartPacket_extractFloat(&packet);
+								float gyro_y = VnUartPacket_extractFloat(&packet);
+								float gyro_z = VnUartPacket_extractFloat(&packet);
+								printf_("accel: %f %f %f\n", accel_x, accel_y, accel_z);
+								printf_("gyro: %f %f %f\n", gyro_x, gyro_y, gyro_z);
+							}
+							else
+							{
+								printf_("bad checksum!\n");
+							}
+							break;
+
+						default:
+							printf_("unhandled message format!\n");
+							break;
+						}
+						printf_("size: %d\n", VnUartPacket_computeBinaryPacketLength(packet.data));
+					}
+
+				//vTaskDelay(10000);
 			}
 
 		}

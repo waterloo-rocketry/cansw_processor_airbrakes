@@ -195,7 +195,7 @@ int main(void)
   /* USER CODE BEGIN RTOS_QUEUES */
   //canHandlerInit(); //create bus queue
   //flightPhaseInit();
-  HAL_UART_RegisterCallback(&huart4, HAL_UART_RX_COMPLETE_CB_ID, USART1_DMA_Rx_Complete_Callback);
+  //HAL_UART_RegisterCallback(&huart4, HAL_UART_RX_COMPLETE_CB_ID, USART1_DMA_Rx_Complete_Callback);
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -1034,8 +1034,8 @@ void StartDefaultTask(void *argument)
 //
 //		}
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
-		printf_("hello world\n");
-		osDelay(5000);
+		//printf_("hello world\n");
+		osDelay(1000);
 
 	}
   /* USER CODE END 5 */
