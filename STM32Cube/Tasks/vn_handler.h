@@ -13,12 +13,11 @@
 #include "queue.h"
 #include <stdbool.h>
 
-extern UART_HandleTypeDef huart1;
-extern TIM_HandleTypeDef htim1;
-
 bool vnIMUSetup();
 
 void vnIMUHandler(void *argument);
+
+void USART1_DMA_Rx_Complete_Callback(UART_HandleTypeDef *huart);
 
 
 #endif /* VN_HANDLER_H_ */

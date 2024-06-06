@@ -36,6 +36,7 @@
 #include "state_estimation.h"
 #include "trajectory.h"
 #include "can_handler.h"
+#include "vn_handler.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -120,11 +121,11 @@ void StartDefaultTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint8_t flag = 0;
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-	flag = 1;
-}
+//uint8_t flag = 0;
+//void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+//{
+//	flag = 1;
+//}
 /* USER CODE END 0 */
 
 /**
@@ -194,6 +195,7 @@ int main(void)
   /* USER CODE BEGIN RTOS_QUEUES */
   //canHandlerInit(); //create bus queue
   //flightPhaseInit();
+  HAL_UART_RegisterCallback(&huart4, HAL_UART_RX_COMPLETE_CB_ID, USART1_DMA_Rx_Complete_Callback);
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -205,7 +207,7 @@ int main(void)
   BaseType_t xReturned = pdPASS;
 
   //dunno if casting from CMSIS priorities is valid
-  //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
+  xReturned &= xTaskCreate(vnIMUHandler, "VN Task", 2000, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
   //xReturned &= xTaskCreate(canHandlerTask, "CAN handler", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
   //xReturned &= xTaskCreate(stateEstTask, "StateEst", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
   //xReturned &= xTaskCreate(logTask, "Logging", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
@@ -1002,36 +1004,38 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
 	/* Infinite loop */
-	uint32_t index = 0;
-	uint8_t temp_buf[1];
-	uint8_t rx_buf[100] = {0};
-	int isSizeRxed = 0;
-	uint16_t size = 0;
+//	uint32_t index = 0;
+//	uint8_t temp_buf[1];
+//	uint8_t rx_buf[100] = {0};
+//	int isSizeRxed = 0;
+//	uint16_t size = 0;
 
-	HAL_UART_Receive_DMA(&huart4, rx_buf, 1);
+	//HAL_UART_Receive_DMA(&huart4, rx_buf, 1);
 	for(;;)
 	{
-		if(flag == 1)
-		{
-			flag = 0;
-			printf_("interrupted!\n");
-			printf_(rx_buf); //print out the full buffer
-			printf_("\n");
-
-			if (isSizeRxed == 0)
-			{
-				size = rx_buf[0]-48;
-				isSizeRxed = 1;
-				HAL_UART_Receive_DMA(&huart4, rx_buf, size);
-			}
-			else if (isSizeRxed == 1)
-			{
-				isSizeRxed = 0;
-				HAL_UART_Receive_DMA(&huart4, rx_buf, 1);
-			}
-
-		}
-		//HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
+//		if(flag == 1)
+//		{
+//			flag = 0;
+//			printf_("interrupted!\n");
+//			printf_(rx_buf); //print out the full buffer
+//			printf_("\n");
+//
+//			if (isSizeRxed == 0)
+//			{
+//				size = rx_buf[0]-48;
+//				isSizeRxed = 1;
+//				HAL_UART_Receive_DMA(&huart4, rx_buf, size);
+//			}
+//			else if (isSizeRxed == 1)
+//			{
+//				isSizeRxed = 0;
+//				HAL_UART_Receive_DMA(&huart4, rx_buf, 1);
+//			}
+//
+//		}
+		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
+		printf_("hello world\n");
+		osDelay(5000);
 
 	}
   /* USER CODE END 5 */
