@@ -3,7 +3,6 @@
 #include "trajectory.h"
 #include "millis.h"
 
-
 xQueueHandle busQueue;
 
 void can_handle_rx(const can_msg_t *message, uint32_t timestamp){
@@ -26,10 +25,10 @@ void can_handle_rx(const can_msg_t *message, uint32_t timestamp){
 	}
 	else if (msgtype == MSG_SENSOR_ALTITUDE)
 	{
-		AltTime result;
-		get_altitude_data(message, &result.alt);
-		result.time = millis_();
-		result = xQueueOverwriteFromISR(apogeeQueue, &result, &xHigherPriorityTaskWoken);
+		AltTime data;
+		get_altitude_data(message, &data.alt);
+		data.time = millis_();
+		result = xQueueOverwriteFromISR(altQueue, &data, &xHigherPriorityTaskWoken);
 	}
 
 	/*this will potentially yield from the CAN callback early but that is okay so long as the
