@@ -1,10 +1,14 @@
 #include "can_handler.h"
 #include "flight_phase.h"
+#include "trajectory.h"
+#include "millis.h"
 
 
 xQueueHandle busQueue;
 
 void can_handle_rx(const can_msg_t *message, uint32_t timestamp){
+	//The timestamp parameter passed to the handler is some internal FDCAN thing that I don't know how to convert to a sensible value
+	//Just use millis_() for now
 	uint16_t msgtype = get_message_type(message);
 	BaseType_t xHigherPriorityTaskWoken, result = pdFALSE;
 
@@ -20,6 +24,14 @@ void can_handle_rx(const can_msg_t *message, uint32_t timestamp){
 	{
 		result = xEventGroupSetBitsFromISR(flightPhaseEventsHandle, INJ_OPEN_BIT, &xHigherPriorityTaskWoken);
 	}
+	else if (msgtype == MSG_SENSOR_ALTITUDE)
+	{
+		AltTime result;
+		get_altitude_data(message, &result.alt);
+		result.time = millis_();
+		result = xQueueOverwriteFromISR(apogeeQueue, &result, &xHigherPriorityTaskWoken);
+	}
+
 	/*this will potentially yield from the CAN callback early but that is okay so long as the
 	CAN ISR imlementation doesn't do any cleanup after returning from the callback (it currently doesn't) */
 	if(result != pdFALSE)  portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
