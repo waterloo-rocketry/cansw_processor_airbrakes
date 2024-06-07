@@ -25,9 +25,9 @@
 /* USER CODE BEGIN Includes */
 #include "printf.h"
 #include "canlib.h"
-//#include "ICM-20948.h"
+#include "millis.h"
 
-//#include "vn_handler.h"
+#include "vn_handler.h"
 #include "log.h"
 #include "controller.h"
 #include "flight_phase.h"
@@ -89,7 +89,9 @@ TaskHandle_t logTaskhandle = NULL;
 TaskHandle_t VNTaskHandle = NULL;
 TaskHandle_t stateEstTaskHandle = NULL;
 TaskHandle_t canhandlerhandle = NULL;
+TaskHandle_t healthChecksTaskHandle = NULL;
 TaskHandle_t controllerHandle = NULL;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -111,7 +113,7 @@ static void MX_TIM2_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
-//void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -185,7 +187,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_QUEUES */
   //canHandlerInit(); //create bus queue
-  logInit();
+  //flightPhaseInit();
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -197,11 +199,14 @@ int main(void)
   BaseType_t xReturned = pdPASS;
 
   //dunno if casting from CMSIS priorities is valid
-  //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
-  //xReturned &= xTaskCreate(canHandlerTask, "CAN handler", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
-  //xReturned &= xTaskCreate(stateEstTask, "StateEst", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
-  xReturned &= xTaskCreate(logTask, "Logging", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
-  //xReturned &= xTaskCreate(controlTask, "Controller", DEFAULT_STACKDEPTH_WORDS, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
+  //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", 2000, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
+  //xReturned &= xTaskCreate(canHandlerTask, "CAN handler", 2000, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
+  //xReturned &= xTaskCreate(stateEstTask, "StateEst", 2000, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
+  //xReturned &= xTaskCreate(logTask, "Logging", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
+  //xReturned &= xTaskCreate(healthCheckTask, "health checks", 2000, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
+  //xReturned &= xTaskCreate(controlTask, "Controller", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
+  //xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 2000, NULL, (UBaseType_t) osPriorityAboveNormal, &controllerHandle);
+
 
   if(xReturned != pdPASS)
   {
@@ -261,7 +266,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLM = 1;
   RCC_OscInitStruct.PLL.PLLN = 125;
   RCC_OscInitStruct.PLL.PLLP = 1;
-  RCC_OscInitStruct.PLL.PLLQ = 20;
+  RCC_OscInitStruct.PLL.PLLQ = 4;
   RCC_OscInitStruct.PLL.PLLR = 4;
   RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_2;
   RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;
@@ -987,15 +992,13 @@ static void MX_GPIO_Init(void)
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
-	idx = 0;
 	/* Infinite loop */
 	for(;;)
 	{
-		//char buffer[] = "hello world!\r\n";
-		//printf_(buffer);
-		logDebug(0, "test message");
+		char buffer[] = "hello world!\r\n";
+		printf_(buffer);
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
-		osDelay(10);
+		osDelay(1000);
 	}
   /* USER CODE END 5 */
 }
