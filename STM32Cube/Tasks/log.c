@@ -1,10 +1,8 @@
+#include "sdmmc.h"
 #include "log.h"
-#include <stdio.h>
+
 #include <stdarg.h>
-
 #include "printf.h"
-
-extern UART_HandleTypeDef huart4;
 
 static log_buffer logBuffers[NUM_LOG_BUFFERS];
 static int CURRENT_BUFFER = 0; // TODO: better way to store current buffer than literally a global var
@@ -195,6 +193,18 @@ bool logDebug(const LogDataSource_t source, const char* msg, ...)
 
 void logTask(void *argument)
 {
+	// initalize log file stuff
+	FATFS fs;
+	(void)f_mount(&fs, "", 0);
+
+	(void)f_mkdir(logsPath);
+
+	(void)initUniqueLogFileName();
+
+	FIL logfile;
+	(void)f_open(&logfile, logFileName, FA_CREATE_ALWAYS);
+	(void)f_close(&logfile);
+
     log_buffer* bufferToPrint;
 
     // wait for a full buffer to appear in the queue; timeout is long - queues are not expected to fill up super quickly
@@ -206,7 +216,10 @@ void logTask(void *argument)
             {
                 // TODO: do uart transmit better
                 // buffers fill from 0, so `index` conveniently indicates how many chars of data there are to print
-                HAL_UART_Transmit(&huart4, (uint8_t *) bufferToPrint->buffer, bufferToPrint->index, 1000);
+
+            	(void)f_open(&logfile, logFileName, FA_OPEN_APPEND | FA_WRITE);
+            	(void)f_write(&logfile, bufferToPrint->buffer, bufferToPrint->index, NULL);
+            	(void)f_close(&logfile);
 
                 bufferToPrint->index = 0;
                 bufferToPrint->isFull = false;    
