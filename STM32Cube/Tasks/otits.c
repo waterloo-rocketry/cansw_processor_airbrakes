@@ -1,14 +1,10 @@
+#ifdef TEST_MODE
 #include "otits.h"
 
 #include <stdbool.h>
 #include "FreeRTOS.h"
 #include "task.h"
 #include "printf.h"
-
-//*****************************************************************************/
-// SET TO 1 TO ENABLE TESTING TASK. SET TO 0 TO DISABLE TESTING TASK.
-//*****************************************************************************/
-#define TEST_MODE 1
 
 //*****************************************************************************/
 // statics
@@ -20,6 +16,29 @@ static int currentTestId = 0;
 static Otits_Test tests[MAX_NUM_TESTS] = {};
 // This should never exceed `MAX_NUM_TESTS`
 static int numTestsRegistered = 0;
+
+static char* testOutcomeStrings[TEST_OUTCOME_ENUM_MAX] = {
+		"PASS",
+		"FAIL",
+		"TIMEOUT",
+		"DATA ERR",
+		"UNTESTED",
+};
+
+static char* testSourceStrings[TEST_SOURCE_ENUM_MAX] = {
+	    "CAN_HANDLER",
+	    "CONTROLLER",
+	    "FLIGHT_PHASE",
+	    "HEALTH",
+		"LOGGER",
+		"MILLIS",
+	    "OTITS",
+		"SDMMC",
+		"STATE_EST",
+		"TRAJ",
+		"VN",
+		"DEFAULT",
+};
 
 /**
  * Run and store results of a test
@@ -70,7 +89,7 @@ static bool otitsInit() {
 bool otitsRegister(Otits_Test_Function_t* testFunctionPtr, OtitsSource_e source) {
 	// ensure not overflowing array
 	if (numTestsRegistered == MAX_NUM_TESTS) {
-		printf_("ERROR: CANNOT REGISTER MORE TESTS THAN TEST_COUNT!\n");
+		printf_("ERROR: CANNOT REGISTER MORE TESTS %d THAN MAX_NUM_TESTS!\n", numTestsRegistered);
 		return false;
 	}
 
@@ -92,7 +111,6 @@ bool otitsRegister(Otits_Test_Function_t* testFunctionPtr, OtitsSource_e source)
  * Task running one otit test each cycle
  */
 void otitsTask(void *arg) {
-#if TEST_MODE
 	otitsInit();
 	TickType_t xLastWakeTime;
 	xLastWakeTime = xTaskGetTickCount();
@@ -109,6 +127,6 @@ void otitsTask(void *arg) {
 
         vTaskDelayUntil(&xLastWakeTime, 99);
     }
-#endif
 }
 
+#endif
