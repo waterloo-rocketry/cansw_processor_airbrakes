@@ -6,7 +6,7 @@
  */
 
 #include "controller.h"
-#include "freertos.h"
+#include "FreeRTOS.h"
 #include "queue.h"
 #include "cmsis_os.h" //TODO replace with xtaskDelayUntil
 #include "stm32h7xx_hal.h"
