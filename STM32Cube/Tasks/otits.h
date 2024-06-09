@@ -1,0 +1,73 @@
+#ifndef MAIN_OTITS_H_
+#define MAIN_OTITS_H_
+
+#include <stdbool.h>
+
+// MAXIMUM NUMBER OF TESTS ALLOWED TO BE REGISTERED
+#define MAX_NUM_TESTS 30
+
+/**
+ * Log data source
+*/
+typedef enum {
+    TEST_SOURCE_FLIGHT_EVENT,
+    TEST_SOURCE_HEALTH,
+    TEST_SOURCE_CAN_HANDLER,
+    TEST_SOURCE_STATE_EST,
+    TEST_SOURCE_TRAJ_PRED,
+    TEST_SOURCE_EXT_TARGET,
+	TEST_SOURCE_CONTROLLER,
+	TEST_SOURCE_LOGGER,
+    TEST_SOURCE_ICM,
+	TEST_SOURCE_MAG,
+	TEST_SOURCE_I2C4,
+	TEST_SOURCE_UART4,
+	TEST_SOURCE_ADC1,
+	TEST_SOURCE_ADC3,
+	TEST_SOURCE_VN,
+	TEST_SOURCE_TIMER,
+	TEST_SOURCE_DEFAULT,
+} OtitsSource_e;
+
+/**
+ * Completion status of one test run
+ */
+typedef enum OtitsTestOutcome_e {
+	TEST_OUTCOME_PASSED,
+	TEST_OUTCOME_FAILED,
+	TEST_OUTCOME_TIMEOUT,
+	TEST_OUTCOME_COMMS_ERR,
+	TEST_OUTCOME_DATA_ERR,
+	TEST_OUTCOME_UNTESTED,
+} OtitsTestOutcome_e;
+
+/**
+ * Full results from a test
+ */
+typedef struct Otits_Result_t {
+	OtitsTestOutcome_e outcome;
+	char* info;
+} Otits_Result_t;
+
+/**
+ * Function signature for a otit test
+ */
+typedef Otits_Result_t Otits_Test_Function_t(void);
+
+/**
+ * Struct describing an otit test to run
+ */
+typedef struct Otits_Test {
+	int id;
+	OtitsSource_e source;
+	Otits_Test_Function_t* testFunctionPtr;
+	OtitsTestOutcome_e latestOutcome;
+	int totalRuns;
+	int runsFailed;
+	int lastRunTime;
+} Otits_Test;
+
+
+extern void otitsTask(void *arg);
+extern bool otitsRegister(Otits_Test_Function_t* testFunctionPtr, OtitsSource_e source);
+#endif /* MAIN_OTITS_H_ */
