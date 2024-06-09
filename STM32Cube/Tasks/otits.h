@@ -1,11 +1,14 @@
 #ifndef MAIN_OTITS_H_
 #define MAIN_OTITS_H_
 #ifdef TEST_MODE
+
 #include <stdbool.h>
+#include "stm32h7xx_hal.h"
 
 // MAXIMUM NUMBER OF TESTS ALLOWED TO BE REGISTERED
 #define MAX_NUM_TESTS 30
 
+extern UART_HandleTypeDef huart4;
 /**
  * Log data source
 */
@@ -22,6 +25,8 @@ typedef enum {
 	TEST_SOURCE_TRAJ,
 	TEST_SOURCE_VN,
 	TEST_SOURCE_DEFAULT,
+	TEST_SOURCE_MY2C,
+	TEST_SOURCE_ICM,
 	TEST_SOURCE_ENUM_MAX,
 } OtitsSource_e;
 

@@ -6,6 +6,8 @@
 #include "task.h"
 #include "printf.h"
 
+#define RESULT_STRING_LENGTH 1024
+
 //*****************************************************************************/
 // statics
 //*****************************************************************************/
@@ -38,6 +40,8 @@ static char* testSourceStrings[TEST_SOURCE_ENUM_MAX] = {
 		"TRAJ",
 		"VN",
 		"DEFAULT",
+		"MY2C",
+		"ICM"
 };
 
 /**
@@ -45,7 +49,7 @@ static char* testSourceStrings[TEST_SOURCE_ENUM_MAX] = {
  */
 static Otits_Result_t otitsRunTest(Otits_Test* test) {
 	// Run the requested test function
-    printf_("[%d] running test %d...\n", (int) xTaskGetTickCount(), currentTestId);
+    printf_("\nTEST [%d] running id:%d from %s...\n", (int) xTaskGetTickCount(), currentTestId, testSourceStrings[test->source]);
 	Otits_Result_t result = (*test->testFunctionPtr)();
 
 	// Store results and update this test's stats using latest results
@@ -53,13 +57,28 @@ static Otits_Result_t otitsRunTest(Otits_Test* test) {
 	test->lastRunTime = xTaskGetTickCount();
 	test->totalRuns++;
 	if (result.outcome != TEST_OUTCOME_PASSED) {
-	    printf_("[%d] TEST FAILED: %d | Info: %s\n", (int) xTaskGetTickCount(), result.outcome, result.info);
+	    printf_("TEST [%d] FAILED: id:%d, %s | Info: %s\n", (int) xTaskGetTickCount(), currentTestId, testOutcomeStrings[result.outcome], result.info);
 		test->runsFailed++;
 	} else {
-	    printf_("[%d] test passed: %d\n", (int) xTaskGetTickCount(), result.outcome);
+	    printf_("TEST [%d] passed: %s | %s\n", (int) xTaskGetTickCount(), testOutcomeStrings[result.outcome], result.info);
 	}
 
 	return result;
+}
+
+static char resultString[RESULT_STRING_LENGTH] = {};
+
+void otitsPrintAllResults() {
+	uint32_t len = 0;
+	len += snprintf_(resultString + len, RESULT_STRING_LENGTH - len,  "\n[%d]***TEST RESULTS***\n", (int) xTaskGetTickCount());
+
+	for (int i = 0; i < numTestsRegistered; i++) {
+		len += snprintf_(resultString + len, RESULT_STRING_LENGTH - len,  "id:%d, %s, last run [%d], last outcome %s, fails/total %d/%d\n",
+				tests[i].id, testSourceStrings[tests[i].source], tests[i].lastRunTime,
+				testOutcomeStrings[tests[i].latestOutcome], tests[i].runsFailed, tests[i].totalRuns);
+	}
+	len += snprintf_(resultString + len, RESULT_STRING_LENGTH - len,  "[%d]******************\n\n", (int) xTaskGetTickCount());
+	HAL_UART_Transmit(&huart4, (uint8_t*) resultString, len, 50);
 }
 
 /**
@@ -123,6 +142,10 @@ void otitsTask(void *arg) {
 
             // continue to next test
             currentTestId = (currentTestId + 1) % numTestsRegistered;
+
+            if (currentTestId == 0) {
+            	otitsPrintAllResults();
+            }
     	}
 
         vTaskDelayUntil(&xLastWakeTime, 99);
