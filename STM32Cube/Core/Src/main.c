@@ -35,6 +35,7 @@
 #include "state_estimation.h"
 #include "trajectory.h"
 #include "can_handler.h"
+#include "otits.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -91,6 +92,7 @@ TaskHandle_t stateEstTaskHandle = NULL;
 TaskHandle_t canhandlerhandle = NULL;
 TaskHandle_t healthChecksTaskHandle = NULL;
 TaskHandle_t controllerHandle = NULL;
+TaskHandle_t oTITSHandle = NULL;
 
 /* USER CODE END PV */
 
@@ -117,7 +119,21 @@ void StartDefaultTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#ifdef TEST_MODE
+Otits_Result_t test_defaultTaskPass() {
+	Otits_Result_t res;
+	res.info = "this should pass";
+	res.outcome = TEST_OUTCOME_PASSED;
+	return res;
+}
 
+Otits_Result_t test_defaultTaskFail() {
+	Otits_Result_t res;
+	res.info = "this should fail";
+	res.outcome = TEST_OUTCOME_FAILED;
+	return res;
+}
+#endif
 /* USER CODE END 0 */
 
 /**
@@ -205,7 +221,11 @@ int main(void)
   //xReturned &= xTaskCreate(healthCheckTask, "health checks", 2000, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
   //xReturned &= xTaskCreate(controlTask, "Controller", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
   //xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 2000, NULL, (UBaseType_t) osPriorityAboveNormal, &controllerHandle);
-
+#ifdef TEST_MODE
+  otitsRegister(test_defaultTaskPass, TEST_SOURCE_DEFAULT);
+  otitsRegister(test_defaultTaskFail, TEST_SOURCE_DEFAULT);
+  xReturned &= xTaskCreate(otitsTask, "oTITS", 500, NULL, (UBaseType_t) osPriorityBelowNormal, &oTITSHandle);
+#endif
 
   if(xReturned != pdPASS)
   {
