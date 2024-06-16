@@ -20,6 +20,7 @@ static Otits_Test tests[MAX_NUM_TESTS] = {};
 static int numTestsRegistered = 0;
 
 static char* testOutcomeStrings[TEST_OUTCOME_ENUM_MAX] = {
+		"ENUM UNSPECIFIED",
 		"PASS",
 		"FAIL",
 		"TIMEOUT",
@@ -57,10 +58,10 @@ static Otits_Result_t otitsRunTest(Otits_Test* test) {
 	test->lastRunTime = xTaskGetTickCount();
 	test->totalRuns++;
 	if (result.outcome != TEST_OUTCOME_PASSED) {
-	    printf_("TEST [%d] FAILED: id:%d, %s | Info: %s\n", (int) xTaskGetTickCount(), currentTestId, testOutcomeStrings[result.outcome], result.info);
+		printf_("TEST [%d] FAILED: id:%d, %s | Info: %s\n", (int) xTaskGetTickCount(), currentTestId, testOutcomeStrings[result.outcome], result.info);
 		test->runsFailed++;
 	} else {
-	    printf_("TEST [%d] passed: %s | %s\n", (int) xTaskGetTickCount(), testOutcomeStrings[result.outcome], result.info);
+		printf_("TEST [%d] passed: id:%d, %s | Info: %s\n", (int) xTaskGetTickCount(), currentTestId, testOutcomeStrings[result.outcome], result.info);
 	}
 
 	return result;
@@ -78,7 +79,7 @@ void otitsPrintAllResults() {
 				testOutcomeStrings[tests[i].latestOutcome], tests[i].runsFailed, tests[i].totalRuns);
 	}
 	len += snprintf_(resultString + len, RESULT_STRING_LENGTH - len,  "[%d]******************\n\n", (int) xTaskGetTickCount());
-	HAL_UART_Transmit(&huart4, (uint8_t*) resultString, len, 50);
+	HAL_UART_Transmit(&huart4, (uint8_t*) resultString, len, 250);
 }
 
 /**
