@@ -15,9 +15,10 @@ static SemaphoreHandle_t logWriteMutex;
 QueueHandle_t fullBuffersQueue;
 
 // OTITS TESTS
+#ifdef TEST_MODE
 Otits_Result_t test_logInfo() {
 	Otits_Result_t res;
-	if (!logInfo("otits-test", "otits!")){
+	if (!logInfo("otits test", "otits!")){
 		res.info = "logInfo fail";
 		res.outcome = TEST_OUTCOME_FAILED;
 		return res;
@@ -38,8 +39,10 @@ Otits_Result_t test_currentBufferFull() {
 	res.outcome = TEST_OUTCOME_PASSED;
 	return res;
 }
+#endif
 
-bool logInit(void) {
+bool logInit(void)
+{
     fullBuffersQueue = xQueueCreate(NUM_LOG_BUFFERS - 1, sizeof(log_buffer*));
     logWriteMutex = xSemaphoreCreateMutex();
 
@@ -51,8 +54,10 @@ bool logInit(void) {
         logBuffers[i].index = 0;
         logBuffers[i].isFull = false;
     }
-    otitsRegister(test_currentBufferFull, TEST_SOURCE_LOGGER, "CurrBufFull");
-    otitsRegister(test_logInfo, TEST_SOURCE_LOGGER, "LogInfo");
+#ifdef TEST_MODE
+    otitsRegister(test_currentBufferFull, TEST_SOURCE_LOGGER, "buff full");
+    otitsRegister(test_logInfo, TEST_SOURCE_LOGGER, "loginfo");
+#endif
     return true;
 }
 
