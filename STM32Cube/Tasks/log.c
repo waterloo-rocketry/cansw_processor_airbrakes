@@ -3,15 +3,44 @@
 
 #include <stdarg.h>
 #include "printf.h"
+#include "otits.h"
 
 static log_buffer logBuffers[NUM_LOG_BUFFERS];
-static int CURRENT_BUFFER = 0; // TODO: better way to store current buffer than literally a global var
+static int CURRENT_BUFFER = 0;
 static SemaphoreHandle_t logWriteMutex;
 
 // Queue of full buffers ready for output. Length of `n - 1` because all `n` buffers can never be full at once.
 // Most extreme case: `n - 1` buffers are in queue, and the `nth` buffer is currently being dumped to output (already
 // removed from the queue and protected by mutex, so it can't be written to until the dump is done)
 QueueHandle_t fullBuffersQueue;
+
+
+// OTITS TESTS
+#ifdef TEST_MODE
+Otits_Result_t test_logInfo() {
+	Otits_Result_t res;
+	if (!logInfo(SOURCE_HEALTH, "otits!")){
+		res.info = "logInfo fail";
+		res.outcome = TEST_OUTCOME_FAILED;
+		return res;
+	}
+	res.info = "";
+	res.outcome = TEST_OUTCOME_PASSED;
+	return res;
+}
+
+Otits_Result_t test_currentBufferFull() {
+	Otits_Result_t res;
+	if (logBuffers[CURRENT_BUFFER].isFull){
+		res.info = "all log buffers full";
+		res.outcome = TEST_OUTCOME_FAILED;
+		return res;
+	}
+	res.info = "";
+	res.outcome = TEST_OUTCOME_PASSED;
+	return res;
+}
+#endif
 
 bool logInit(void)
 {
@@ -32,7 +61,10 @@ bool logInit(void)
             return false;
         }
     }
-
+#ifdef TEST_MODE
+    otitsRegister(test_currentBufferFull, TEST_SOURCE_LOGGER);
+    otitsRegister(test_logInfo, TEST_SOURCE_LOGGER);
+#endif
     return true;
 }
 
