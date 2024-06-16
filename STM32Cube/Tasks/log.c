@@ -62,8 +62,8 @@ bool logInit(void)
         }
     }
 #ifdef TEST_MODE
-    otitsRegister(test_currentBufferFull, TEST_SOURCE_LOGGER);
-    otitsRegister(test_logInfo, TEST_SOURCE_LOGGER);
+    otitsRegister(test_currentBufferFull, TEST_SOURCE_LOGGER, "CurrBufFull");
+    otitsRegister(test_logInfo, TEST_SOURCE_LOGGER, "LogInfo");
 #endif
     return true;
 }

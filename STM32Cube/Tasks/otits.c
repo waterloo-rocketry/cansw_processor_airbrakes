@@ -8,6 +8,8 @@
 
 #define RESULT_STRING_LENGTH 1024
 
+extern UART_HandleTypeDef huart4;
+
 //*****************************************************************************/
 // statics
 //*****************************************************************************/
@@ -50,7 +52,7 @@ static char* testSourceStrings[TEST_SOURCE_ENUM_MAX] = {
  */
 static Otits_Result_t otitsRunTest(Otits_Test* test) {
 	// Run the requested test function
-    printf_("\nTEST [%d] running id:%d from %s...\n", (int) xTaskGetTickCount(), currentTestId, testSourceStrings[test->source]);
+    printf_("\nTEST [%d] running id:%d, %s, '%s'...\n", (int) xTaskGetTickCount(), test->id, testSourceStrings[test->source], test->name);
 	Otits_Result_t result = (*test->testFunctionPtr)();
 
 	// Store results and update this test's stats using latest results
@@ -58,10 +60,10 @@ static Otits_Result_t otitsRunTest(Otits_Test* test) {
 	test->lastRunTime = xTaskGetTickCount();
 	test->totalRuns++;
 	if (result.outcome != TEST_OUTCOME_PASSED) {
-		printf_("TEST [%d] FAILED: id:%d, %s | Info: %s\n", (int) xTaskGetTickCount(), currentTestId, testOutcomeStrings[result.outcome], result.info);
+		printf_("TEST [%d] FAILED: id:%d, %s, '%s' | Info: %s\n", (int) xTaskGetTickCount(), test->id, testOutcomeStrings[result.outcome], test->name, result.info);
 		test->runsFailed++;
 	} else {
-		printf_("TEST [%d] passed: id:%d, %s | Info: %s\n", (int) xTaskGetTickCount(), currentTestId, testOutcomeStrings[result.outcome], result.info);
+		printf_("TEST [%d] passed: id:%d, %s, '%s' | Info: %s\n", (int) xTaskGetTickCount(), test->id, testOutcomeStrings[result.outcome], test->name, result.info);
 	}
 
 	return result;
@@ -74,8 +76,8 @@ void otitsPrintAllResults() {
 	len += snprintf_(resultString + len, RESULT_STRING_LENGTH - len,  "\n[%d]***TEST RESULTS***\n", (int) xTaskGetTickCount());
 
 	for (int i = 0; i < numTestsRegistered; i++) {
-		len += snprintf_(resultString + len, RESULT_STRING_LENGTH - len,  "id:%d, %s, last run [%d], last outcome %s, fails/total %d/%d\n",
-				tests[i].id, testSourceStrings[tests[i].source], tests[i].lastRunTime,
+		len += snprintf_(resultString + len, RESULT_STRING_LENGTH - len,  "id:%d, %s, '%s' | last run [%d], last outcome %s, fails/total %d/%d\n",
+				tests[i].id, testSourceStrings[tests[i].source], tests[i].name, tests[i].lastRunTime,
 				testOutcomeStrings[tests[i].latestOutcome], tests[i].runsFailed, tests[i].totalRuns);
 	}
 	len += snprintf_(resultString + len, RESULT_STRING_LENGTH - len,  "[%d]******************\n\n", (int) xTaskGetTickCount());
@@ -106,7 +108,7 @@ static bool otitsInit() {
 /**
  * register a test to be run
  */
-bool otitsRegister(Otits_Test_Function_t* testFunctionPtr, OtitsSource_e source) {
+bool otitsRegister(Otits_Test_Function_t* testFunctionPtr, OtitsSource_e source, const char* name) {
 	// ensure not overflowing array
 	if (numTestsRegistered == MAX_NUM_TESTS) {
 		printf_("ERROR: CANNOT REGISTER MORE TESTS %d THAN MAX_NUM_TESTS!\n", numTestsRegistered);
@@ -115,6 +117,7 @@ bool otitsRegister(Otits_Test_Function_t* testFunctionPtr, OtitsSource_e source)
 
 	// add test things to array
 	tests[numTestsRegistered].id = numTestsRegistered;
+	tests[numTestsRegistered].name = name;
 	tests[numTestsRegistered].lastRunTime = 0;
 	tests[numTestsRegistered].totalRuns = 0;
 	tests[numTestsRegistered].runsFailed = 0;
@@ -123,7 +126,7 @@ bool otitsRegister(Otits_Test_Function_t* testFunctionPtr, OtitsSource_e source)
 	tests[numTestsRegistered].latestOutcome = TEST_OUTCOME_UNTESTED;
 
 	numTestsRegistered++;
-	printf_("otits registered test %d\n", numTestsRegistered);
+	printf_("otits registered test '%s' id:%d\n", name, numTestsRegistered);
 	return true;
 }
 
