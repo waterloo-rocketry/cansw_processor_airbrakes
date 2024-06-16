@@ -205,6 +205,8 @@ int main(void)
   canHandlerInit(); //create bus queue
   flightPhaseInit();
   logInit();
+  //canHandlerInit(); //create bus queue
+  //flightPhaseInit();
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -219,7 +221,7 @@ int main(void)
   //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", 2000, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
   //xReturned &= xTaskCreate(canHandlerTask, "CAN handler", 2000, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
   //xReturned &= xTaskCreate(stateEstTask, "StateEst", 2000, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
-  //xReturned &= xTaskCreate(logTask, "Logging", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
+  xReturned &= xTaskCreate(logTask, "Logging", 1024, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
   //xReturned &= xTaskCreate(healthCheckTask, "health checks", 2000, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
   //xReturned &= xTaskCreate(controlTask, "Controller", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
   //xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 2000, NULL, (UBaseType_t) osPriorityAboveNormal, &controllerHandle);
