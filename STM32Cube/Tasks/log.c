@@ -55,8 +55,8 @@ bool logInit(void)
         logBuffers[i].isFull = false;
     }
 #ifdef TEST_MODE
-    otitsRegister(test_currentBufferFull, TEST_SOURCE_LOGGER, "buff full");
-    otitsRegister(test_logInfo, TEST_SOURCE_LOGGER, "loginfo");
+    otitsRegister(test_currentBufferFull, TEST_SOURCE_LOGGER, "CurrBufFull");
+    otitsRegister(test_logInfo, TEST_SOURCE_LOGGER, "LogInfo");
 #endif
     return true;
 }

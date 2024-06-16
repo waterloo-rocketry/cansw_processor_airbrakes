@@ -228,6 +228,8 @@ int main(void)
   //xReturned &= xTaskCreate(controlTask, "Controller", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
   //xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 2000, NULL, (UBaseType_t) osPriorityAboveNormal, &controllerHandle);
 #ifdef TEST_MODE
+  otitsRegister(test_defaultTaskPass, TEST_SOURCE_DEFAULT, "DefaultPass");
+  otitsRegister(test_defaultTaskFail, TEST_SOURCE_DEFAULT, "DefaultFail");
   xReturned &= xTaskCreate(otitsTask, "oTITS", 500, NULL, (UBaseType_t) osPriorityBelowNormal, &oTITSHandle);
 #endif
 
