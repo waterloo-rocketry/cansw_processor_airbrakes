@@ -26,6 +26,7 @@
 #include "printf.h"
 #include "canlib.h"
 #include "millis.h"
+#include "ICM-20948.h"
 
 #include "vn_handler.h"
 #include "log.h"
@@ -1010,6 +1011,8 @@ static void MX_GPIO_Init(void)
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
+	// THIS FUNCTION MUST BE CALLED INSIDE A FREERTOS TASK
+	ICM_20948_init();
   /* USER CODE BEGIN 5 */
 	/* Infinite loop */
 	for(;;)
