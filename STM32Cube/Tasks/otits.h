@@ -1,6 +1,5 @@
 #ifndef MAIN_OTITS_H_
 #define MAIN_OTITS_H_
-#ifdef TEST_MODE
 
 #include <stdbool.h>
 #include "stm32h7xx_hal.h"
@@ -72,6 +71,5 @@ typedef struct Otits_Test {
 
 extern void otitsTask(void *arg);
 bool otitsRegister(Otits_Test_Function_t* testFunctionPtr, OtitsSource_e source, const char* name);
-#endif
 #endif /* MAIN_OTITS_H_ */
 

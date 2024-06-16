@@ -120,7 +120,6 @@ void StartDefaultTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-#ifdef TEST_MODE
 Otits_Result_t test_defaultTaskPass() {
 	Otits_Result_t res;
 	res.info = "this should pass";
@@ -134,7 +133,6 @@ Otits_Result_t test_defaultTaskFail() {
 	res.outcome = TEST_OUTCOME_FAILED;
 	return res;
 }
-#endif
 /* USER CODE END 0 */
 
 /**
@@ -207,6 +205,8 @@ int main(void)
   logInit();
   //canHandlerInit(); //create bus queue
   //flightPhaseInit();
+  otitsRegister(test_defaultTaskPass, TEST_SOURCE_DEFAULT, "DefaultPass");
+  otitsRegister(test_defaultTaskFail, TEST_SOURCE_DEFAULT, "DefaultFail");
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -226,8 +226,6 @@ int main(void)
   //xReturned &= xTaskCreate(controlTask, "Controller", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
   //xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 2000, NULL, (UBaseType_t) osPriorityAboveNormal, &controllerHandle);
 #ifdef TEST_MODE
-  otitsRegister(test_defaultTaskPass, TEST_SOURCE_DEFAULT, "DefaultPass");
-  otitsRegister(test_defaultTaskFail, TEST_SOURCE_DEFAULT, "DefaultFail");
   xReturned &= xTaskCreate(otitsTask, "oTITS", 500, NULL, (UBaseType_t) osPriorityBelowNormal, &oTITSHandle);
 #endif
 
