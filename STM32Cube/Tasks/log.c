@@ -53,9 +53,8 @@ bool logInit(void) {
         logBuffers[i].index = 0;
         logBuffers[i].isFull = false;
     }
-
-    otitsRegister(test_currentBufferFull, TEST_SOURCE_LOGGER);
-    otitsRegister(test_logInfo, TEST_SOURCE_LOGGER);
+    otitsRegister(test_currentBufferFull, TEST_SOURCE_LOGGER, "CurrBufFull");
+    otitsRegister(test_logInfo, TEST_SOURCE_LOGGER, "LogInfo");
     return true;
 }
 

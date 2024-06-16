@@ -147,9 +147,9 @@ bool ICM_20948_init() {
     MY2C_write1ByteRegister(AK09916_MAG_ADDR, CNTL2, 0x06);
 
 #ifdef TEST_MODE
-    otitsRegister(test_ICMSanity, TEST_SOURCE_ICM);
-    otitsRegister(test_magSanity, TEST_SOURCE_ICM);
-    otitsRegister(test_magSelfTest, TEST_SOURCE_ICM);
+    otitsRegister(test_ICMSanity, TEST_SOURCE_ICM, "ICMSanity");
+    otitsRegister(test_magSanity, TEST_SOURCE_ICM, "MagSanity");
+    otitsRegister(test_magSelfTest, TEST_SOURCE_ICM, "MagSelfTest");
     return true;
 #endif
 }
