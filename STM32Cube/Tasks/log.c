@@ -5,7 +5,7 @@
 #include "printf.h"
 
 static log_buffer logBuffers[NUM_LOG_BUFFERS];
-static int CURRENT_BUFFER = 0; // TODO: better way to store current buffer than literally a global var
+static int CURRENT_BUFFER = 0;
 static SemaphoreHandle_t logWriteMutex;
 
 // Queue of full buffers ready for output. Length of `n - 1` because all `n` buffers can never be full at once.
@@ -24,13 +24,8 @@ bool logInit(void)
 
     for (int i = 0; i < NUM_LOG_BUFFERS; i++)
     {
-        logBuffers[i].mutex = xSemaphoreCreateMutex();
         logBuffers[i].index = 0;
         logBuffers[i].isFull = false;
-
-        if (logBuffers[i].mutex == NULL) {
-            return false;
-        }
     }
 
     return true;
@@ -103,12 +98,6 @@ bool logGeneric(LogDataSource_t source, LogLevel_t level, const char* msg, va_li
         xSemaphoreGive(logWriteMutex);
         return false;
     }
-
-    // TODO: still not sure if this is necessary since isFull exists, but doesnt hurt (unless needs to be optimized out later idk) 
-    if (xSemaphoreTake(currentBuffer->mutex, 0) != pdPASS)
-    {
-        return false;
-    }
     
     // format and append the default log header
 	int headerLength = snprintf_(currentBuffer->buffer + currentBuffer->index, MAX_MSG_LENGTH, "%c: [%d] %s ", level, (int) timestamp, sourceToString(source));
@@ -141,6 +130,7 @@ bool logGeneric(LogDataSource_t source, LogLevel_t level, const char* msg, va_li
         if (xQueueSendToBack(fullBuffersQueue, &currentBuffer, 0) != pdPASS)
         {
             // if queue does not have space, all n - 1 buffers are full which should not be possible!! ERROR!
+            xSemaphoreGive(logWriteMutex);
             return false;
         }
         else
@@ -149,10 +139,8 @@ bool logGeneric(LogDataSource_t source, LogLevel_t level, const char* msg, va_li
             CURRENT_BUFFER = (CURRENT_BUFFER + 1) % NUM_LOG_BUFFERS;
         }
     }
-    
-    xSemaphoreGive(currentBuffer->mutex);
-    xSemaphoreGive(logWriteMutex);
 
+    xSemaphoreGive(logWriteMutex);
     return true;
 }
 
@@ -212,8 +200,6 @@ void logTask(void *argument)
     {
 		if (xQueueReceive(fullBuffersQueue, &bufferToPrint, 1000000) == pdPASS)
         {
-            if (xSemaphoreTake(bufferToPrint->mutex, 0) == pdPASS)
-            {
                 // TODO: do uart transmit better
                 // buffers fill from 0, so `index` conveniently indicates how many chars of data there are to print
 
@@ -223,8 +209,6 @@ void logTask(void *argument)
 
                 bufferToPrint->index = 0;
                 bufferToPrint->isFull = false;    
-                xSemaphoreGive(bufferToPrint->mutex);            
-            }
         }
     }
 }

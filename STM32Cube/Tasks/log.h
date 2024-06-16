@@ -51,7 +51,6 @@ typedef enum
  * Buffer holding one block of log msgs
 */
 typedef struct log_buffer {
-    SemaphoreHandle_t mutex;
     uint16_t index;
     char buffer[LOG_BUFFER_SIZE];
     bool isFull;
