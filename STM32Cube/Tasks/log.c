@@ -16,7 +16,6 @@ QueueHandle_t fullBuffersQueue;
 
 
 // OTITS TESTS
-#ifdef TEST_MODE
 Otits_Result_t test_logInfo() {
 	Otits_Result_t res;
 	if (!logInfo(SOURCE_HEALTH, "otits!")){
@@ -40,7 +39,6 @@ Otits_Result_t test_currentBufferFull() {
 	res.outcome = TEST_OUTCOME_PASSED;
 	return res;
 }
-#endif
 
 bool logInit(void)
 {
@@ -61,10 +59,8 @@ bool logInit(void)
             return false;
         }
     }
-#ifdef TEST_MODE
     otitsRegister(test_currentBufferFull, TEST_SOURCE_LOGGER, "CurrBufFull");
     otitsRegister(test_logInfo, TEST_SOURCE_LOGGER, "LogInfo");
-#endif
     return true;
 }
 

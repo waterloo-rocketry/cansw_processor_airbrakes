@@ -14,7 +14,6 @@ static const float ACCEL_SENSITIVITY = 2048;
 static const float MAG_SENSITIVITY = 0.15;
 
 // OTITS TESTS
-#ifdef TEST_MODE
 Otits_Result_t test_ICMSanity() {
 	Otits_Result_t res;
 
@@ -104,8 +103,6 @@ Otits_Result_t test_magSelfTest() {
 	res.outcome = TEST_OUTCOME_PASSED;
 	return res;
 }
-#endif
-
 
 // This driver assumes that I2C is already initialized
 bool ICM_20948_init() {
@@ -146,12 +143,10 @@ bool ICM_20948_init() {
     // Set to continuous measurement mode 3 (50 Hz measurement frequency)
     MY2C_write1ByteRegister(AK09916_MAG_ADDR, CNTL2, 0x06);
 
-#ifdef TEST_MODE
     otitsRegister(test_ICMSanity, TEST_SOURCE_ICM, "ICMSanity");
     otitsRegister(test_magSanity, TEST_SOURCE_ICM, "MagSanity");
     otitsRegister(test_magSelfTest, TEST_SOURCE_ICM, "MagSelfTest");
     return true;
-#endif
 }
 
 bool ICM_20948_check_sanity(void) {
