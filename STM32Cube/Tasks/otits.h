@@ -34,6 +34,7 @@ typedef enum {
  * Completion status of one test run
  */
 typedef enum OtitsTestOutcome_e {
+	TEST_OUTCOME_UNSPECIFIED,
 	TEST_OUTCOME_PASSED,
 	TEST_OUTCOME_FAILED,
 	TEST_OUTCOME_TIMEOUT,
