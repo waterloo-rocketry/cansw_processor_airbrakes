@@ -5,7 +5,7 @@
 const char *logsPath = "/LOGS"; //path to the log file directory on the SD card
 char logFileName[LOG_FILE_NAME_SIZE];
 
-Otits_Result_t test_sdmmcWriteReadFile() {
+static Otits_Result_t test_sdmmcWriteReadFile() {
 	Otits_Result_t res;
 	FIL testFileW;
     FIL testFileR;
@@ -68,6 +68,11 @@ Otits_Result_t test_sdmmcWriteReadFile() {
 	res.info = "";
 	res.outcome = TEST_OUTCOME_PASSED;
 	return res;
+}
+
+bool sdmmcInit() {
+	if (!otitsRegister(test_sdmmcWriteReadFile, TEST_SOURCE_SDMMC, "fatfs")) return false;
+	return true;
 }
 
 //Count the number of files inside of a directory
