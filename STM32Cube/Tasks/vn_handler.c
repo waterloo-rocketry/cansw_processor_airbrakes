@@ -19,32 +19,6 @@ extern UART_HandleTypeDef huart4;
 extern xQueueHandle busQueue;
 
 
-////RateDivisor sets the output rate as a function of the sensor ImuRate (800 Hz for the VN-200)
-//#define CONFIG_MSG_LENGTH 100
-//#define VN_200_IMURATE 800 //Hz
-//
-////Binary Output #1
-//#define BINARY1_OUT_RATE 10 //Hz
-//#define RATE1_DIVISOR VN_200_IMURATE / BINARY1_OUT_RATE
-//
-////See "vnenum.h" and the ICD for parameter definitions
-//
-//#define COMMONGROUP_PARAMS COMMONGROUP_QUATERNION | COMMONGROUP_POSITION | COMMONGROUP_VELOCITY | COMMONGROUP_ACCEL
-//#define TIMEGROUP_PARAMS TIMEGROUP_TIMEUTC | TIMEGROUP_TIMEUTC
-//#define IMUGROUP_PARAMS IMUGROUP_IMUSTATUS | IMUGROUP_SENSSAT | IMUGROUP_UNCOMPMAG | IMUGROUP_UNCOMPACCEL | IMUGROUP_UNCOMPGYRO | IMUGROUP_TEMP | IMUGROUP_PRES
-//#define GPSGROUP_PARAMS GPSGROUP_UTC | GPSGROUP_NUMSATS | GPSGROUP_FIX | GPSGROUP_POSLLA | GPSGROUP_VELECEF
-//#define ATTITUDEGROUP_PARAMS ATTITUDEGROUP_NONE
-//#define INSGROUP_PARAMS INSGROUP_NONE
-
-//Minimize binary output contents for initial testing
-//#define COMMONGROUP_PARAMS COMMONGROUP_NONE
-//#define TIMEGROUP_PARAMS TIMEGROUP_TIMEUTC
-//#define IMUGROUP_PARAMS IMUGROUP_NONE
-//#define GPSGROUP_PARAMS GPSGROUP_NONE
-//#define ATTITUDEGROUP_PARAMS ATTITUDEGROUP_NONE
-//#define INSGROUP_PARAMS INSGROUP_NONE
-
-
 #define MAX_BINARY_OUTPUT_LENGTH 100
 #define DMA_RX_TIMEOUT 300
 const uint8_t MS_WAIT_CAN = 10;
@@ -55,7 +29,7 @@ SemaphoreHandle_t USART1_DMA_Sempahore;
 
 const uint32_t ASCII_METERS = 109;
 
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) //this rebinds the generic _weak callback
 {
 	if(huart == &huart4)
 		{
@@ -65,30 +39,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 		}
 }
 
-bool vnIMUSetup(){
-	//Setup DMA on Rx
-//	HAL_UART_RegisterCallback(&huart1, HAL_UART_RX_COMPLETE_CB_ID, USART1_DMA_Rx_Complete_Callback);
-//
-//	//TODO: Read the WHOAMI registers or equivalent to verify IMU is connected, if not throw error
-//		//Register ID 0x01: Offset 0 Model string[24] – Product model number, maximum length 24 characters.
-//
-//	//configure binary output for raw IMU data and full state estimate
-//	uint8_t buffer[CONFIG_MSG_LENGTH];
-//	size_t returnedLength;
-//	VnError err = VnUartPacket_genWriteBinaryOutput1(buffer, CONFIG_MSG_LENGTH, VNERRORDETECTIONMODE_CHECKSUM, &returnedLength, ASYNCMODE_BOTH, RATE1_DIVISOR,COMMONGROUP_PARAMS,TIMEGROUP_PARAMS,IMUGROUP_PARAMS,GPSGROUP_PARAMS,ATTITUDEGROUP_PARAMS,INSGROUP_PARAMS, GPSGROUP_NONE);
-//	if (err == E_NONE)
-//	{
-//		return HAL_OK == HAL_UART_Transmit(&huart1, buffer, returnedLength, 10); //Send the command to configure IMU output format
-//		//TODO: Log error to logQueue
-//	}
-//	else
-//	{
-//		//TODO: Log error to logQueue
-//	}
-	return false;
-}
-
-uint8_t decimalFromDouble2(double num){
+static uint8_t decimalFromDouble2(double num){
 	uint16_t integer_part = (uint16_t)num;
 	double fractional_part = num - integer_part;
 	if (fractional_part*100 > 254){
@@ -100,7 +51,7 @@ uint8_t decimalFromDouble2(double num){
 	return decimal_part;
 }
 
-uint16_t decimalFromDouble4(double num){
+static uint16_t decimalFromDouble4(double num){
 	uint16_t integer_part = (uint16_t)num;
 	double fractional_part = num - integer_part;
 	if (fractional_part*10000 > 65534){
@@ -112,18 +63,18 @@ uint16_t decimalFromDouble4(double num){
 	return decimal_part;
 }
 
-double minFromDeg(double deg){
+static double minFromDeg(double deg){
 	return (deg -  (uint32_t)deg)  * 60;
 }
 
-void send3VectorStateCanMsg_float(uint64_t time, float vector[3], uint8_t firstStateIDOfVector, can_msg_t msg){
+static void send3VectorStateCanMsg_float(uint64_t time, float vector[3], uint8_t firstStateIDOfVector, can_msg_t msg){
 	for (int i = 0; i < 3; i++) {
 		build_state_est_data_msg((uint32_t) time, &vector[i], firstStateIDOfVector + i, &msg);
 		xQueueSend(busQueue, &msg, MS_WAIT_CAN);
 	}
 }
 
-void send3VectorStateCanMsg_double(uint64_t time, double vector[3], uint8_t firstStateIDOfVector, can_msg_t msg){
+static void send3VectorStateCanMsg_double(uint64_t time, double vector[3], uint8_t firstStateIDOfVector, can_msg_t msg){
 	float float_vector[3];
 	for (int i = 0; i < 3; i++) {
 		float_vector[i] = (float) vector[i];  // Convert double to float
@@ -134,7 +85,7 @@ void send3VectorStateCanMsg_double(uint64_t time, double vector[3], uint8_t firs
 
 void vnIMUHandler(void *argument)
 {
-	//HAL_UART_RegisterCallback(&huart4, HAL_UART_RX_COMPLETE_CB_ID, USART1_DMA_Rx_Complete_Callback);
+	//HAL_UART_RegisterCallback(&huart4, HAL_UART_RX_COMPLETE_CB_ID, USART1_DMA_Rx_Complete_Callback); //TODO: use user-defined callback binding
 	USART1_DMA_Sempahore = xSemaphoreCreateBinary();
 	printf_("Hello world");
 	for(;;)
@@ -166,13 +117,14 @@ void vnIMUHandler(void *argument)
 						can_msg_t msg;
 						size_t packetLength = VnUartPacket_computeBinaryPacketLength(packet.data);
 
-						//switch case bad because they all have same scope
-						if (packetLength == 14){//TimeStartup only - this packet format will fail the checksum above,
+						//time only packet - used for testing purposes only
+						if (packetLength == 14){
 							uint64_t time_startup = VnUartPacket_extractUint64(&packet);
 							printf_("%lld\n", time_startup / NS_TO_S);
 						}
 
-						else if (packetLength == 38){ //time and raw IMU accel and gyro
+						//time and raw IMU accel and gyro - used for testing purposes only
+						else if (packetLength == 38){
 							if(VnUartPacket_isValid(&packet)) //if the checksum is good
 							{
 								uint64_t time_startup = VnUartPacket_extractUint64(&packet); //time in ns -> s
@@ -194,6 +146,7 @@ void vnIMUHandler(void *argument)
 							}
 						}
 
+						//Binary Output #1 - armaan fill this in
 						else if (packetLength == 53){
 							uint64_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_S; //time in ns -> s
 
@@ -226,6 +179,7 @@ void vnIMUHandler(void *argument)
 
 						}
 
+						//Binary Output #2 - armaan fill this in
 						else if (packetLength == 92){
 							uint64_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_S; //time in ns -> s
 
@@ -260,6 +214,7 @@ void vnIMUHandler(void *argument)
 
 
 
+						//Binary Output #3 - armaan fill this in
 						else if (packetLength == 42){
 
 							vec3f magVec = VnUartPacket_extractVec3f(&packet);
@@ -270,17 +225,18 @@ void vnIMUHandler(void *argument)
 						}
 
 
+						//unhandled message format
 						else{
 							printf_("unhandled message format!\n");
 						}
 
 						printf_("size: %d\n", VnUartPacket_computeBinaryPacketLength(packet.data));
 					}
-					else{
-						printf_("Invalid data");
-					}
 
-				//vTaskDelay(10000);
+					else {
+						printf_("Not a valid binary packet");
+						logError(SOURCE_SENSOR, "Non Binary Packet received");
+					}
 			}
 
 		}
