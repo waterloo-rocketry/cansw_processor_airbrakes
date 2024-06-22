@@ -3,21 +3,17 @@
  *  Created on: Mar 24, 2024
  *      Author: joedo*/
 
-
+#include "stm32h7xx_hal.h"
 #include "vn_handler.h"
 #include "vn/protocol/upack.h"
-#include "FreeRTOS.h"
-#include "semphr.h"
 #include "log.h"
-#include "stm32h7xx_hal.h"
-#include <stdio.h>
+#include "state_estimation.h"
 #include "printf.h"
 #include "can_handler.h"
 #include <math.h>
+#include <string.h>
 
 extern UART_HandleTypeDef huart4;
-extern xQueueHandle busQueue;
-
 
 #define MAX_BINARY_OUTPUT_LENGTH 100
 #define DMA_RX_TIMEOUT 300
@@ -43,7 +39,7 @@ static uint8_t decimalFromDouble2(double num){
 	uint16_t integer_part = (uint16_t)num;
 	double fractional_part = num - integer_part;
 	if (fractional_part*100 > 254){
-		printf("Error: getDecimalFromDouble2: overflow");
+		printf_("Error: getDecimalFromDouble2: overflow");
 		return 0;
 	}
 	uint8_t decimal_part = (uint8_t)(fractional_part * 100); // This captures up to two decimal places which is the max safely stored by a 8bit uint, since max size is 255 it cant hold 999 only 99
@@ -55,7 +51,7 @@ static uint16_t decimalFromDouble4(double num){
 	uint16_t integer_part = (uint16_t)num;
 	double fractional_part = num - integer_part;
 	if (fractional_part*10000 > 65534){
-		printf("Error: getDecimalFromDouble4: overflow");
+		printf_("Error: getDecimalFromDouble4: overflow");
 		return 0;
 	}
 	uint16_t decimal_part = (uint8_t)(fractional_part * 10000); // This captures up to 4 decimal places which is the max safely stored by a 16bit uint
@@ -87,15 +83,13 @@ void vnIMUHandler(void *argument)
 {
 	//HAL_UART_RegisterCallback(&huart4, HAL_UART_RX_COMPLETE_CB_ID, USART1_DMA_Rx_Complete_Callback); //TODO: use user-defined callback binding
 	USART1_DMA_Sempahore = xSemaphoreCreateBinary();
-	printf_("Hello world");
 	for(;;)
 	{
 		//Begin a receive, until we read MAX_BINARY_OUTPUT_LENGTH or the line goes idle, indicating a shorter message
 		HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(&huart4, USART1_Rx_Buffer, MAX_BINARY_OUTPUT_LENGTH);
-		//HAL_StatusTypeDef status = HAL_UART_Receive_DMA(&huart4, USART1_Rx_Buffer, MAX_BINARY_OUTPUT_LENGTH);
 		if(status != HAL_OK)
 		{
-			//yikes, log an error and try again
+			logError(SOURCE_SENSOR, "Failed to begin UART read");
 		}
 		else
 		{
@@ -146,7 +140,7 @@ void vnIMUHandler(void *argument)
 							}
 						}
 
-						//Binary Output #1 - armaan fill this in
+						//Binary Output #1 - GPS - armaan fill this in
 						else if (packetLength == 53){
 							uint64_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_S; //time in ns -> s
 
@@ -154,13 +148,8 @@ void vnIMUHandler(void *argument)
 							uint8_t numSatellites = VnUartPacket_extractInt8(&packet);
 							vec3f postUncertainty = VnUartPacket_extractVec3f(&packet);
 
-							uint32_t quality_ = sqrt(pow(postUncertainty.c[0], 2) + pow(postUncertainty.c[1], 2) + pow(postUncertainty.c[2], 2));
-							uint8_t quality = quality_; //the higher the number the worse the quality
-
-							if (quality_ > 255){
-								quality = 255;
-							}
-
+							uint32_t quality_ = sqrt(pow(postUncertainty.c[0], 2) + pow(postUncertainty.c[1], 2) + pow(postUncertainty.c[2], 2)); //the higher the number the worse the quality
+							uint8_t quality = (uint8_t) quality_; //cast should truncate
 
 							build_gps_lon_msg((uint32_t) time_startup, (uint8_t) pos.c[1], (uint8_t) minFromDeg(pos.c[1]), decimalFromDouble4(minFromDeg(pos.c[1])), (int) (pos.c[1] >= 0) ? 'N' : 'S', &msg);
 							xQueueSend(busQueue, &msg, MS_WAIT_CAN);
@@ -179,7 +168,7 @@ void vnIMUHandler(void *argument)
 
 						}
 
-						//Binary Output #2 - armaan fill this in
+						//Binary Output #2 - INS - armaan fill this in
 						else if (packetLength == 92){
 							uint64_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_S; //time in ns -> s
 
@@ -190,14 +179,11 @@ void vnIMUHandler(void *argument)
 							vec3f velEcef = VnUartPacket_extractVec3f(&packet); //m/s
 							vec3f linAccelEcef = VnUartPacket_extractVec3f(&packet); //m/s^2 NOT INCLUDING GRAVITY
 
-
 							send3VectorStateCanMsg_double(time_startup, posEcef.c,STATE_POS_X, msg); //position
 							send3VectorStateCanMsg_float(time_startup, velEcef.c,STATE_VEL_X, msg); //velocity
 							send3VectorStateCanMsg_float(time_startup, linAccelEcef.c,STATE_ACC_X, msg); //acceleration
-							send3VectorStateCanMsg_float(time_startup, yprAngles.c,STATE_ANGLE_YAW, msg); //angle
+							//send3VectorStateCanMsg_float(time_startup, yprAngles.c,STATE_ANGLE_YAW, msg); //angle; TODO: this is also sent by OUR state estimation, so we should expand the enum in canlib to distinguish
 							send3VectorStateCanMsg_float(time_startup, angularRate.c,STATE_RATE_YAW, msg); //angle rate in XYZ (TODO: NEED TO CONVERT TO YPR)
-
-
 
 							char msgAsString[900];
 							sprintf_(msgAsString,"Time: %lli, Angular Rate: (X: %.3f, Y: %.3f, Z: %.3f), YPR Angles: (Yaw: %.3f, Pitch: %.3f, Roll: %.3f), Pos ECEF: (X: %.3f, Y: %.3f, Z: %.3f), Vel ECEF: (X: %.3f, Y: %.3f, Z: %.3f), Lin Accel ECEF: (X: %.3f, Y: %.3f, Z: %.3f)\n",
@@ -212,24 +198,29 @@ void vnIMUHandler(void *argument)
 
 						}
 
-
-
-						//Binary Output #3 - armaan fill this in
+						//Binary Output #3 - IMU Raw - armaan fill this in
 						else if (packetLength == 42){
 
 							vec3f magVec = VnUartPacket_extractVec3f(&packet);
 							vec3f accelVec = VnUartPacket_extractVec3f(&packet);
-							vec3f angles = VnUartPacket_extractVec3f(&packet);
+							vec3f gyroVec = VnUartPacket_extractVec3f(&packet);
 
-							printf_("Mag: (X: %.3f, Y: %.3f, Z: %.3f), Accel: (X: %.3f, Y: %.3f, Z: %.3f), Angles: (X: %.3f, Y: %.3f, Z: %.3f)\n", magVec.c[0], magVec.c[1], magVec.c[2], accelVec.c[0], accelVec.c[1], accelVec.c[2], angles.c[0], angles.c[1], angles.c[2]);
+							printf_("Mag: (X: %.3f, Y: %.3f, Z: %.3f), Accel: (X: %.3f, Y: %.3f, Z: %.3f), Angles: (X: %.3f, Y: %.3f, Z: %.3f)\n", magVec.c[0], magVec.c[1], magVec.c[2], accelVec.c[0], accelVec.c[1], accelVec.c[2], gyroVec.c[0], gyroVec.c[1], gyroVec.c[2]);
+
+							rawIMUPacked data;
+							memcpy(data.accelerometer.array, accelVec.c, 3 * sizeof(float));
+							memcpy(data.gyroscope.array, gyroVec.c, 3 * sizeof(float));
+							memcpy(data.magnetometer.array, magVec.c, 3 * sizeof(float));
+							data.deltaTimems = 0; //TODO armaan I need time_startup here
+
+							xQueueOverwrite(IMUDataHandle, &data);
 						}
-
 
 						//unhandled message format
 						else{
 							printf_("unhandled message format!\n");
+							logError(SOURCE_SENSOR, "unhandled message format!");
 						}
-
 						printf_("size: %d\n", VnUartPacket_computeBinaryPacketLength(packet.data));
 					}
 

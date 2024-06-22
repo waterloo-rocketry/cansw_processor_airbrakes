@@ -8,6 +8,9 @@
 #ifndef CONTROLLER_H_
 #define CONTROLLER_H_
 
+#include "freertos.h"
+#include "queue.h"
+
 #define CONTROLLER_GAIN_P 0.05
 #define CONTROLLER_GAIN_I 0.01
 #define CONTROLLER_GAIN_D 0.0

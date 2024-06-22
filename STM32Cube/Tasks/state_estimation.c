@@ -5,21 +5,37 @@
  *      Author: joedo
  */
 
-
+#define USE_ICM 0 && defined(DEBUG)
 #include "state_estimation.h"
 #include "ICM-20948.h"
-#include "Fusion.h"
-#include "vn_handler.h"
 #include "log.h"
 #include "can_handler.h"
+#if USE_ICM == 1
 #include <time.h>
+#endif
 
 #define SAMPLE_RATE 100 // replace this with actual sample rate
-#define USE_ICM 1
+
+QueueHandle_t IMUDataHandle;
+
+bool unpackIMUData(FusionVector *gyroscope, FusionVector *accelerometer, FusionVector *magnetometer, uint32_t *deltaTimems)
+{
+	rawIMUPacked data;
+	if(xQueueReceive(IMUDataHandle, &data, 50) == pdTRUE)
+	{
+		*gyroscope = data.gyroscope;
+		*accelerometer = data.accelerometer;
+		*magnetometer = data.magnetometer;
+		*deltaTimems = data.deltaTimems;
+		return true;
+	}
+	return false;
+}
 
 void stateEstTask(void *arguments)
 {
-	/* USER CODE BEGIN stateEstimationTask */
+		//create queue to store IMU data passed from the VN handler
+		IMUDataHandle = xQueueCreate(1, sizeof(rawIMUPacked));
 
 	    // Define calibration (replace with actual calibration data if available)
 		//all of these have this missing braces error..... that seems to just be a bug...?
@@ -42,7 +58,7 @@ void stateEstTask(void *arguments)
 				.axis = {0.0f, 0.0f, 0.0f}
 		};
 
-		// TODO Figure out how to check soft and hard iron (?)
+		// TODO populate with values using VN Control Center's builtin magnetic bias calculator
 		const FusionMatrix softIronMatrix = {
 				.element = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
 		};
@@ -120,21 +136,13 @@ void stateEstTask(void *arguments)
 			 const clock_t timestamp = clock(); // replace this with actual gyroscope timestamp
 			 const float deltaTime = (float) (timestamp - previousTimestamp) / (float) CLOCKS_PER_SEC;
 			 previousTimestamp = timestamp;
-
-
 			#else
-			 //wait for the VN data buffer mutex to be available
-			 if(xSemaphoreTake(vnIMUResultMutex, 100) != pdTRUE)
-			 {
-				 //we timed out, something is holding onto the mutex
-			 }
-
 			 uint32_t deltaTimeMS;
-			 writeIMUData(&gyroscope, &accelerometer, &magnetometer, &deltaTimeMS);
+			 if(unpackIMUData(&gyroscope, &accelerometer, &magnetometer, &deltaTimeMS) == false)
+			 {
+				 logError(SOURCE_STATE_EST, "Failed to get raw IMU data");
+			 }
 			 float deltaTime = (float) deltaTimeMS / 1000.0; //yes I realized deltaTime was a float in s after the fact sue me
-
-			 xSemaphoreGive(vnIMUResultMutex);
-
 			#endif
 
 
@@ -146,13 +154,12 @@ void stateEstTask(void *arguments)
 		 	 // Update gyroscope offset correction algorithm
 		 	 gyroscope = FusionOffsetUpdate(&offset, gyroscope);
 
-
 		 	 // Update gyroscope AHRS algorithm
 		 	 FusionAhrsUpdate(&ahrs, gyroscope, accelerometer, magnetometer, deltaTime);
 
 		 	 //calculate algorithm outputs
 		 	 const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
-		 	logInfo(SOURCE_STATE_EST, "EuRoll %d, EuPitch %d, EuYaw %d", (int) (euler.angle.roll * 1000), (int) (euler.angle.pitch * 1000), (int) (euler.angle.yaw * 1000));
+		 	logInfo(SOURCE_STATE_EST, "EuRoll %d, EuPitch %d, EuYaw %d mdeg", (int) (euler.angle.roll * 1000), (int) (euler.angle.pitch * 1000), (int) (euler.angle.yaw * 1000));
 
 		 	can_msg_t msg;
 		 	if(build_state_est_data_msg(69, &euler.angle.roll, STATE_ANGLE_ROLL, &msg)) xQueueSend(busQueue, &msg, 10);

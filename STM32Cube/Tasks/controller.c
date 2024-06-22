@@ -16,9 +16,6 @@
 #include "can_handler.h"
 #include "printf.h"
 
-extern UART_HandleTypeDef huart4;
-
-
 void controlTask(void *argument)
 {
 	float altitudeEstimate;
