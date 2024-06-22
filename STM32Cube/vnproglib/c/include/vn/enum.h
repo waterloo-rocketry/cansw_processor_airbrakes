@@ -34,7 +34,7 @@ typedef enum
 typedef enum
 {
 	COMMONGROUP_NONE				= 0x0000,	/**< None. */
-	COMMONGROUP_TIMESTARTUP = 0x0001,	/**< TimeStartup. */
+	COMMONGROUP_TIMESTARTUP 		= 0x0001,	/**< TimeStartup. */
 	COMMONGROUP_TIMEGPS				= 0x0002,	/**< TimeGps. */
 	COMMONGROUP_TIMESYNCIN			= 0x0004,	/**< TimeSyncIn. */
 	COMMONGROUP_YAWPITCHROLL		= 0x0008,	/**< YawPitchRoll. */

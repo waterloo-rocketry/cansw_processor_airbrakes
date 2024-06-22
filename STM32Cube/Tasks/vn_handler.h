@@ -11,6 +11,8 @@
 #include "stm32h7xx_hal.h"
 #include "FreeRTOS.h"
 #include "queue.h"
+#include "semphr.h"
+#include "Fusion.h"
 #include <stdbool.h>
 
 bool vnIMUSetup();
