@@ -8,18 +8,45 @@
 #include "health_checks.h"
 #include "log.h"
 #include "can_handler.h"
+#include "otits.h"
 #include "printf.h"
 
 extern ADC_HandleTypeDef hadc1;
 
+static Otits_Result_t test_ADCRead() {
+	Otits_Result_t res;
+	HAL_ADC_Start(&hadc1);
+    HAL_ADC_PollForConversion(&hadc1, 10);
+    uint32_t adc1_val = HAL_ADC_GetValue(&hadc1);
+    uint16_t adc1_voltage_mV = ADC1_VOLTAGE_V(adc1_val)*1000;
+    uint16_t adc1_current_mA = ADC1_CURR_mA(adc1_voltage_mV);
+
+    if (adc1_val > 65536 ) {
+    	res = (Otits_Result_t) {TEST_OUTCOME_DATA_ERR, "raw adc out of range"};
+    	return res;
+    } else if (adc1_current_mA > 500) {
+    	res = (Otits_Result_t) {TEST_OUTCOME_DATA_ERR, "I > 500mA"};
+    	return res;
+    }
+	res = (Otits_Result_t) {TEST_OUTCOME_PASSED, ""};
+	return res;
+}
+
+bool healthCheckInit() {
+	HAL_StatusTypeDef sts = HAL_OK;
+	// Calibrate ADC
+	sts |= HAL_ADC_Stop(&hadc1);
+	sts |= HAL_ADCEx_Calibration_Start(&hadc1,ADC_CALIB_OFFSET,ADC_SINGLE_ENDED );
+	sts |= HAL_ADC_Start(&hadc1);
+	if (sts != HAL_OK) return false;
+
+	if (!otitsRegister(test_ADCRead, TEST_SOURCE_HEALTH, "health")) return false;
+
+	return true;
+}
+
 void healthCheckTask(void *argument)
 {
-
-  // Calibrate ADC
-  HAL_ADC_Stop(&hadc1);
-  HAL_ADCEx_Calibration_Start(&hadc1,ADC_CALIB_OFFSET,ADC_SINGLE_ENDED );
-  HAL_ADC_Start(&hadc1);
-
   /* Infinite loop */
   for (;;)
   {
