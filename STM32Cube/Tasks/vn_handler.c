@@ -13,9 +13,9 @@
 #include <math.h>
 #include <string.h>
 
-extern UART_HandleTypeDef huart4;
+extern UART_HandleTypeDef huart1;
 
-#define MAX_BINARY_OUTPUT_LENGTH 100
+#define MAX_BINARY_OUTPUT_LENGTH 200
 #define DMA_RX_TIMEOUT 300
 const uint8_t MS_WAIT_CAN = 10;
 const uint32_t NS_TO_S = 1000000000;
@@ -27,7 +27,7 @@ const uint32_t ASCII_METERS = 109;
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) //this rebinds the generic _weak callback
 {
-	if(huart == &huart4)
+	if(huart == &huart1)
 		{
 			BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 			xSemaphoreGiveFromISR(USART1_DMA_Sempahore, &xHigherPriorityTaskWoken);
@@ -83,13 +83,15 @@ void vnIMUHandler(void *argument)
 {
 	//HAL_UART_RegisterCallback(&huart4, HAL_UART_RX_COMPLETE_CB_ID, USART1_DMA_Rx_Complete_Callback); //TODO: use user-defined callback binding
 	USART1_DMA_Sempahore = xSemaphoreCreateBinary();
+	printf_("Starting...\n");
 	for(;;)
 	{
 		//Begin a receive, until we read MAX_BINARY_OUTPUT_LENGTH or the line goes idle, indicating a shorter message
-		HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(&huart4, USART1_Rx_Buffer, MAX_BINARY_OUTPUT_LENGTH);
+		HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(&huart1, USART1_Rx_Buffer, MAX_BINARY_OUTPUT_LENGTH);
 		if(status != HAL_OK)
 		{
-			logError(SOURCE_SENSOR, "Failed to begin UART read");
+			//logError(SOURCE_SENSOR, "Failed to begin UART read");
+			//printf_("Failed to begin UART read\n");
 		}
 		else
 		{
@@ -111,36 +113,25 @@ void vnIMUHandler(void *argument)
 						can_msg_t msg;
 						size_t packetLength = VnUartPacket_computeBinaryPacketLength(packet.data);
 
+						if (packetLength>MAX_BINARY_OUTPUT_LENGTH){
+							printf_("Memory Overflow!\n\n\n");
+							continue;
+						}
+
+						printf_("Data recived: ");
+					    for(int i = 0; i < MAX_BINARY_OUTPUT_LENGTH; i++) {
+					        printf_("0x%x ", USART1_Rx_Buffer[i]);
+					    }
+					    printf_("\n");
+
 						//time only packet - used for testing purposes only
 						if (packetLength == 14){
 							uint64_t time_startup = VnUartPacket_extractUint64(&packet);
 							printf_("%lld\n", time_startup / NS_TO_S);
 						}
 
-						//time and raw IMU accel and gyro - used for testing purposes only
-						else if (packetLength == 38){
-							if(VnUartPacket_isValid(&packet)) //if the checksum is good
-							{
-								uint64_t time_startup = VnUartPacket_extractUint64(&packet); //time in ns -> s
-								printf_("%lld\n", time_startup / NS_TO_S);
-								float accel_x = VnUartPacket_extractFloat(&packet);
-								float accel_y = VnUartPacket_extractFloat(&packet);
-								float accel_z = VnUartPacket_extractFloat(&packet);
+						//Binary Output #1 - GPS - 53 bytes | Time startup (Common), PosLla (common), NumSats (gnss), GnssPosUncertainty (gnss)
 
-								float gyro_x = VnUartPacket_extractFloat(&packet);
-								float gyro_y = VnUartPacket_extractFloat(&packet);
-								float gyro_z = VnUartPacket_extractFloat(&packet);
-
-								printf_("accel: %f %f %f\n", accel_x, accel_y, accel_z);
-								printf_("gyro: %f %f %f\n", gyro_x, gyro_y, gyro_z);
-							}
-							else
-							{
-								printf_("bad checksum!\n");
-							}
-						}
-
-						//Binary Output #1 - GPS - armaan fill this in
 						else if (packetLength == 53){
 							uint64_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_S; //time in ns -> s
 
@@ -150,6 +141,12 @@ void vnIMUHandler(void *argument)
 
 							uint32_t quality_ = sqrt(pow(postUncertainty.c[0], 2) + pow(postUncertainty.c[1], 2) + pow(postUncertainty.c[2], 2)); //the higher the number the worse the quality
 							uint8_t quality = (uint8_t) quality_; //cast should truncate
+
+							char msgAsString[300];
+							sprintf_(msgAsString, "Time: %lli, pos: (Lat: %.3f, Lon: %.3f, Alt: %.3f) +- (%.3f, %.3f, %.3f) using %d satellites \n", time_startup, pos.c[0],pos.c[1],pos.c[2], postUncertainty.c[0],postUncertainty.c[1],postUncertainty.c[2], numSatellites);
+							printf_(msgAsString);
+
+							/*ENABLE LOGGING!!!
 
 							build_gps_lon_msg((uint32_t) time_startup, (uint8_t) pos.c[1], (uint8_t) minFromDeg(pos.c[1]), decimalFromDouble4(minFromDeg(pos.c[1])), (int) (pos.c[1] >= 0) ? 'N' : 'S', &msg);
 							xQueueSend(busQueue, &msg, MS_WAIT_CAN);
@@ -165,10 +162,11 @@ void vnIMUHandler(void *argument)
 							printf_(msgAsString);
 
 							logInfo(SOURCE_SENSOR, msgAsString);
+							*/
 
 						}
 
-						//Binary Output #2 - INS - armaan fill this in
+						//Binary Output #2 92 bytes | Time startup (Common), Angular rate (IMU), Ypr (Attitude), PosEcef (INS), VelEcef (INS), LinAccelEcef (INS)
 						else if (packetLength == 92){
 							uint64_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_S; //time in ns -> s
 
@@ -178,6 +176,19 @@ void vnIMUHandler(void *argument)
 							vec3d posEcef = VnUartPacket_extractVec3d(&packet); //m
 							vec3f velEcef = VnUartPacket_extractVec3f(&packet); //m/s
 							vec3f linAccelEcef = VnUartPacket_extractVec3f(&packet); //m/s^2 NOT INCLUDING GRAVITY
+
+							char msgAsString[900];
+							sprintf_(msgAsString,"Time: %lli, Angular Rate: (X: %.3f, Y: %.3f, Z: %.3f), YPR Angles: (Yaw: %.3f, Pitch: %.3f, Roll: %.3f), Pos ECEF: (X: %.3f, Y: %.3f, Z: %.3f), Vel ECEF: (X: %.3f, Y: %.3f, Z: %.3f), Lin Accel ECEF: (X: %.3f, Y: %.3f, Z: %.3f)\n",
+															time_startup,
+															angularRate.c[0], angularRate.c[1], angularRate.c[2],
+															yprAngles.c[0], yprAngles.c[1], yprAngles.c[2],
+															posEcef.c[0], posEcef.c[1], posEcef.c[2],
+															velEcef.c[0], velEcef.c[1], velEcef.c[2],
+															linAccelEcef.c[0], linAccelEcef.c[1], linAccelEcef.c[2]);
+							printf_(msgAsString);
+
+
+							/*ENABLE LOGGING!!!
 
 							send3VectorStateCanMsg_double(time_startup, posEcef.c,STATE_POS_X, msg); //position
 							send3VectorStateCanMsg_float(time_startup, velEcef.c,STATE_VEL_X, msg); //velocity
@@ -195,10 +206,12 @@ void vnIMUHandler(void *argument)
 								linAccelEcef.c[0], linAccelEcef.c[1], linAccelEcef.c[2]);
 							printf_(msgAsString);
 							logInfo(SOURCE_SENSOR, msgAsString);
+							*/
 
 						}
 
-						//Binary Output #3 - IMU Raw - armaan fill this in
+						//Binary Output #3 42 bytes | UncompMag (IMU). UncompAccel (IMU), UncompGyro (IMU)
+
 						else if (packetLength == 42){
 
 							vec3f magVec = VnUartPacket_extractVec3f(&packet);
@@ -207,6 +220,7 @@ void vnIMUHandler(void *argument)
 
 							printf_("Mag: (X: %.3f, Y: %.3f, Z: %.3f), Accel: (X: %.3f, Y: %.3f, Z: %.3f), Angles: (X: %.3f, Y: %.3f, Z: %.3f)\n", magVec.c[0], magVec.c[1], magVec.c[2], accelVec.c[0], accelVec.c[1], accelVec.c[2], gyroVec.c[0], gyroVec.c[1], gyroVec.c[2]);
 
+							/*ENABLE THIS!!!
 							rawIMUPacked data;
 							memcpy(data.accelerometer.array, accelVec.c, 3 * sizeof(float));
 							memcpy(data.gyroscope.array, gyroVec.c, 3 * sizeof(float));
@@ -214,19 +228,20 @@ void vnIMUHandler(void *argument)
 							data.deltaTimems = 0; //TODO armaan I need time_startup here
 
 							xQueueOverwrite(IMUDataHandle, &data);
+							*/
 						}
 
 						//unhandled message format
 						else{
 							printf_("unhandled message format!\n");
-							logError(SOURCE_SENSOR, "unhandled message format!");
+							//logError(SOURCE_SENSOR, "unhandled message format!");
 						}
-						printf_("size: %d\n", VnUartPacket_computeBinaryPacketLength(packet.data));
+						printf_("size: %d\n", packetLength);
 					}
 
 					else {
-						printf_("Not a valid binary packet");
-						logError(SOURCE_SENSOR, "Non Binary Packet received");
+						//printf_("Not a valid binary packet\n");
+						//logError(SOURCE_SENSOR, "Non Binary Packet received");
 					}
 			}
 
