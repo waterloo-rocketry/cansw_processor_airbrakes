@@ -201,6 +201,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_QUEUES */
   logInit();
+  trajectory_init();
   //canHandlerInit(); //create bus queue
   //flightPhaseInit();
   otitsRegister(test_defaultTaskPass, TEST_SOURCE_DEFAULT, "DefaultPass");
