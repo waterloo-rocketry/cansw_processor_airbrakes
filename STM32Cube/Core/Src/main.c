@@ -203,6 +203,7 @@ int main(void)
   /* USER CODE BEGIN RTOS_QUEUES */
   //canHandlerInit(); //create bus queue
   //flightPhaseInit();
+  //logInit();
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -1015,6 +1016,7 @@ void StartDefaultTask(void *argument)
 	{
 		char buffer[] = "hello world!\r\n";
 		printf_(buffer);
+		//logDebug(0, "test messsssage");
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 		osDelay(1000);
 	}
