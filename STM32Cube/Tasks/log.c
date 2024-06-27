@@ -149,7 +149,9 @@ void logTask(void *argument) {
                 // buffers fill from 0, so `index` conveniently indicates how many chars of data there are to print
             	(void)f_write(&logfile, bufferToPrint->buffer, bufferToPrint->index, NULL);
             	(void)f_close(&logfile);
-
+            	// uart print for testing
+            	// !!!! Ensure the timeout (rn 3000) is long enough to transmit a whole log chunk !!!
+            	// HAL_UART_Transmit(&huart4, bufferToPrint->buffer, bufferToPrint->index, 3000);
                 bufferToPrint->index = 0;
                 bufferToPrint->isFull = false;    
         }

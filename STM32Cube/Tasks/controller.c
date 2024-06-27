@@ -53,6 +53,10 @@ void controlTask(void *argument)
 			build_actuator_cmd_analog( (uint32_t) millis_(), ACTUATOR_AIRBRAKES_SERVO, extension, &msg);
 			xQueueSend(busQueue, &msg, 5);
 		}
+<<<<<<< HEAD
 		printf_("extension: %f", extension);
+=======
+		//printf_("extension: %f", extension);
+>>>>>>> 2c43740 (remove test printing code)
 	}
 }

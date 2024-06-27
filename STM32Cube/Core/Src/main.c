@@ -203,7 +203,7 @@ int main(void)
   /* USER CODE BEGIN RTOS_QUEUES */
   //canHandlerInit(); //create bus queue
   //flightPhaseInit();
-  //logInit();
+  logInit();
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
