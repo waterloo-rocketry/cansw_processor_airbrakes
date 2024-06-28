@@ -201,9 +201,9 @@ int main(void)
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  //canHandlerInit(); //create bus queue
-  //flightPhaseInit();
-  //logInit();
+  canHandlerInit(); //create bus queue
+  flightPhaseInit();
+  logInit();
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */

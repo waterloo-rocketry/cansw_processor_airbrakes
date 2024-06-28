@@ -30,10 +30,10 @@ void healthCheckTask(void *argument)
     uint16_t adc1_current_mA = ADC1_CURR_mA(adc1_voltage_mV);
 
     //Transmitting voltage
-    printf_( "%u mV\r\n", (uint16_t) (adc1_voltage_mV));
+    //printf_( "%u mV\r\n", (uint16_t) (adc1_voltage_mV));
 
     //Transmitting current
-    printf_("%u mA\r\n", (uint16_t) (adc1_current_mA) );;
+    //printf_("%u mA\r\n", (uint16_t) (adc1_current_mA) );;
 
     //Checking for over current
     if(adc1_current_mA > MAX_CURR_5V_mA)
