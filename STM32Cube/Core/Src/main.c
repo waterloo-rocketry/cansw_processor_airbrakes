@@ -187,6 +187,8 @@ int main(void)
   /* USER CODE BEGIN RTOS_QUEUES */
   //canHandlerInit(); //create bus queue
   //flightPhaseInit();
+  controllerInit();
+  trajectory_init();
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -994,10 +996,17 @@ void StartDefaultTask(void *argument)
 	/* Infinite loop */
 	for(;;)
 	{
-		char buffer[] = "hello world!\r\n";
-		printf_(buffer);
-		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
-		osDelay(1000);
+		//char buffer[] = "hello world!\r\n";
+		//printf_(buffer);
+    time = millis_();
+    uint32_t alt =  0.0292*time*time*time - 6.7446*time*time + 315.51*time + 5400.9;
+    AltStruct altStruct = {alt, time};
+    FusionEuler angles = {0.2, 0.2, 0.2}; //Need Rad ~ 11.5 deg
+    xQueueOverwrite(angleQueue, &angles);
+    xQueueSend(altQueue, &altStruct, 10);
+
+		//HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
+		osDelay(100);
 	}
   /* USER CODE END 5 */
 }

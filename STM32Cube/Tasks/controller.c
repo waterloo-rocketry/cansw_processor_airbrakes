@@ -26,7 +26,7 @@ void controlTask(void *argument)
 {
 	float apogeeEstimate;
 	controller_t airbrakesController;
-	airbrakesController.target_altitude = 10000;
+	airbrakesController.target_altitude = 9000;
 	float last_ms = millis_();
 	float initial_extension = 0;
 	xQueueOverwrite(extQueue, &initial_extension); //put a valid element in the queue so that trajectory prediction can actually run
