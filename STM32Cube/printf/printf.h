@@ -39,6 +39,16 @@
 #ifndef PRINTF_H_
 #define PRINTF_H_
 
+// Added to enforce not using the default printf
+#define printf do_not_use_default_printf
+#define fprintf do_not_use_default_printf
+#define sprintf do_not_use_default_printf
+#define snprintf do_not_use_default_printf
+#define printf_s do_not_use_default_printf
+#define fprintf_s do_not_use_default_printf
+#define sprintf_s do_not_use_default_printf
+#define snprintf_s do_not_use_default_printf
+
 #ifdef __cplusplus
 # include <cstdarg>
 # include <cstddef>
