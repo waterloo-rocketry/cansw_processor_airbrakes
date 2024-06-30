@@ -26,6 +26,8 @@
 #include "printf.h"
 #include "canlib.h"
 #include "millis.h"
+#include "ICM-20948.h"
+#include "my2c.h"
 
 #include "vn_handler.h"
 #include "log.h"
@@ -119,7 +121,6 @@ void StartDefaultTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-#ifdef TEST_MODE
 Otits_Result_t test_defaultTaskPass() {
 	Otits_Result_t res;
 	res.info = "this should pass";
@@ -133,7 +134,6 @@ Otits_Result_t test_defaultTaskFail() {
 	res.outcome = TEST_OUTCOME_FAILED;
 	return res;
 }
-#endif
 /* USER CODE END 0 */
 
 /**
@@ -204,6 +204,11 @@ int main(void)
   canHandlerInit(); //create bus queue
   flightPhaseInit();
   logInit();
+  MY2C_init();
+  //canHandlerInit(); //create bus queue
+  //flightPhaseInit();
+  otitsRegister(test_defaultTaskPass, TEST_SOURCE_DEFAULT, "DefaultPass");
+  otitsRegister(test_defaultTaskFail, TEST_SOURCE_DEFAULT, "DefaultFail");
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -218,13 +223,11 @@ int main(void)
   //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", 2000, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
   //xReturned &= xTaskCreate(canHandlerTask, "CAN handler", 2000, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
   //xReturned &= xTaskCreate(stateEstTask, "StateEst", 2000, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
-  //xReturned &= xTaskCreate(logTask, "Logging", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
+  xReturned &= xTaskCreate(logTask, "Logging", 1024, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
   //xReturned &= xTaskCreate(healthCheckTask, "health checks", 2000, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
   //xReturned &= xTaskCreate(controlTask, "Controller", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
   //xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 2000, NULL, (UBaseType_t) osPriorityAboveNormal, &controllerHandle);
 #ifdef TEST_MODE
-  otitsRegister(test_defaultTaskPass, TEST_SOURCE_DEFAULT);
-  otitsRegister(test_defaultTaskFail, TEST_SOURCE_DEFAULT);
   xReturned &= xTaskCreate(otitsTask, "oTITS", 500, NULL, (UBaseType_t) osPriorityBelowNormal, &oTITSHandle);
 #endif
 
@@ -1010,6 +1013,8 @@ static void MX_GPIO_Init(void)
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
+	// THIS FUNCTION MUST BE CALLED INSIDE A FREERTOS TASK
+	ICM_20948_init();
   /* USER CODE BEGIN 5 */
 	/* Infinite loop */
 	for(;;)

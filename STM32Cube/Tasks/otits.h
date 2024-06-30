@@ -1,6 +1,5 @@
 #ifndef MAIN_OTITS_H_
 #define MAIN_OTITS_H_
-#ifdef TEST_MODE
 
 #include <stdbool.h>
 #include "stm32h7xx_hal.h"
@@ -8,7 +7,6 @@
 // MAXIMUM NUMBER OF TESTS ALLOWED TO BE REGISTERED
 #define MAX_NUM_TESTS 30
 
-extern UART_HandleTypeDef huart4;
 /**
  * Log data source
 */
@@ -34,6 +32,7 @@ typedef enum {
  * Completion status of one test run
  */
 typedef enum OtitsTestOutcome_e {
+	TEST_OUTCOME_UNSPECIFIED,
 	TEST_OUTCOME_PASSED,
 	TEST_OUTCOME_FAILED,
 	TEST_OUTCOME_TIMEOUT,
@@ -60,6 +59,7 @@ typedef Otits_Result_t Otits_Test_Function_t(void);
  */
 typedef struct Otits_Test {
 	int id;
+	const char* name;
 	OtitsSource_e source;
 	Otits_Test_Function_t* testFunctionPtr;
 	OtitsTestOutcome_e latestOutcome;
@@ -70,7 +70,6 @@ typedef struct Otits_Test {
 
 
 extern void otitsTask(void *arg);
-extern bool otitsRegister(Otits_Test_Function_t* testFunctionPtr, OtitsSource_e source);
-#endif
+bool otitsRegister(Otits_Test_Function_t* testFunctionPtr, OtitsSource_e source, const char* name);
 #endif /* MAIN_OTITS_H_ */
 
