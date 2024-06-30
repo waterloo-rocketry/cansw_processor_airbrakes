@@ -7,6 +7,7 @@
 
 #include "trajectory.h"
 #include "otits.h"
+#include "Fusion.h"
 #include <math.h>
 
 #define GRAV_AT_SEA_LVL 9.80665 //m/s^2
@@ -274,7 +275,7 @@ void trajectory_task(void * argument){
     AltTime altTimeTEST;
     altTimeTEST.alt = 5000;
     altTimeTEST.time = 12.34;
-   AnglesUnion anglesTEST;
+   FusionEuler anglesTEST;
    anglesTEST.array[0] = 45;
    anglesTEST.array[1] = 45;
    anglesTEST.array[2] = 45;
@@ -288,7 +289,7 @@ void trajectory_task(void * argument){
     for(;;)
     {
         AltTime altTime;
-        AnglesUnion angles;
+        FusionEuler angles;
         float ext;
         if(xQueueReceive(altQueue, &altTime, 10) == pdTRUE) {
             if(xQueuePeek(extQueue, &ext, 10)== pdTRUE) {
@@ -310,7 +311,7 @@ void trajectory_task(void * argument){
 }
 void trajectory_init(){
     altQueue = xQueueCreate(1, sizeof(AltTime));
-    angleQueue = xQueueCreate(1, sizeof(AnglesUnion));
+    angleQueue = xQueueCreate(1, sizeof(FusionEuler));
     apogeeQueue = xQueueCreate(1, sizeof(float));
     extQueue = xQueueCreate(1, sizeof(float));
     otitsRegister(test_apogeeQueue, TEST_SOURCE_TRAJ, "apogeeQ");

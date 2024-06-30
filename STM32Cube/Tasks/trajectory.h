@@ -38,16 +38,4 @@ typedef struct AltStruct{
     float time;
 } AltTime;
 
-// Remove this and just import it from Fusion
-typedef union {
-    float array[3];
-
-    struct {
-        float roll;
-        float pitch;
-        float yaw;
-    } angle;
-} AnglesUnion;
-
-
 #endif /* TRAJECTORY_H_ */
