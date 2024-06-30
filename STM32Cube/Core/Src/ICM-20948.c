@@ -104,7 +104,6 @@ Otits_Result_t test_magSelfTest() {
 	return res;
 }
 
-// This driver assumes that I2C is already initialized
 bool ICM_20948_init() {
     MY2C_init();
 

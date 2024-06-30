@@ -38,6 +38,7 @@
 #include "trajectory.h"
 #include "can_handler.h"
 #include "otits.h"
+#include "sdmmc.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -202,11 +203,11 @@ int main(void)
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
+  sdmmcInit();
   logInit();
   trajectory_init();
   canHandlerInit(); //create bus queue
   flightPhaseInit();
-  MY2C_init();
   healthCheckInit();
   //canHandlerInit(); //create bus queue
   //flightPhaseInit();
