@@ -27,6 +27,7 @@
 #include "canlib.h"
 #include "millis.h"
 #include "ICM-20948.h"
+#include "my2c.h"
 
 #include "vn_handler.h"
 #include "log.h"
@@ -203,6 +204,7 @@ int main(void)
   canHandlerInit(); //create bus queue
   flightPhaseInit();
   logInit();
+  MY2C_init();
   //canHandlerInit(); //create bus queue
   //flightPhaseInit();
   otitsRegister(test_defaultTaskPass, TEST_SOURCE_DEFAULT, "DefaultPass");
