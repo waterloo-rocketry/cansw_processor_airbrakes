@@ -209,7 +209,7 @@ bool ICM_20948_check_sanity(void) {
     return true;
 }
 
-bool ICM_20948_get_accel_raw(int16_t *x, int16_t *y, int16_t *z) {
+static bool ICM_20948_get_accel_raw(int16_t *x, int16_t *y, int16_t *z) {
     if (!x || !y || !z) { return false; }
     if (xSemaphoreTake(ICMMutex, MUTEX_WAIT) != pdTRUE) return false;
 
@@ -230,7 +230,7 @@ bool ICM_20948_get_accel_raw(int16_t *x, int16_t *y, int16_t *z) {
     return true;
 }
 
-bool ICM_20948_get_gyro_raw(int16_t *x, int16_t *y, int16_t *z) {
+static bool ICM_20948_get_gyro_raw(int16_t *x, int16_t *y, int16_t *z) {
     if (!x || !y || !z) { return false; }
     if (xSemaphoreTake(ICMMutex, MUTEX_WAIT) != pdTRUE) return false;
 
@@ -250,7 +250,7 @@ bool ICM_20948_get_gyro_raw(int16_t *x, int16_t *y, int16_t *z) {
     return true;
 }
 
-bool ICM_20948_get_mag_raw(int16_t *x, int16_t *y, int16_t *z) {
+static bool ICM_20948_get_mag_raw(int16_t *x, int16_t *y, int16_t *z) {
     if (!x || !y || !z) { return false; }
     if (xSemaphoreTake(ICMMutex, MUTEX_WAIT) != pdTRUE) return false;
 
