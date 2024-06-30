@@ -201,10 +201,11 @@ int main(void)
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
+  logInit();
   canHandlerInit(); //create bus queue
   flightPhaseInit();
-  logInit();
   MY2C_init();
+  healthCheckInit();
   //canHandlerInit(); //create bus queue
   //flightPhaseInit();
   otitsRegister(test_defaultTaskPass, TEST_SOURCE_DEFAULT, "DefaultPass");
@@ -224,7 +225,7 @@ int main(void)
   //xReturned &= xTaskCreate(canHandlerTask, "CAN handler", 2000, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
   //xReturned &= xTaskCreate(stateEstTask, "StateEst", 2000, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
   xReturned &= xTaskCreate(logTask, "Logging", 1024, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
-  //xReturned &= xTaskCreate(healthCheckTask, "health checks", 2000, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
+  xReturned &= xTaskCreate(healthCheckTask, "health checks", 512, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
   //xReturned &= xTaskCreate(controlTask, "Controller", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
   //xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 2000, NULL, (UBaseType_t) osPriorityAboveNormal, &controllerHandle);
 #ifdef TEST_MODE

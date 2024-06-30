@@ -17,7 +17,7 @@ QueueHandle_t fullBuffersQueue;
 // OTITS TESTS
 Otits_Result_t test_logInfo() {
 	Otits_Result_t res;
-	if (!logInfo("otits-test", "otits!")){
+	if (!logInfo("otits test", "otits!")){
 		res.info = "logInfo fail";
 		res.outcome = TEST_OUTCOME_FAILED;
 		return res;
@@ -39,7 +39,8 @@ Otits_Result_t test_currentBufferFull() {
 	return res;
 }
 
-bool logInit(void) {
+bool logInit(void)
+{
     fullBuffersQueue = xQueueCreate(NUM_LOG_BUFFERS - 1, sizeof(log_buffer*));
     logWriteMutex = xSemaphoreCreateMutex();
 
