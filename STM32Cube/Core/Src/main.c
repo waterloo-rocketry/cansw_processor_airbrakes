@@ -208,7 +208,6 @@ int main(void)
   trajectory_init();
   canHandlerInit(); //create bus queue
   flightPhaseInit();
-  MY2C_init();
   healthCheckInit();
   //canHandlerInit(); //create bus queue
   //flightPhaseInit();
