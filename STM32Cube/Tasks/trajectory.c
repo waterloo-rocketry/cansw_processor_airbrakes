@@ -305,6 +305,7 @@ void trajectory_task(void * argument){
             }
 
         }
+        vTaskDelay(20); // TODO: for testing so this blocks
     }
 }
 void trajectory_init(){
