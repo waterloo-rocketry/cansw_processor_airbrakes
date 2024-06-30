@@ -116,7 +116,7 @@ static bool otitsInit() {
 bool otitsRegister(Otits_Test_Function_t* testFunctionPtr, OtitsSource_e source, const char* name) {
 #ifdef TEST_MODE
 	// ensure not overflowing array
-	if (numTestsRegistered == MAX_NUM_TESTS) {
+	if (numTestsRegistered >= MAX_NUM_TESTS) {
 		printf_("ERROR: CANNOT REGISTER MORE TESTS %d THAN MAX_NUM_TESTS!\n", numTestsRegistered);
 		return false;
 	}

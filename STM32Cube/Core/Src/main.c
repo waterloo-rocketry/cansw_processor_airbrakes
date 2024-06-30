@@ -27,7 +27,6 @@
 #include "canlib.h"
 #include "millis.h"
 #include "ICM-20948.h"
-#include "my2c.h"
 
 #include "vn_handler.h"
 #include "log.h"
@@ -38,6 +37,7 @@
 #include "trajectory.h"
 #include "can_handler.h"
 #include "otits.h"
+#include "sdmmc.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -90,6 +90,7 @@ uint32_t idx;
 //Task handles
 TaskHandle_t logTaskhandle = NULL;
 TaskHandle_t VNTaskHandle = NULL;
+TaskHandle_t trajectoryTaskHandle = NULL;
 TaskHandle_t stateEstTaskHandle = NULL;
 TaskHandle_t canhandlerhandle = NULL;
 TaskHandle_t healthChecksTaskHandle = NULL;
@@ -201,13 +202,15 @@ int main(void)
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
+  sdmmcInit();
+  ICM_20948_init();
+
   logInit();
+  trajectory_init();
   canHandlerInit(); //create bus queue
   flightPhaseInit();
-  ICM_20948_init();
   healthCheckInit();
-  //canHandlerInit(); //create bus queue
-  //flightPhaseInit();
+
   otitsRegister(test_defaultTaskPass, TEST_SOURCE_DEFAULT, "DefaultPass");
   otitsRegister(test_defaultTaskFail, TEST_SOURCE_DEFAULT, "DefaultFail");
   /* USER CODE END RTOS_QUEUES */
@@ -224,12 +227,13 @@ int main(void)
   //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", 2000, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
   //xReturned &= xTaskCreate(canHandlerTask, "CAN handler", 2000, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
   xReturned &= xTaskCreate(stateEstTask, "StateEst", 512, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
+  xReturned &= xTaskCreate(trajectory_task, "traj", 512, NULL, (UBaseType_t) osPriorityNormal, &trajectoryTaskHandle);
   xReturned &= xTaskCreate(logTask, "Logging", 1024, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
   xReturned &= xTaskCreate(healthCheckTask, "health checks", 512, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
   //xReturned &= xTaskCreate(controlTask, "Controller", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
   //xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 2000, NULL, (UBaseType_t) osPriorityAboveNormal, &controllerHandle);
 #ifdef TEST_MODE
-  xReturned &= xTaskCreate(otitsTask, "oTITS", 500, NULL, (UBaseType_t) osPriorityAboveNormal, &oTITSHandle);
+  xReturned &= xTaskCreate(otitsTask, "oTITS", 512, NULL, (UBaseType_t) osPriorityNormal, &oTITSHandle);
 #endif
 
   if(xReturned != pdPASS)
@@ -1018,7 +1022,7 @@ void StartDefaultTask(void *argument)
 	/* Infinite loop */
 	for(;;)
 	{
-		char buffer[] = "hello world!\r\n";
+		//char buffer[] = "hello world!\r\n";
 		//printf_(buffer);
 		//logDebug(0, "test messsssage");
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
