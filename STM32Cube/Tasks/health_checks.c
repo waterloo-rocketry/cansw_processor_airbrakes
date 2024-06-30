@@ -23,12 +23,16 @@ static Otits_Result_t test_ADCRead() {
 
     if (adc1_val > 65536 ) {
         res.outcome = TEST_OUTCOME_DATA_ERR;
-        res.info = "raw adc out of range";
+        res.info = "raw adc > 65536";
     	return res;
     } else if (adc1_current_mA > 500) {
         res.outcome = TEST_OUTCOME_DATA_ERR;
         res.info = "I > 500mA";
     	return res;
+    } else if (adc1_current_mA < 100) {
+        res.outcome = TEST_OUTCOME_DATA_ERR;
+        res.info = "I < 100mA";
+        return res;
     }
     res.outcome = TEST_OUTCOME_PASSED;
     res.info = "";
