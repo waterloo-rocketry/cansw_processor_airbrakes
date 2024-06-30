@@ -204,7 +204,7 @@ int main(void)
   logInit();
   canHandlerInit(); //create bus queue
   flightPhaseInit();
-  MY2C_init();
+  ICM_20948_init();
   healthCheckInit();
   //canHandlerInit(); //create bus queue
   //flightPhaseInit();
@@ -223,13 +223,13 @@ int main(void)
   //dunno if casting from CMSIS priorities is valid
   //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", 2000, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
   //xReturned &= xTaskCreate(canHandlerTask, "CAN handler", 2000, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
-  //xReturned &= xTaskCreate(stateEstTask, "StateEst", 2000, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
+  xReturned &= xTaskCreate(stateEstTask, "StateEst", 512, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
   xReturned &= xTaskCreate(logTask, "Logging", 1024, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
   xReturned &= xTaskCreate(healthCheckTask, "health checks", 512, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
   //xReturned &= xTaskCreate(controlTask, "Controller", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
   //xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 2000, NULL, (UBaseType_t) osPriorityAboveNormal, &controllerHandle);
 #ifdef TEST_MODE
-  xReturned &= xTaskCreate(otitsTask, "oTITS", 500, NULL, (UBaseType_t) osPriorityBelowNormal, &oTITSHandle);
+  xReturned &= xTaskCreate(otitsTask, "oTITS", 500, NULL, (UBaseType_t) osPriorityAboveNormal, &oTITSHandle);
 #endif
 
   if(xReturned != pdPASS)
@@ -1014,14 +1014,12 @@ static void MX_GPIO_Init(void)
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
-	// THIS FUNCTION MUST BE CALLED INSIDE A FREERTOS TASK
-	ICM_20948_init();
   /* USER CODE BEGIN 5 */
 	/* Infinite loop */
 	for(;;)
 	{
 		char buffer[] = "hello world!\r\n";
-		printf_(buffer);
+		//printf_(buffer);
 		//logDebug(0, "test messsssage");
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 		osDelay(1000);

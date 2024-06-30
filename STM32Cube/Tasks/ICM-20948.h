@@ -7,8 +7,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-// Set up gyroscope, accelerometer, and magnetometer
+// Initialize mutex, tests, etc. Does not need to be run from a task.
 bool ICM_20948_init();
+
+// Set up gyroscope, accelerometer, and magnetometer.
+// !!! This must be run from a freertos task !!!
+bool ICM_20948_setup();
 
 // Check if the device is alive. Fails if an I2C can't be established
 // or if WHO_AM_I registers don't return default values.

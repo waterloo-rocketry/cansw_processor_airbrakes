@@ -12,13 +12,16 @@
 #include "vn_handler.h"
 #include "log.h"
 #include "can_handler.h"
-#include <time.h>
+#include "millis.h"
+#include "printf.h"
 
 #define SAMPLE_RATE 100 // replace this with actual sample rate
 #define USE_ICM 1
 
 void stateEstTask(void *arguments)
 {
+    float previousTimestamp = 0;
+
 	/* USER CODE BEGIN stateEstimationTask */
 
 	    // Define calibration (replace with actual calibration data if available)
@@ -27,7 +30,7 @@ void stateEstTask(void *arguments)
 				.element = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
 		};
 		const FusionVector gyroscopeSensitivity = {
-				.axis = {0.0f, 0.0f, 0.0f}
+				.axis = {1.0f, 1.0f, 1.0f}
 		};
 		const FusionVector gyroscopeOffset = {
 				.axis = {0.0f, 0.0f, 0.0f}
@@ -36,7 +39,7 @@ void stateEstTask(void *arguments)
 					.element = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
 			};
 		const FusionVector accelerometerSensitivity = {
-				.axis = {0.0f, 0.0f, 0.0f}
+				.axis = {1.0f, 1.0f, 1.0f}
 		};
 		const FusionVector accelerometerOffset = {
 				.axis = {0.0f, 0.0f, 0.0f}
@@ -71,9 +74,9 @@ void stateEstTask(void *arguments)
 		 #if USE_ICM == 1
 		 //if we are using the ICM IMU, initialize it
 		 bool res = true;
-		 res &= ICM_20948_init();
+		 res &= ICM_20948_setup();
 		 res &= ICM_20948_check_sanity();
-		 res &= MAG_Self_Test();
+		// res &= MAG_Self_Test();
 		 if(!res)
 		 {
 			 //throw an error?
@@ -86,7 +89,7 @@ void stateEstTask(void *arguments)
 
 		 // This loop should repeat each time new gyroscope data is available
 		 while (true) {
-			#if USE_ICM == 1
+	        #if USE_ICM == 1
 			 //If using the ICM, do a synchronous (wrt to state estimation) read on all sensors
 			 float xData;
 			 float yData;
@@ -107,7 +110,7 @@ void stateEstTask(void *arguments)
 				 accelerometer.axis.z = zData;
 			 }
 
-			 // magnetometer data in arbitrary units //TODO Figure out units
+			 // magnetometer data in microteslas
 			 if(ICM_20948_get_mag_converted(&xData, &yData, &zData)) {
 				 magnetometer.axis.x = xData;
 				 magnetometer.axis.y = yData;
@@ -115,10 +118,8 @@ void stateEstTask(void *arguments)
 			 }
 
 		 	 // Calculate delta time (in seconds) to account for gyroscope sample clock error
-			 //TODO Replace anything to do with time.h with a FreeRTOS or HAL service
-			 static clock_t previousTimestamp;
-			 const clock_t timestamp = clock(); // replace this with actual gyroscope timestamp
-			 const float deltaTime = (float) (timestamp - previousTimestamp) / (float) CLOCKS_PER_SEC;
+			 const float timestamp = millis_(); // replace this with actual gyroscope timestamp
+			 const float deltaTime = (float) (timestamp - previousTimestamp) / 1000;
 			 previousTimestamp = timestamp;
 
 
@@ -152,8 +153,8 @@ void stateEstTask(void *arguments)
 
 		 	 //calculate algorithm outputs
 		 	 const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
-		 	logInfo(SOURCE_STATE_EST, "EuRoll %d, EuPitch %d, EuYaw %d", (int) (euler.angle.roll * 1000), (int) (euler.angle.pitch * 1000), (int) (euler.angle.yaw * 1000));
-
+		 	logInfo("stateest", "EuRoll %f, EuPitch %f, EuYaw %f", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
+		 	//printf_("EuRoll %f, EuPitch %f, EuYaw %f\n", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
 		 	can_msg_t msg;
 		 	if(build_state_est_data_msg(69, &euler.angle.roll, STATE_ANGLE_ROLL, &msg)) xQueueSend(busQueue, &msg, 10);
 		 	if(build_state_est_data_msg(70, &euler.angle.pitch, STATE_ANGLE_PITCH, &msg)) xQueueSend(busQueue, &msg, 10);
@@ -161,7 +162,7 @@ void stateEstTask(void *arguments)
 
 		 	//Push accelerationv alues for debugging
 		 	const FusionVector earth = FusionAhrsGetEarthAcceleration(&ahrs);
-		 	logDebug(SOURCE_STATE_EST, "AccelX %d, AccelY %d, AccelZ %d", earth.axis.x, earth.axis.y, earth.axis.z);
+		 	logDebug("stateest", "AccelX %d, AccelY %d, AccelZ %d", earth.axis.x, earth.axis.y, earth.axis.z);
 
 		 	 vTaskDelay(20); //TODO replace this with vTaskDelayUntil
 		 }
