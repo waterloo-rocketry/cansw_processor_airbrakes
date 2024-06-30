@@ -1,18 +1,29 @@
 #include "can_handler.h"
+#include "flight_phase.h"
 
 
-uint32_t LED_state = 0;
 xQueueHandle busQueue;
 
 void can_handle_rx(const can_msg_t *message, uint32_t timestamp){
-	if(get_message_type(message) == MSG_LEDS_ON)
+	uint16_t msgtype = get_message_type(message);
+	BaseType_t xHigherPriorityTaskWoken, result = pdFALSE;
+
+	if(msgtype == MSG_LEDS_ON)
 	{
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, 0);
 	}
-	else if (get_message_type(message) == MSG_LEDS_OFF)
+	else if (msgtype == MSG_LEDS_OFF)
 	{
 		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, 1);
 	}
+	else if(msgtype == MSG_ACTUATOR_CMD && get_actuator_id(message) == ACTUATOR_INJECTOR_VALVE && get_req_actuator_state(message) == ACTUATOR_ON)
+	{
+		result = xEventGroupSetBitsFromISR(flightPhaseEventsHandle, INJ_OPEN_BIT, &xHigherPriorityTaskWoken);
+	}
+	/*this will potentially yield from the CAN callback early but that is okay so long as the
+	CAN ISR imlementation doesn't do any cleanup after returning from the callback (it currently doesn't) */
+	if(result != pdFALSE)  portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+
 	return;
 }
 
@@ -25,8 +36,7 @@ void canHandlerTask(void *argument)
 	if(xQueueReceive(busQueue, &tx_msg, 10) == pdTRUE) //Returns pdTRUE if we got a message, pdFALSE if timed out
 	{
 		can_send(&tx_msg);
-		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_1, LED_state); //write and toggle D3 when we send a CAN message
-		LED_state = !LED_state;
+		HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_1); //write and toggle D3 when we send a CAN message
 	}
   }
 }

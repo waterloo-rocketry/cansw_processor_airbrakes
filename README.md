@@ -6,9 +6,7 @@ Processor is a bit different from most other rocketCAN boards as it uses an STM3
 
 To get started with development, clone the repository and open the IDE project folder in the workspace directory of your choice. You will also need to initialize the submodules in the project using 
 
-`git submodule update --init`
-
-As of writing, you will need to check the ```canlib``` submodule out to the correct working branch, in this case ```stm32h7```.
+`git submodule update --init --recursive`
 
 Otherwise this process is fairly standard across Eclipse-based IDEs, so any issues should be resolvable with some Google-fu.
 
@@ -35,6 +33,13 @@ In addition to targeting a more modern CPU, the project is made significantly mo
 - If you need to write to a queue, ```extern``` the queue handle. Be mindful that queues with many writers may fill up, and be prepared to handle that situation
 - A queue should only ever have one reader. This is again a stylistic choice, but makes sense in our application since we don't have any parallel communication interfaces. If you have a situation where multiple things need to happen with the data from a queue, have a dedicated task, even if this means you need to read a queue then separate that data into multiple downstream queues.
 - The task that reads from a queue is responsible for initializing it. This means write an intialization function in your source file, and call it in ```main``` prior to beginning the scheduler. You can't do this inside your task funcion because you can't guarantee your task will run and initialize your queue before another task tries to put data into it
+
+### Logging
+- Use the logging methods described in `Tasks/log.h` to send logs to SD card.
+- `logDebug()` calls will not run in production! Only for debugging.
+- *DO NOT USE STDIO PRINTF* Instead, add `#include printf.h` to use this safer printf library.
+  - The methods are identical but with _ at the end (`snprintf_("hi")` instead of `snprintf("hi")`).
+- Use `printf_()` for printing debug msgs to UART4 (console). This method is ifdef'd out in production.
 
 ### Misc
 - Do not use magic numbers. Any constant in your code should be delcared at the top of the respective: source file, if the constant does not need to be used elsewhere or header file if it does

@@ -9,7 +9,7 @@
 #define VN_HANDLER_H_
 
 #include "stm32h7xx_hal.h"
-#include "freertos.h"
+#include "FreeRTOS.h"
 #include "queue.h"
 #include "semphr.h"
 #include "Fusion.h"
