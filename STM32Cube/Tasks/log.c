@@ -9,16 +9,15 @@ static log_buffer logBuffers[NUM_LOG_BUFFERS];
 static int CURRENT_BUFFER = 0;
 static SemaphoreHandle_t logWriteMutex;
 
-// Queue of full buffers ready for output. Length of `n - 1` because all `n` buffers can never be full at once.
-// Most extreme case: `n - 1` buffers are in queue, and the `nth` buffer is currently being dumped to output (already
-// removed from the queue and protected by mutex, so it can't be written to until the dump is done)
+// Queue of full buffers ready for output. Typically a max of `n - 1` buffers will be in queue as
+// the nth buffer is being dumped. But leave space for all `n` buffers in case queueReceive is
+// delayed. Otherwise, CURRENT_BUFFER can get stuck on a full buffer that's outside the queue.
 QueueHandle_t fullBuffersQueue;
-
 
 // OTITS TESTS
 Otits_Result_t test_logInfo() {
 	Otits_Result_t res;
-	if (!logInfo(SOURCE_HEALTH, "otits!")){
+	if (!logInfo("otits test", "otits!")){
 		res.info = "logInfo fail";
 		res.outcome = TEST_OUTCOME_FAILED;
 		return res;
@@ -49,55 +48,13 @@ bool logInit(void)
         return false;
     }
 
-    for (int i = 0; i < NUM_LOG_BUFFERS; i++)
-    {
-        logBuffers[i].mutex = xSemaphoreCreateMutex();
+    for (int i = 0; i < NUM_LOG_BUFFERS; i++) {
         logBuffers[i].index = 0;
         logBuffers[i].isFull = false;
-
-        if (logBuffers[i].mutex == NULL) {
-            return false;
-        }
     }
     otitsRegister(test_currentBufferFull, TEST_SOURCE_LOGGER, "CurrBufFull");
     otitsRegister(test_logInfo, TEST_SOURCE_LOGGER, "LogInfo");
     return true;
-}
-
-/**
- * internal helper to convert source enum to string
-*/
-static const char* sourceToString(LogDataSource_t source)
-{
-    switch (source)
-    {
-        case SOURCE_FLIGHT_EVENT:
-            return "FlightEvt";
-            break;
-        case SOURCE_HEALTH: 
-            return "Health";
-            break;
-        case SOURCE_CAN_RX:
-            return "CanRx";
-            break;
-        case SOURCE_CAN_TX:
-            return "CanTx";
-            break;
-        case SOURCE_SENSOR:
-            return "Sensor";
-            break;
-        case SOURCE_STATE_EST:
-            return "StateEst";
-            break;
-        case SOURCE_APOGEE_PRED:
-            return "TrajPred";
-            break;
-        case SOURCE_EXT_TARGET :
-            return "ExtTarget";
-            break;
-        default:
-            return "";
-    }
 }
 
 /**
@@ -110,14 +67,12 @@ static const char* sourceToString(LogDataSource_t source)
  * users don't have to manually do sprintf_ beforehand - instead, this function will handle formatting the string.
  * Should be safe since this is essentially a sprintf_ wrapper, where variable arguments are acceptable.
 */
-bool logGeneric(LogDataSource_t source, LogLevel_t level, const char* msg, va_list msgArgs)
-{
+bool logGeneric(const char* source, LogLevel_t level, const char* msg, va_list msgArgs) {
     // get timestamp immediately so the following mutex wait time is irrelevant
     TickType_t timestamp = xTaskGetTickCount();
 
     // there can only be 1 log writer at once
-    if (xSemaphoreTake(logWriteMutex, 50) != pdPASS)
-    {
+    if (xSemaphoreTake(logWriteMutex, 50) != pdPASS) {
         return false;
         // timed out while waiting to log - maybe too many tasks are waiting to log. this should never happen?
     }
@@ -126,61 +81,45 @@ bool logGeneric(LogDataSource_t source, LogLevel_t level, const char* msg, va_li
     log_buffer* currentBuffer = &logBuffers[CURRENT_BUFFER];
     
     // if current buffer is full, then all of them must be full. ERROR!!! do not proceed
-    if (currentBuffer->isFull)
-    {
+    if (currentBuffer->isFull) {
         xSemaphoreGive(logWriteMutex);
         return false;
     }
 
-    // TODO: still not sure if this is necessary since isFull exists, but doesnt hurt (unless needs to be optimized out later idk) 
-    if (xSemaphoreTake(currentBuffer->mutex, 0) != pdPASS)
-    {
-        return false;
-    }
-    
-    // format and append the default log header
-	int headerLength = snprintf_(currentBuffer->buffer + currentBuffer->index, MAX_MSG_LENGTH, "%c: [%d] %s ", level, (int) timestamp, sourceToString(source));
-    currentBuffer->index += headerLength;
+    // format and append the log header and msg
+    int charsWritten = 0;
+    char* msgStart = currentBuffer->buffer + currentBuffer->index;
 
-    // limit the actual msg to `MAX_MSG_LENGTH - headerLength` to account for the header we just printed
-    int msgLength = vsnprintf_(currentBuffer->buffer + currentBuffer->index, MAX_MSG_LENGTH - headerLength, msg, msgArgs);
-    
-    // snprintf_ behaviour moment: it returns a larger number than the limit if it had to truncate
-	if (msgLength >= MAX_MSG_LENGTH - headerLength)
-    {
-        currentBuffer->index += MAX_MSG_LENGTH - headerLength - 1; // -1 cuz snprintf_ makes the last char \0
+    charsWritten += snprintf_(msgStart + charsWritten, MAX_MSG_LENGTH - charsWritten, "%c: [%d] %s ", level, (int) timestamp, source);
+    if (charsWritten >= MAX_MSG_LENGTH) {
+        charsWritten = MAX_MSG_LENGTH; // -1 to ignore the '\0' that snprintf automatically counts
     }
-    else
-    {
-        currentBuffer->index += msgLength; // no -1 here cuz snprintf_ normal return value doesn't count \0
+
+    charsWritten += vsnprintf_(msgStart + charsWritten, MAX_MSG_LENGTH - charsWritten, msg, msgArgs);
+    if (charsWritten >= MAX_MSG_LENGTH) {
+        charsWritten = MAX_MSG_LENGTH; // -1 to ignore the '\0' that snprintf automatically counts
     }
 
     // add \n in here instead of asking the sender to do it. This guarantees \n in all logs in case msg gets cut off
-    currentBuffer->buffer[currentBuffer->index] = '\n';
-    currentBuffer->index += 1;
+    currentBuffer->buffer[currentBuffer->index + charsWritten] = '\n';
+    currentBuffer->index += charsWritten + 1; // + 1 for the '\n'
 
-    // if buffer cannot be guaranteed to fit another msg, rotate buffers (which can be up to `MAX_MSG_LENGTH + \n` chars)
-    if (LOG_BUFFER_SIZE - currentBuffer->index < MAX_MSG_LENGTH + 1)
-    {
-        // do this before sending to queue in case queue is full. this prevents other loggers from writing to it
+    // check if this buffer can fit another msg of up to `MAX_MSG_LENGTH + '\n'` chars
+    if (LOG_BUFFER_SIZE - currentBuffer->index <= MAX_MSG_LENGTH) {
+        // set isFull before sending to queue in case queue is full. this prevents other loggers from writing to it
         currentBuffer->isFull = true;
 
-        // if full, send this buffer to output queue and move to next empty one
-        if (xQueueSendToBack(fullBuffersQueue, &currentBuffer, 0) != pdPASS)
-        {
-            // if queue does not have space, all n - 1 buffers are full which should not be possible!! ERROR!
+        // if full, send this buffer to output queue and rotate to next buffer
+        if (xQueueSendToBack(fullBuffersQueue, &currentBuffer, 0) != pdPASS) {
+            // if queue is full, all buffers are already in queue. how did we get here ??? ERROR!!!!
+            xSemaphoreGive(logWriteMutex);
             return false;
         }
-        else
-        {
-            // rotate only if the queue write was successful. otherwise, stay on this buffer until queue hopefully empties
-            CURRENT_BUFFER = (CURRENT_BUFFER + 1) % NUM_LOG_BUFFERS;
-        }
-    }
-    
-    xSemaphoreGive(currentBuffer->mutex);
-    xSemaphoreGive(logWriteMutex);
 
+        CURRENT_BUFFER = (CURRENT_BUFFER + 1) % NUM_LOG_BUFFERS;
+    }
+
+    xSemaphoreGive(logWriteMutex);
     return true;
 }
 
@@ -188,8 +127,7 @@ bool logGeneric(LogDataSource_t source, LogLevel_t level, const char* msg, va_li
 // public log functions
 // ----------------------------------------------------------------------------
 
-bool logError(const LogDataSource_t source, const char* msg, ...)
-{
+bool logError(const char* source, const char* msg, ...) {
     va_list args;
     va_start(args, msg);
     bool success = logGeneric(source, LOG_LVL_ERROR, msg, args);
@@ -197,8 +135,7 @@ bool logError(const LogDataSource_t source, const char* msg, ...)
     return success;
 }
 
-bool logInfo(const LogDataSource_t source, const char* msg, ...)
-{
+bool logInfo(const char* source, const char* msg, ...) {
     va_list args;
     va_start(args, msg);
     bool success = logGeneric(source, LOG_LVL_INFO, msg, args);
@@ -206,8 +143,7 @@ bool logInfo(const LogDataSource_t source, const char* msg, ...)
     return success;
 }
 
-bool logDebug(const LogDataSource_t source, const char* msg, ...)
-{
+bool logDebug(const char* source, const char* msg, ...) {
 #ifdef DEBUG
     va_list args;
     va_start(args, msg);
@@ -219,8 +155,7 @@ bool logDebug(const LogDataSource_t source, const char* msg, ...)
 
 // ----------------------------------------------------------------------------
 
-void logTask(void *argument)
-{
+void logTask(void *argument) {
 	// initalize log file stuff
 	FATFS fs;
 	(void)f_mount(&fs, "", 0);
@@ -236,23 +171,17 @@ void logTask(void *argument)
     log_buffer* bufferToPrint;
 
     // wait for a full buffer to appear in the queue; timeout is long - queues are not expected to fill up super quickly
-    for (;;)
-    {
-		if (xQueueReceive(fullBuffersQueue, &bufferToPrint, 1000000) == pdPASS)
-        {
-            if (xSemaphoreTake(bufferToPrint->mutex, 0) == pdPASS)
-            {
-                // TODO: do uart transmit better
-                // buffers fill from 0, so `index` conveniently indicates how many chars of data there are to print
-
+    for (;;) {
+		if (xQueueReceive(fullBuffersQueue, &bufferToPrint, 1000000) == pdPASS) {
             	(void)f_open(&logfile, logFileName, FA_OPEN_APPEND | FA_WRITE);
+                // buffers fill from 0, so `index` conveniently indicates how many chars of data there are to print
             	(void)f_write(&logfile, bufferToPrint->buffer, bufferToPrint->index, NULL);
             	(void)f_close(&logfile);
-
+            	// uart print for testing
+            	// !!!! Ensure the timeout (rn 3000) is long enough to transmit a whole log chunk !!!
+            	// HAL_UART_Transmit(&huart4, bufferToPrint->buffer, bufferToPrint->index, 3000);
                 bufferToPrint->index = 0;
                 bufferToPrint->isFull = false;    
-                xSemaphoreGive(bufferToPrint->mutex);            
-            }
         }
     }
 }

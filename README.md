@@ -6,9 +6,7 @@ Processor is a bit different from most other rocketCAN boards as it uses an STM3
 
 To get started with development, clone the repository and open the IDE project folder in the workspace directory of your choice. You will also need to initialize the submodules in the project using 
 
-`git submodule update --init`
-
-As of writing, you will need to check the ```canlib``` submodule out to the correct working branch, in this case ```stm32h7```.
+`git submodule update --init --recursive`
 
 Otherwise this process is fairly standard across Eclipse-based IDEs, so any issues should be resolvable with some Google-fu.
 
