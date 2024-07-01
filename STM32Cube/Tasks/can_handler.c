@@ -46,10 +46,10 @@ void can_handle_rx(const can_msg_t *message, uint32_t timestamp) {
 void canHandlerTask(void *argument) {
     for(;;) {
         can_msg_t tx_msg;
-        //Block the thread until we see data in the bus queue or 5 ticks elapse
-        if(xQueueReceive(busQueue, &tx_msg, 10) == pdTRUE) { //Returns pdTRUE if we got a message, pdFALSE if timed out
+        //Block the thread until we see data in the bus queue or 1 sec elapses
+        if(xQueueReceive(busQueue, &tx_msg, 1000) == pdTRUE) { //Returns pdTRUE if we got a message, pdFALSE if timed out
             can_send(&tx_msg);
-            HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_1); //write and toggle D3 when we send a CAN message
+            HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_10); //write and toggle D3 when we send a CAN message
         }
     }
 }
