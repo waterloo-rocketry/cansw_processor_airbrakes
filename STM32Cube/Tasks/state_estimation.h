@@ -10,8 +10,6 @@
 
 #include "stm32h7xx_hal.h"
 
-extern UART_HandleTypeDef huart4;
-
 void stateEstTask(void *arguments);
 
 #endif /* STATE_ESTIMATION_H_ */
