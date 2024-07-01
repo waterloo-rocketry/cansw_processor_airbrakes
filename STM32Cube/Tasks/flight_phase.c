@@ -8,53 +8,51 @@
 #include "flight_phase.h"
 #include "millis.h"
 #include "printf.h"
+#include "log.h"
 
 #define BOOST_TIME_MS 10000 //time from inj valve open to motor bunout
 #define RECOVERY_DELAY_MS 15000 //time from inj valve open to recovery deployment
 
-enum FLIGHT_PHASE flight_state = PHASE_PRELAUNCH;
-float injOpenTime;
-float deploymentTime;
+static FLIGHT_PHASE flight_state = PHASE_PRELAUNCH;
+static float injOpenTime;
+static float deploymentTime;
 
 EventGroupHandle_t flightPhaseEventsHandle = NULL;
 #define INJ_OPEN (xEventGroupGetBits(flightPhaseEventsHandle) & INJ_OPEN_BIT)
 #define RECOVERY_DEPLOYMENT (xEventGroupGetBits(flightPhaseEventsHandle) & RECOVERY_DEPLOYMENT_BIT)
 
 
-void flightPhaseInit()
-{
+bool flightPhaseInit() {
 	flightPhaseEventsHandle = xEventGroupCreate();
+	if (flightPhaseEventsHandle == NULL) return false;
 	xEventGroupClearBits(flightPhaseEventsHandle, 0xFFFF); //clear out the enitire group since API doesn't specify if values are initialized to 0
+	return true;
 }
 
-void flightPhaseTask(void * argument)
-{
-	while(1)
-	{
+void flightPhaseTask(void *argument) {
+	while(1) {
 		float time = millis_();
 
-
-		if(flight_state == PHASE_PRELAUNCH && INJ_OPEN)
-		{
+		if(flight_state == PHASE_PRELAUNCH && INJ_OPEN) {
 			injOpenTime = time;
 			flight_state = 	PHASE_BOOST;
+			logInfo("FlightPhase", "Entered boost phase");
 		}
 
-		else if(flight_state == PHASE_BOOST && (time - injOpenTime) > BOOST_TIME_MS)
-		{
+		else if(flight_state == PHASE_BOOST && (time - injOpenTime) > BOOST_TIME_MS) {
 			flight_state = PHASE_COAST;
+            logInfo("FlightPhase", "Entered coast phase");
 		}
 
-		else if((flight_state == PHASE_COAST && (time - injOpenTime) > RECOVERY_DELAY_MS) || RECOVERY_DEPLOYMENT)
-		{
+		else if((flight_state == PHASE_COAST && (time - injOpenTime) > RECOVERY_DELAY_MS) || RECOVERY_DEPLOYMENT) {
 			flight_state = PHASE_DESCENT;
+            logInfo("FlightPhase", "Entered descent phase");
 		}
 		//printf_("[%f] flight phase: %d\n", time/1000, flight_state);
-		osDelay(10);
+		vTaskDelay(10);
 	}
 }
 
-bool extensionAllowed()
-{
+bool extensionAllowed() {
 	return flight_state == PHASE_COAST;
 }
