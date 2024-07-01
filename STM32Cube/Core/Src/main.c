@@ -210,6 +210,7 @@ int main(void)
   canHandlerInit(); //create bus queue
   flightPhaseInit();
   healthCheckInit();
+  controllerInit();
 
   otitsRegister(test_defaultTaskPass, TEST_SOURCE_DEFAULT, "DefaultPass");
   otitsRegister(test_defaultTaskFail, TEST_SOURCE_DEFAULT, "DefaultFail");

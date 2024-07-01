@@ -6,9 +6,10 @@
  */
 
 #include "trajectory.h"
+#include "controller.h"
 #include "otits.h"
-#include "Fusion.h"
 #include <math.h>
+#include "Fusion.h"
 
 #define GRAV_AT_SEA_LVL 9.80665 //m/s^2
 #define EARTH_MEAN_RADIUS 6371009 //m
@@ -22,7 +23,6 @@
 xQueueHandle altQueue;
 xQueueHandle angleQueue;
 xQueueHandle extQueue;
-xQueueHandle apogeeQueue;
 
 float rocket_area(float extension);
 float velocity_derivative(float force, float mass);
@@ -271,21 +271,6 @@ void trajectory_task(void * argument){
     float prev_time = -1;
     uint16_t prev_alt = 0xFFFF;
     
-    //TEST CODE
-    AltTime altTimeTEST;
-    altTimeTEST.alt = 5000;
-    altTimeTEST.time = 12.34;
-   FusionEuler anglesTEST;
-   anglesTEST.array[0] = 45;
-   anglesTEST.array[1] = 45;
-   anglesTEST.array[2] = 45;
-   float extTEST = 0.5;
-
-    xQueueOverwrite(altQueue, &altTimeTEST);
-    xQueueOverwrite(angleQueue, &anglesTEST);
-    xQueueOverwrite(extQueue, &extTEST);
-
-
     for(;;)
     {
         AltTime altTime;
@@ -312,7 +297,6 @@ void trajectory_task(void * argument){
 void trajectory_init(){
     altQueue = xQueueCreate(1, sizeof(AltTime));
     angleQueue = xQueueCreate(1, sizeof(FusionEuler));
-    apogeeQueue = xQueueCreate(1, sizeof(float));
     extQueue = xQueueCreate(1, sizeof(float));
     otitsRegister(test_apogeeQueue, TEST_SOURCE_TRAJ, "apogeeQ");
 }
