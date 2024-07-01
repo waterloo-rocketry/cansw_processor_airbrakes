@@ -51,7 +51,7 @@
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+volatile unsigned long ulHighFrequencyTimerTicks = 0; // TODO: FOR DEVELOPMENT
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -220,7 +220,6 @@ void SDMMC1_IRQHandler(void)
   /* USER CODE END SDMMC1_IRQn 1 */
 }
 
-volatile unsigned long ulHighFrequencyTimerTicks = 0; // TODO: FOR DEVELOPMENT
 /**
   * @brief This function handles TIM6 global interrupt, DAC1_CH1 and DAC1_CH2 underrun error interrupts.
   */

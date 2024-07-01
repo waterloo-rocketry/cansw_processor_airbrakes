@@ -26,7 +26,6 @@
 #include "printf.h"
 #include "canlib.h"
 #include "millis.h"
-#include "my2c.h"
 #include "ICM-20948.h"
 
 #include "vn_handler.h"
@@ -204,6 +203,8 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_QUEUES */
   sdmmcInit();
+  ICM_20948_init();
+
   logInit();
   trajectory_init();
   canHandlerInit(); //create bus queue
@@ -225,12 +226,12 @@ int main(void)
 
   //dunno if casting from CMSIS priorities is valid
   //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", 2000, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
-  xReturned &= xTaskCreate(canHandlerTask, "CAN handler", 512, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
-  //xReturned &= xTaskCreate(stateEstTask, "StateEst", 2000, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
+  xReturned &= xTaskCreate(canHandlerTask, "CAN handler", 2000, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
+  xReturned &= xTaskCreate(stateEstTask, "StateEst", 512, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
   xReturned &= xTaskCreate(trajectory_task, "traj", 512, NULL, (UBaseType_t) osPriorityNormal, &trajectoryTaskHandle);
   xReturned &= xTaskCreate(logTask, "Logging", 1024, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
   xReturned &= xTaskCreate(healthCheckTask, "health checks", 512, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
-  xReturned &= xTaskCreate(controlTask, "Controller", 512, NULL, (UBaseType_t) osPriorityNormal, &controllerHandle);
+  //xReturned &= xTaskCreate(controlTask, "Controller", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
   //xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 2000, NULL, (UBaseType_t) osPriorityAboveNormal, &controllerHandle);
 #ifdef TEST_MODE
   xReturned &= xTaskCreate(otitsTask, "oTITS", 512, NULL, (UBaseType_t) osPriorityNormal, &oTITSHandle);
@@ -1018,14 +1019,13 @@ static void MX_GPIO_Init(void)
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
-	// THIS FUNCTION MUST BE CALLED INSIDE A FREERTOS TASK
-	ICM_20948_init();
   /* USER CODE BEGIN 5 */
 	/* Infinite loop */
 	for(;;)
 	{
 		char buffer[] = "hello world!\r\n";
 		printf_(buffer);
+		//logDebug(0, "test messsssage");
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 		osDelay(1000);
 	}
