@@ -14,16 +14,6 @@
 #include "queue.h"
 #include "semphr.h"
 
-typedef struct
-{
-	uint32_t deltaTimems;
-	FusionVector gyroscope;
-	FusionVector accelerometer;
-	FusionVector magnetometer;
-} rawIMUPacked;
-
-extern QueueHandle_t IMUDataHandle;
-
 void stateEstTask(void *arguments);
 
 #endif /* STATE_ESTIMATION_H_ */

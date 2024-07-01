@@ -8,6 +8,7 @@
 #ifndef HEALTH_CHECKS_H_
 #define HEALTH_CHECKS_H_
 
+#include <stdbool.h>
 #include "stm32h7xx_hal.h"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -22,6 +23,7 @@
 
 #define MAX_CURR_5V_mA 500
 
+bool healthCheckInit();
 void healthCheckTask(void *argument);
 
 

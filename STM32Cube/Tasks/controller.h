@@ -31,6 +31,10 @@ typedef struct {
 	float target_extension;
 } controller_t;
 
+extern QueueHandle_t apogeeQueue;
+
+void controllerInit();
+
 void controlTask(void *argument);
 
 

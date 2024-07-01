@@ -51,13 +51,13 @@
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+volatile unsigned long ulHighFrequencyTimerTicks = 0; // TODO: FOR DEVELOPMENT
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
 extern FDCAN_HandleTypeDef hfdcan1;
 extern I2C_HandleTypeDef hi2c4;
-extern DMA_HandleTypeDef hdma_uart4_rx;
+extern SD_HandleTypeDef hsd1;
 extern DMA_HandleTypeDef hdma_usart1_rx;
 extern UART_HandleTypeDef huart4;
 extern UART_HandleTypeDef huart1;
@@ -222,17 +222,17 @@ void USART1_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles UART4 global interrupt.
+  * @brief This function handles SDMMC1 global interrupt.
   */
-void UART4_IRQHandler(void)
+void SDMMC1_IRQHandler(void)
 {
-  /* USER CODE BEGIN UART4_IRQn 0 */
+  /* USER CODE BEGIN SDMMC1_IRQn 0 */
 
-  /* USER CODE END UART4_IRQn 0 */
-  HAL_UART_IRQHandler(&huart4);
-  /* USER CODE BEGIN UART4_IRQn 1 */
+  /* USER CODE END SDMMC1_IRQn 0 */
+  HAL_SD_IRQHandler(&hsd1);
+  /* USER CODE BEGIN SDMMC1_IRQn 1 */
 
-  /* USER CODE END UART4_IRQn 1 */
+  /* USER CODE END SDMMC1_IRQn 1 */
 }
 
 /**
@@ -245,7 +245,7 @@ void TIM6_DAC_IRQHandler(void)
   /* USER CODE END TIM6_DAC_IRQn 0 */
   HAL_TIM_IRQHandler(&htim6);
   /* USER CODE BEGIN TIM6_DAC_IRQn 1 */
-
+  ulHighFrequencyTimerTicks++; // TODO: FOR DEVELOPMENT
   /* USER CODE END TIM6_DAC_IRQn 1 */
 }
 

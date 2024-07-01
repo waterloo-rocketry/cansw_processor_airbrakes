@@ -7,6 +7,7 @@ extern "C" {
 
 #include <stdarg.h>
 #include <string.h>
+#include <stdbool.h>
 #include "printf.h"
 #include "stm32h7xx_hal.h"
 #include "FreeRTOS.h"
@@ -15,6 +16,7 @@ extern "C" {
 
 // function declarations
 void initUniqueLogFileName();
+bool sdmmcInit();
 
 // variable declarations
 
