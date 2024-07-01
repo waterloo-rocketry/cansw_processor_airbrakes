@@ -41,6 +41,29 @@ In addition to targeting a more modern CPU, the project is made significantly mo
   - The methods are identical but with _ at the end (`snprintf_("hi")` instead of `snprintf("hi")`).
 - Use `printf_()` for printing debug msgs to UART4 (console). This method is ifdef'd out in production.
 
+### on-Target Integration Testing System (oTITS)
+This module is an attempt at live integration testing. oTITS runs in a FreeRTOS task which periodically executes user-registered test functions and prints the results. Otits is meant to be a developer tool to help flag broken peripherals or tasks. It is somewhat intrusive and may disrupt timings slightly in order to test peripherals.
+
+#### Quick-start:
+- Enable/disable oTITS by adding/deleting the preprocessor define `TEST_MODE` (`Project->Properties->C/C++ Build->Settings->Compiler->Preprocessor`).
+- View sample usage of registering tests in `main.c` at `test_defaultTaskPass()`.
+
+#### Add tests:
+  - Add `#include "otits.h"`
+  - Create a function with the signature `typedef Otits_Result_t Otits_Test_Function_t(void);`.
+    - The function should test something, then must return the results in a `Otits_Result_t` struct. The `outcome` field is mandatory. The `info` field can optionally be an empty string or any info that may be helpful while reading test results (ex, sensor data from the test).
+  - Register this function with `otitsRegister(Otits_Test_Function_t* testFunctionPtr, OtitsSource_e source, const char* name)`, where `source` is the module and `name` describes the test.
+    - All registration should be done before `otitInit()` is called in `main.c` (ideally, do registration in each task's init method).
+#### Read test results:
+- Ensure `TEST_MODE` is defined (as described above).
+- Open a serial terminal, connect to the board, run the program.
+  - Verify that the registration messages from `otitsInit()` contain no errors.
+  - A test is run every 99 ticks, cycling through all tests. Verify that a message is printed before each test, then a message containing the test results.
+  - Every time a full cycle of tests is run, `***TEST RESULTS***` shows a summary of all test stats. Verify that tests passed/failed as expected.
+![image](https://github.com/waterloo-rocketry/cansw_processor_stm/assets/71736183/8c66459f-9de1-493c-9cc5-03785f03881a)
+
+Unfortunately there is no convenient way to read the rapidly printing messages aside from stopping/starting and scrolling through the serial terminal.
+
 ### Misc
 - Do not use magic numbers. Any constant in your code should be delcared at the top of the respective: source file, if the constant does not need to be used elsewhere or header file if it does
 - When you delcare a constant, either put the units (if applicable) in the name or in an inline comment with the definition
