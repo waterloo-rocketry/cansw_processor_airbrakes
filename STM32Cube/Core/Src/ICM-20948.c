@@ -4,6 +4,7 @@
 #include "ICM-20948.h"
 #include "ICM-20948_regmap.h"
 #include "cmsis_os.h"
+#include "otits.h"
 
 /* LSB / (deg/sec) */
 static const float GYRO_SENSITIVITY = 16.4;
@@ -12,7 +13,97 @@ static const float ACCEL_SENSITIVITY = 2048;
 /* microteslas / LSB */
 static const float MAG_SENSITIVITY = 0.15;
 
-// This driver assumes that I2C is already initialized
+// OTITS TESTS
+Otits_Result_t test_ICMSanity() {
+	Otits_Result_t res;
+
+	if (MY2C_write1ByteRegister(ICM_20948_ADDR, REG_BANK_SEL, 0x00) != HAL_OK){
+		res.info = "my2c write fail";
+		res.outcome = TEST_OUTCOME_FAILED;
+		return res;
+	} else if (MY2C_read1ByteRegister(ICM_20948_ADDR, WHO_AM_I) != 0xEA) {
+		res.info = "icm who-am-i value incorrect";
+		res.outcome = TEST_OUTCOME_DATA_ERR;
+		return res;
+    }
+	res.info = "";
+	res.outcome = TEST_OUTCOME_PASSED;
+	return res;
+}
+
+Otits_Result_t test_magSanity() {
+	Otits_Result_t res;
+
+    if (MY2C_read1ByteRegister(AK09916_MAG_ADDR, WIA2) != 0x09) {
+		res.info = "mag who-am-i value incorrect";
+		res.outcome = TEST_OUTCOME_DATA_ERR;
+		return res;
+    }
+	res.info = "";
+	res.outcome = TEST_OUTCOME_PASSED;
+	return res;
+}
+
+Otits_Result_t test_magSelfTest() {
+	Otits_Result_t res;
+	HAL_StatusTypeDef status = HAL_OK;
+
+    // reset to power-down mode
+    status |= MY2C_write1ByteRegister(AK09916_MAG_ADDR, CNTL2, 0x0);
+    vTaskDelay(50);
+    // set self-test mode
+    status |= MY2C_write1ByteRegister(AK09916_MAG_ADDR, CNTL2, 0x10);
+    vTaskDelay(50);
+
+    // bit 1 of this reg indicates whether data is ready
+    uint8_t mag_data_status_1 = MY2C_read1ByteRegister(AK09916_MAG_ADDR, ST1);
+    vTaskDelay(50);
+
+    // wait until data is ready
+    if (!(mag_data_status_1 & 1)) {
+    	res.info = "mag selftest data not ready";
+    	res.outcome = TEST_OUTCOME_FAILED;
+    	return res;
+    }
+
+    // get data
+    int16_t x = 0;
+    int16_t y = 0;
+    int16_t z = 0;
+
+    uint8_t x_h = MY2C_read1ByteRegister(AK09916_MAG_ADDR, HXH);
+    uint8_t x_l = MY2C_read1ByteRegister(AK09916_MAG_ADDR, HXL);
+    x = (int16_t)((uint16_t)x_h << 8 | x_l);
+
+    uint8_t y_h = MY2C_read1ByteRegister(AK09916_MAG_ADDR, HYH);
+    uint8_t y_l = MY2C_read1ByteRegister(AK09916_MAG_ADDR, HYL);
+    y = (int16_t)((uint16_t)y_h << 8 | y_l);
+
+    uint8_t z_h = MY2C_read1ByteRegister(AK09916_MAG_ADDR, HZH);
+    uint8_t z_l = MY2C_read1ByteRegister(AK09916_MAG_ADDR, HZL);
+    z = (int16_t)((uint16_t)z_h << 8 | z_l);
+
+    // Must read ST2 register after measurement, see datasheet register 13.4 ST2
+    MY2C_read1ByteRegister(AK09916_MAG_ADDR, ST2);
+    // exit self test mode
+    status |= MY2C_write1ByteRegister(AK09916_MAG_ADDR, CNTL2, 0x06);
+
+    // validate data according to self-test thresholds on datasheet
+    if (status != HAL_OK) {
+    	res.info = "mag selftest my2c fail";
+    	res.outcome = TEST_OUTCOME_FAILED;
+    	return res;
+    }
+    if (!(-200 <= x && x <= 200  && -200 <= y && y <= 200 && -1000 <= z && z <= -200)) {
+    	res.info = "mag selftest data out of bounds";
+    	res.outcome = TEST_OUTCOME_DATA_ERR;
+    	return res;
+    }
+	res.info = "";
+	res.outcome = TEST_OUTCOME_PASSED;
+	return res;
+}
+
 bool ICM_20948_init() {
     MY2C_init();
 
@@ -51,6 +142,9 @@ bool ICM_20948_init() {
     // Set to continuous measurement mode 3 (50 Hz measurement frequency)
     MY2C_write1ByteRegister(AK09916_MAG_ADDR, CNTL2, 0x06);
 
+    otitsRegister(test_ICMSanity, TEST_SOURCE_ICM, "ICMSanity");
+    otitsRegister(test_magSanity, TEST_SOURCE_ICM, "MagSanity");
+    otitsRegister(test_magSelfTest, TEST_SOURCE_ICM, "MagSelfTest");
     return true;
 }
 
@@ -68,52 +162,6 @@ bool ICM_20948_check_sanity(void) {
 
     // checks pass
     return true;
-}
-
-/**
- * Perform AK09916 self-test procedure according to datasheet
- * @return true if the data passes the self-test thresholds 
-*/
-bool MAG_Self_Test(void) {
-    // reset to power-down mode
-    MY2C_write1ByteRegister(AK09916_MAG_ADDR, CNTL2, 0x0);
-    osDelay(1000);
-    // set self-test mode
-    MY2C_write1ByteRegister(AK09916_MAG_ADDR, CNTL2, 0x10);
-    
-    // bit 1 of this reg indicates whether data is ready
-    uint8_t mag_data_status_1 = MY2C_read1ByteRegister(AK09916_MAG_ADDR, ST1);
-
-    // wait until data is ready
-    while (!(mag_data_status_1 & 1)) {
-        mag_data_status_1 = MY2C_read1ByteRegister(AK09916_MAG_ADDR, ST1);
-    }
-
-    // get data
-    int16_t x = 0;
-    int16_t y = 0;
-    int16_t z = 0;
-
-    uint8_t x_h = MY2C_read1ByteRegister(AK09916_MAG_ADDR, HXH);
-    uint8_t x_l = MY2C_read1ByteRegister(AK09916_MAG_ADDR, HXL);
-    x = (int16_t)((uint16_t)x_h << 8 | x_l);
-
-    uint8_t y_h = MY2C_read1ByteRegister(AK09916_MAG_ADDR, HYH);
-    uint8_t y_l = MY2C_read1ByteRegister(AK09916_MAG_ADDR, HYL);
-    y = (int16_t)((uint16_t)y_h << 8 | y_l);
-
-    uint8_t z_h = MY2C_read1ByteRegister(AK09916_MAG_ADDR, HZH);
-    uint8_t z_l = MY2C_read1ByteRegister(AK09916_MAG_ADDR, HZL);
-    z = (int16_t)((uint16_t)z_h << 8 | z_l);
-
-    // Must read ST2 register after measurement, see datasheet register 13.4 ST2
-    MY2C_read1ByteRegister(AK09916_MAG_ADDR, ST2);
-
-    // validate data according to self-test thresholds on datasheet
-    if (-200 <= x && x <= 200  && -200 <= y && y <= 200 && -1000 <= z && z <= -200) { 
-        return true;
-    }
-    return false;
 }
 
 bool ICM_20948_get_accel_raw(int16_t *x, int16_t *y, int16_t *z) 

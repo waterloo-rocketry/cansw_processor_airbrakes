@@ -26,6 +26,8 @@
 #include "printf.h"
 #include "canlib.h"
 #include "millis.h"
+#include "my2c.h"
+#include "ICM-20948.h"
 
 #include "vn_handler.h"
 #include "log.h"
@@ -35,6 +37,8 @@
 #include "state_estimation.h"
 #include "trajectory.h"
 #include "can_handler.h"
+#include "otits.h"
+#include "sdmmc.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -87,10 +91,12 @@ uint32_t idx;
 //Task handles
 TaskHandle_t logTaskhandle = NULL;
 TaskHandle_t VNTaskHandle = NULL;
+TaskHandle_t trajectoryTaskHandle = NULL;
 TaskHandle_t stateEstTaskHandle = NULL;
 TaskHandle_t canhandlerhandle = NULL;
 TaskHandle_t healthChecksTaskHandle = NULL;
 TaskHandle_t controllerHandle = NULL;
+TaskHandle_t oTITSHandle = NULL;
 
 /* USER CODE END PV */
 
@@ -117,7 +123,19 @@ void StartDefaultTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+Otits_Result_t test_defaultTaskPass() {
+	Otits_Result_t res;
+	res.info = "this should pass";
+	res.outcome = TEST_OUTCOME_PASSED;
+	return res;
+}
 
+Otits_Result_t test_defaultTaskFail() {
+	Otits_Result_t res;
+	res.info = "this should fail";
+	res.outcome = TEST_OUTCOME_FAILED;
+	return res;
+}
 /* USER CODE END 0 */
 
 /**
@@ -185,8 +203,16 @@ int main(void)
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  //canHandlerInit(); //create bus queue
-  //flightPhaseInit();
+  sdmmcInit();
+  logInit();
+  trajectory_init();
+  canHandlerInit(); //create bus queue
+  flightPhaseInit();
+  healthCheckInit();
+  controllerInit();
+
+  otitsRegister(test_defaultTaskPass, TEST_SOURCE_DEFAULT, "DefaultPass");
+  otitsRegister(test_defaultTaskFail, TEST_SOURCE_DEFAULT, "DefaultFail");
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -199,13 +225,16 @@ int main(void)
 
   //dunno if casting from CMSIS priorities is valid
   //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", 2000, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
-  //xReturned &= xTaskCreate(canHandlerTask, "CAN handler", 2000, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
+  xReturned &= xTaskCreate(canHandlerTask, "CAN handler", 512, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
   //xReturned &= xTaskCreate(stateEstTask, "StateEst", 2000, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
-  //xReturned &= xTaskCreate(logTask, "Logging", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
-  //xReturned &= xTaskCreate(healthCheckTask, "health checks", 2000, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
-  //xReturned &= xTaskCreate(controlTask, "Controller", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
+  xReturned &= xTaskCreate(trajectory_task, "traj", 512, NULL, (UBaseType_t) osPriorityNormal, &trajectoryTaskHandle);
+  xReturned &= xTaskCreate(logTask, "Logging", 1024, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
+  xReturned &= xTaskCreate(healthCheckTask, "health checks", 512, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
+  xReturned &= xTaskCreate(controlTask, "Controller", 512, NULL, (UBaseType_t) osPriorityNormal, &controllerHandle);
   //xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 2000, NULL, (UBaseType_t) osPriorityAboveNormal, &controllerHandle);
-
+#ifdef TEST_MODE
+  xReturned &= xTaskCreate(otitsTask, "oTITS", 512, NULL, (UBaseType_t) osPriorityNormal, &oTITSHandle);
+#endif
 
   if(xReturned != pdPASS)
   {
@@ -265,7 +294,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLM = 1;
   RCC_OscInitStruct.PLL.PLLN = 125;
   RCC_OscInitStruct.PLL.PLLP = 1;
-  RCC_OscInitStruct.PLL.PLLQ = 4;
+  RCC_OscInitStruct.PLL.PLLQ = 20;
   RCC_OscInitStruct.PLL.PLLR = 4;
   RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_2;
   RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;
@@ -305,8 +334,8 @@ void PeriphCommonClock_Config(void)
   /** Initializes the peripherals clock
   */
   PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C4|RCC_PERIPHCLK_ADC
-                              |RCC_PERIPHCLK_SDMMC|RCC_PERIPHCLK_FDCAN
-                              |RCC_PERIPHCLK_USART1|RCC_PERIPHCLK_UART4;
+                              |RCC_PERIPHCLK_FDCAN|RCC_PERIPHCLK_USART1
+                              |RCC_PERIPHCLK_UART4;
   PeriphClkInitStruct.PLL2.PLL2M = 1;
   PeriphClkInitStruct.PLL2.PLL2N = 120;
   PeriphClkInitStruct.PLL2.PLL2P = 20;
@@ -323,7 +352,6 @@ void PeriphCommonClock_Config(void)
   PeriphClkInitStruct.PLL3.PLL3RGE = RCC_PLL3VCIRANGE_1;
   PeriphClkInitStruct.PLL3.PLL3VCOSEL = RCC_PLL3VCOWIDE;
   PeriphClkInitStruct.PLL3.PLL3FRACN = 0;
-  PeriphClkInitStruct.SdmmcClockSelection = RCC_SDMMCCLKSOURCE_PLL2;
   PeriphClkInitStruct.FdcanClockSelection = RCC_FDCANCLKSOURCE_PLL2;
   PeriphClkInitStruct.Usart234578ClockSelection = RCC_USART234578CLKSOURCE_PLL3;
   PeriphClkInitStruct.Usart16ClockSelection = RCC_USART16910CLKSOURCE_PLL3;
@@ -990,6 +1018,8 @@ static void MX_GPIO_Init(void)
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
+	// THIS FUNCTION MUST BE CALLED INSIDE A FREERTOS TASK
+	ICM_20948_init();
   /* USER CODE BEGIN 5 */
 	/* Infinite loop */
 	for(;;)
