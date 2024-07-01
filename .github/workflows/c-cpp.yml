@@ -1,14 +1,14 @@
-name: C/C++ CI
+name: arm-none-eabi-gcc
+uses: fiam/arm-none-eabi-gcc@v1.0.4
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "test-workflow" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "test-workflow" ]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -21,3 +21,7 @@ jobs:
       run: make check
     - name: make distcheck
       run: make distcheck
+
+
+              
+            
