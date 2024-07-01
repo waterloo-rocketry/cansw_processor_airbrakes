@@ -7,6 +7,7 @@
 
 #include "trajectory.h"
 #include "controller.h"
+#include "otits.h"
 #include <math.h>
 #include "Fusion.h"
 
@@ -227,6 +228,45 @@ float get_max_altitude(float velY, float velX, float altitude, float airbrake_ex
     return prevAlt;
 }
 
+/*
+ * Test that the apogee queue is not frozen, and values are within reason
+ */
+Otits_Result_t test_apogeeQueue() {
+    Otits_Result_t res;
+    float apogee1;
+    float apogee2;
+
+    if (xQueuePeek(apogeeQueue, &apogee1, 120) != pdTRUE) {
+        res.outcome = TEST_OUTCOME_TIMEOUT;
+        res.info = "apogee q peek 1 timeout";
+        return res;
+    }
+
+    vTaskDelay(120);
+
+    if (xQueuePeek(apogeeQueue, &apogee2, 120) != pdTRUE) {
+        res.outcome = TEST_OUTCOME_TIMEOUT;
+        res.info = "apogee q peek 2 timeout";
+        return res;
+    }
+
+    if (apogee1 == apogee2) {
+        res.outcome = TEST_OUTCOME_FAILED;
+        res.info = "apogee q didnt update?";
+        return res;
+    }
+
+    if (apogee1 <= 0 || apogee1 > 20000 || apogee2 <= 0 || apogee2 > 20000 ) {
+        res.outcome = TEST_OUTCOME_DATA_ERR;
+        res.info = "apogee out of range";
+        return res;
+    }
+
+    res.outcome = TEST_OUTCOME_PASSED;
+    res.info = "";
+    return res;
+}
+
 void trajectory_task(void * argument){    
     float prev_time = -1;
     uint16_t prev_alt = 0xFFFF;
@@ -252,10 +292,12 @@ void trajectory_task(void * argument){
             }
 
         }
+        vTaskDelay(20); // TODO: for testing so this blocks
     }
 }
 void trajectory_init(){
     altQueue = xQueueCreate(1, sizeof(AltTime));
     angleQueue = xQueueCreate(1, sizeof(FusionEuler));
     extQueue = xQueueCreate(1, sizeof(float));
+    otitsRegister(test_apogeeQueue, TEST_SOURCE_TRAJ, "apogeeQ");
 }
