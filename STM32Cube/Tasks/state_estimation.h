@@ -12,8 +12,18 @@
 #include "Fusion.h"
 #include "FreeRTOS.h"
 #include "queue.h"
-#include "semphr.h"
+
+typedef struct
+{
+	uint32_t deltaTimems;
+	FusionVector gyroscope;
+	FusionVector accelerometer;
+	FusionVector magnetometer;
+} rawIMUPacked;
+
+extern QueueHandle_t IMUDataHandle;
 
 void stateEstTask(void *arguments);
+void state_est_init();
 
 #endif /* STATE_ESTIMATION_H_ */

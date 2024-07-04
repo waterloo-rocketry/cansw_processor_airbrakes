@@ -220,7 +220,7 @@ void vnIMUHandler(void *argument)
 
 							printf_("Mag: (X: %.3f, Y: %.3f, Z: %.3f), Accel: (X: %.3f, Y: %.3f, Z: %.3f), Angles: (X: %.3f, Y: %.3f, Z: %.3f)\n", magVec.c[0], magVec.c[1], magVec.c[2], accelVec.c[0], accelVec.c[1], accelVec.c[2], gyroVec.c[0], gyroVec.c[1], gyroVec.c[2]);
 
-							/*ENABLE THIS!!!
+
 							rawIMUPacked data;
 							memcpy(data.accelerometer.array, accelVec.c, 3 * sizeof(float));
 							memcpy(data.gyroscope.array, gyroVec.c, 3 * sizeof(float));
@@ -228,7 +228,7 @@ void vnIMUHandler(void *argument)
 							data.deltaTimems = 0; //TODO armaan I need time_startup here
 
 							xQueueOverwrite(IMUDataHandle, &data);
-							*/
+
 						}
 
 						//unhandled message format
