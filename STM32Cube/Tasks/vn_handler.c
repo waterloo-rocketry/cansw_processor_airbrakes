@@ -12,6 +12,7 @@
 #include "can_handler.h"
 #include <math.h>
 #include <string.h>
+#include "stdbool.h"
 
 extern UART_HandleTypeDef huart1;
 
@@ -83,18 +84,18 @@ void vnIMUHandler(void *argument)
 {
 	//HAL_UART_RegisterCallback(&huart4, HAL_UART_RX_COMPLETE_CB_ID, USART1_DMA_Rx_Complete_Callback); //TODO: use user-defined callback binding
 	USART1_DMA_Sempahore = xSemaphoreCreateBinary();
-	printf_("Starting...\n");
+	printf_("Starting...\r\n");
 	for(;;)
 	{
 		//Begin a receive, until we read MAX_BINARY_OUTPUT_LENGTH or the line goes idle, indicating a shorter message
 		HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(&huart1, USART1_Rx_Buffer, MAX_BINARY_OUTPUT_LENGTH);
 		if(status != HAL_OK)
 		{
-			//logError(SOURCE_SENSOR, "Failed to begin UART read");
-			printf_("Failed to begin UART read\n");
+			//this is not an error, its fine if the code errors here, dont put debug statment here
 		}
 		else
 		{
+			printf_("\r\n");
 			if(xSemaphoreTake(USART1_DMA_Sempahore, 100) != pdTRUE) //this semaphore is given by the DMA Rx interrupt, indicating we got UART data
 			{
 				//we timed out, we did not see valid data
@@ -114,25 +115,20 @@ void vnIMUHandler(void *argument)
 						size_t packetLength = VnUartPacket_computeBinaryPacketLength(packet.data);
 
 						if (packetLength>MAX_BINARY_OUTPUT_LENGTH){
-							printf_("Memory Overflow!\n\n\n");
+							printf_("Memory Overflow!\n\n\r\n");
 							continue;
 						}
 
-						printf_("Data recived: ");
-					    for(int i = 0; i < MAX_BINARY_OUTPUT_LENGTH; i++) {
-					        printf_("0x%x ", USART1_Rx_Buffer[i]);
-					    }
-					    printf_("\n");
-
-						//time only packet - used for testing purposes only
-						if (packetLength == 14){
-							uint64_t time_startup = VnUartPacket_extractUint64(&packet);
-							printf_("%lld\n", time_startup / NS_TO_S);
+						bool verbose = false;
+						if (verbose){
+							printf_("Data recived: ");
+							for(int i = 0; i < MAX_BINARY_OUTPUT_LENGTH; i++) {
+								printf_("0x%x ", USART1_Rx_Buffer[i]);
+							}
+							printf_("\r\n");
 						}
 
-						//Binary Output #1 - GPS - 53 bytes | Time startup (Common), PosLla (common), NumSats (gnss), GnssPosUncertainty (gnss)
-
-						else if (packetLength == 53){
+						if (packetLength == 53){
 							uint64_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_S; //time in ns -> s
 
 							vec3d pos = VnUartPacket_extractVec3d(&packet);
@@ -143,7 +139,7 @@ void vnIMUHandler(void *argument)
 							uint8_t quality = (uint8_t) quality_; //cast should truncate
 
 							char msgAsString[300];
-							sprintf_(msgAsString, "Time: %lli, pos: (Lat: %.3f, Lon: %.3f, Alt: %.3f) +- (%.3f, %.3f, %.3f) using %d satellites \n", time_startup, pos.c[0],pos.c[1],pos.c[2], postUncertainty.c[0],postUncertainty.c[1],postUncertainty.c[2], numSatellites);
+							sprintf_(msgAsString, "Time: %lli, pos: (Lat: %.3f, Lon: %.3f, Alt: %.3f) +- (%.3f, %.3f, %.3f) using %d satellites \r\n", time_startup, pos.c[0],pos.c[1],pos.c[2], postUncertainty.c[0],postUncertainty.c[1],postUncertainty.c[2], numSatellites);
 							printf_(msgAsString);
 
 							/*ENABLE LOGGING!!!
@@ -158,7 +154,7 @@ void vnIMUHandler(void *argument)
 							xQueueSend(busQueue, &msg, MS_WAIT_CAN);
 
 							char msgAsString[300];
-							sprintf_(msgAsString, "Time: %lli, pos: (Lat: %.3f, Lon: %.3f, Alt: %.3f) +- (%.3f, %.3f, %.3f) using %d satellites \n", time_startup, pos.c[0],pos.c[1],pos.c[2], postUncertainty.c[0],postUncertainty.c[1],postUncertainty.c[2], numSatellites);
+							sprintf_(msgAsString, "Time: %lli, pos: (Lat: %.3f, Lon: %.3f, Alt: %.3f) +- (%.3f, %.3f, %.3f) using %d satellites \r\n", time_startup, pos.c[0],pos.c[1],pos.c[2], postUncertainty.c[0],postUncertainty.c[1],postUncertainty.c[2], numSatellites);
 							printf_(msgAsString);
 
 							logInfo(SOURCE_SENSOR, msgAsString);
@@ -178,7 +174,7 @@ void vnIMUHandler(void *argument)
 							vec3f linAccelEcef = VnUartPacket_extractVec3f(&packet); //m/s^2 NOT INCLUDING GRAVITY
 
 							char msgAsString[900];
-							sprintf_(msgAsString,"Time: %lli, Angular Rate: (X: %.3f, Y: %.3f, Z: %.3f), YPR Angles: (Yaw: %.3f, Pitch: %.3f, Roll: %.3f), Pos ECEF: (X: %.3f, Y: %.3f, Z: %.3f), Vel ECEF: (X: %.3f, Y: %.3f, Z: %.3f), Lin Accel ECEF: (X: %.3f, Y: %.3f, Z: %.3f)\n",
+							sprintf_(msgAsString,"Time: %lli, Angular Rate: (X: %.3f, Y: %.3f, Z: %.3f), YPR Angles: (Yaw: %.3f, Pitch: %.3f, Roll: %.3f), Pos ECEF: (X: %.3f, Y: %.3f, Z: %.3f), Vel ECEF: (X: %.3f, Y: %.3f, Z: %.3f), Lin Accel ECEF: (X: %.3f, Y: %.3f, Z: %.3f)\r\n",
 															time_startup,
 															angularRate.c[0], angularRate.c[1], angularRate.c[2],
 															yprAngles.c[0], yprAngles.c[1], yprAngles.c[2],
@@ -197,7 +193,7 @@ void vnIMUHandler(void *argument)
 							send3VectorStateCanMsg_float(time_startup, angularRate.c,STATE_RATE_YAW, msg); //angle rate in XYZ (TODO: NEED TO CONVERT TO YPR)
 
 							char msgAsString[900];
-							sprintf_(msgAsString,"Time: %lli, Angular Rate: (X: %.3f, Y: %.3f, Z: %.3f), YPR Angles: (Yaw: %.3f, Pitch: %.3f, Roll: %.3f), Pos ECEF: (X: %.3f, Y: %.3f, Z: %.3f), Vel ECEF: (X: %.3f, Y: %.3f, Z: %.3f), Lin Accel ECEF: (X: %.3f, Y: %.3f, Z: %.3f)\n",
+							sprintf_(msgAsString,"Time: %lli, Angular Rate: (X: %.3f, Y: %.3f, Z: %.3f), YPR Angles: (Yaw: %.3f, Pitch: %.3f, Roll: %.3f), Pos ECEF: (X: %.3f, Y: %.3f, Z: %.3f), Vel ECEF: (X: %.3f, Y: %.3f, Z: %.3f), Lin Accel ECEF: (X: %.3f, Y: %.3f, Z: %.3f)\r\n",
 								time_startup,
 								angularRate.c[0], angularRate.c[1], angularRate.c[2],
 								yprAngles.c[0], yprAngles.c[1], yprAngles.c[2],
@@ -218,9 +214,9 @@ void vnIMUHandler(void *argument)
 							vec3f accelVec = VnUartPacket_extractVec3f(&packet);
 							vec3f gyroVec = VnUartPacket_extractVec3f(&packet);
 
-							printf_("Mag: (X: %.3f, Y: %.3f, Z: %.3f), Accel: (X: %.3f, Y: %.3f, Z: %.3f), Angles: (X: %.3f, Y: %.3f, Z: %.3f)\n", magVec.c[0], magVec.c[1], magVec.c[2], accelVec.c[0], accelVec.c[1], accelVec.c[2], gyroVec.c[0], gyroVec.c[1], gyroVec.c[2]);
+							printf_("Mag: (X: %.3f, Y: %.3f, Z: %.3f), Accel: (X: %.3f, Y: %.3f, Z: %.3f), Angles: (X: %.3f, Y: %.3f, Z: %.3f)\r\n", magVec.c[0], magVec.c[1], magVec.c[2], accelVec.c[0], accelVec.c[1], accelVec.c[2], gyroVec.c[0], gyroVec.c[1], gyroVec.c[2]);
 
-
+							/*ENABLE THIS!!!
 							rawIMUPacked data;
 							memcpy(data.accelerometer.array, accelVec.c, 3 * sizeof(float));
 							memcpy(data.gyroscope.array, gyroVec.c, 3 * sizeof(float));
@@ -228,19 +224,19 @@ void vnIMUHandler(void *argument)
 							data.deltaTimems = 0; //TODO armaan I need time_startup here
 
 							xQueueOverwrite(IMUDataHandle, &data);
-
+							*/
 						}
 
 						//unhandled message format
 						else{
-							printf_("unhandled message format!\n");
+							printf_("unhandled message format!\r\n");
 							//logError(SOURCE_SENSOR, "unhandled message format!");
 						}
-						printf_("size: %d\n", packetLength);
+						printf_("size: %d\r\n", packetLength);
 					}
 
 					else {
-						printf_("Not a valid binary packet\n");
+						//printf_("Not a valid binary packet\r\n");
 						//logError(SOURCE_SENSOR, "Non Binary Packet received");
 					}
 			}
@@ -249,4 +245,3 @@ void vnIMUHandler(void *argument)
 	}
 
 }
-
