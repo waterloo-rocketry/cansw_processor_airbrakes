@@ -208,13 +208,14 @@ void vnIMUHandler(void *argument)
 
 						//Binary Output #3 42 bytes | UncompMag (IMU). UncompAccel (IMU), UncompGyro (IMU)
 
-						else if (packetLength == 42){
+						else if (packetLength == 52){
+							uint64_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_S; //time in ns -> s
 
 							vec3f magVec = VnUartPacket_extractVec3f(&packet);
 							vec3f accelVec = VnUartPacket_extractVec3f(&packet);
 							vec3f gyroVec = VnUartPacket_extractVec3f(&packet);
 
-							printf_("Mag: (X: %.3f, Y: %.3f, Z: %.3f), Accel: (X: %.3f, Y: %.3f, Z: %.3f), Angles: (X: %.3f, Y: %.3f, Z: %.3f)\r\n", magVec.c[0], magVec.c[1], magVec.c[2], accelVec.c[0], accelVec.c[1], accelVec.c[2], gyroVec.c[0], gyroVec.c[1], gyroVec.c[2]);
+							printf_("Time: %lli, Mag: (X: %.3f, Y: %.3f, Z: %.3f), Accel: (X: %.3f, Y: %.3f, Z: %.3f), Angles: (X: %.3f, Y: %.3f, Z: %.3f)\r\n", time_startup, magVec.c[0], magVec.c[1], magVec.c[2], accelVec.c[0], accelVec.c[1], accelVec.c[2], gyroVec.c[0], gyroVec.c[1], gyroVec.c[2]);
 
 
 							rawIMUPacked data;
