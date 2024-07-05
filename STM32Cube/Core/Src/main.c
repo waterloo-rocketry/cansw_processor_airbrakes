@@ -1034,7 +1034,7 @@ void StartDefaultTask(void *argument)
 	for(;;)
 	{
 		char buffer[] = "hello world!\r\n";
-		printf_(buffer);
+		//printf_(buffer);
 		//logDebug(0, "test messsssage");
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 		//printf_("hello world\n");
