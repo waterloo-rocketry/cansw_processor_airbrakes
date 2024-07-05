@@ -38,6 +38,7 @@
 #include "can_handler.h"
 #include "otits.h"
 #include "sdmmc.h"
+#include "vn_handler.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -227,12 +228,12 @@ int main(void)
   BaseType_t xReturned = pdPASS;
 
   //dunno if casting from CMSIS priorities is valid
-  //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", 2000, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
-  xReturned &= xTaskCreate(canHandlerTask, "CAN handler", 2000, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
-  xReturned &= xTaskCreate(stateEstTask, "StateEst", 512, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
-  xReturned &= xTaskCreate(trajectory_task, "traj", 512, NULL, (UBaseType_t) osPriorityNormal, &trajectoryTaskHandle);
-  xReturned &= xTaskCreate(logTask, "Logging", 1024, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
-  xReturned &= xTaskCreate(healthCheckTask, "health checks", 512, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
+  xReturned &= xTaskCreate(vnIMUHandler, "VN Task", 2000, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
+  //xReturned &= xTaskCreate(canHandlerTask, "CAN handler", 2000, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
+  //xReturned &= xTaskCreate(stateEstTask, "StateEst", 512, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
+  //xReturned &= xTaskCreate(trajectory_task, "traj", 512, NULL, (UBaseType_t) osPriorityNormal, &trajectoryTaskHandle);
+  //xReturned &= xTaskCreate(logTask, "Logging", 1024, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
+  //xReturned &= xTaskCreate(healthCheckTask, "health checks", 512, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
   //xReturned &= xTaskCreate(controlTask, "Controller", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
   //xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 2000, NULL, (UBaseType_t) osPriorityAboveNormal, &controllerHandle);
 #ifdef TEST_MODE

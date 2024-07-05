@@ -91,7 +91,7 @@ void vnIMUHandler(void *argument)
 		if(status != HAL_OK)
 		{
 			//logError(SOURCE_SENSOR, "Failed to begin UART read");
-			//printf_("Failed to begin UART read\n");
+			printf_("Failed to begin UART read\n");
 		}
 		else
 		{
@@ -240,7 +240,7 @@ void vnIMUHandler(void *argument)
 					}
 
 					else {
-						//printf_("Not a valid binary packet\n");
+						printf_("Not a valid binary packet\n");
 						//logError(SOURCE_SENSOR, "Non Binary Packet received");
 					}
 			}
