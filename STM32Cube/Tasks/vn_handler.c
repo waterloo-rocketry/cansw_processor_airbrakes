@@ -1,147 +1,243 @@
-/*
- * vn_handler.c
+/* * vn_handler.c
  *
  *  Created on: Mar 24, 2024
- *      Author: joedo
- */
+ *      Author: joedo*/
 
-/*
+#include "stm32h7xx_hal.h"
 #include "vn_handler.h"
 #include "vn/protocol/upack.h"
-#include "FreeRTOS.h"
-#include "semphr.h"
 #include "log.h"
-#include "stm32h7xx_hal.h"
-#include <stdio.h>
+#include "state_estimation.h"
+#include "printf.h"
+#include "can_handler.h"
+#include <math.h>
+#include <string.h>
+#include "stdbool.h"
 
-
-//RateDivisor sets the output rate as a function of the sensor ImuRate (800 Hz for the VN-200)
-#define CONFIG_MSG_LENGTH 100
-#define VN_200_IMURATE 800 //Hz
-
-//Binary Output #1
-#define BINARY1_OUT_RATE 10 //Hz
-#define RATE1_DIVISOR VN_200_IMURATE / BINARY1_OUT_RATE
-
-//See "vnenum.h" and the ICD for parameter definitions
-
-#define COMMONGROUP_PARAMS COMMONGROUP_QUATERNION | COMMONGROUP_POSITION | COMMONGROUP_VELOCITY | COMMONGROUP_ACCEL
-#define TIMEGROUP_PARAMS TIMEGROUP_TIMEUTC | TIMEGROUP_TIMEUTC
-#define IMUGROUP_PARAMS IMUGROUP_IMUSTATUS | IMUGROUP_SENSSAT | IMUGROUP_UNCOMPMAG | IMUGROUP_UNCOMPACCEL | IMUGROUP_UNCOMPGYRO | IMUGROUP_TEMP | IMUGROUP_PRES
-#define GPSGROUP_PARAMS GPSGROUP_UTC | GPSGROUP_NUMSATS | GPSGROUP_FIX | GPSGROUP_POSLLA | GPSGROUP_VELECEF
-#define ATTITUDEGROUP_PARAMS ATTITUDEGROUP_NONE
-#define INSGROUP_PARAMS INSGROUP_NONE
-*/
-
-//Minimize binary output contents for initial testing
-/*
-#define COMMONGROUP_PARAMS COMMONGROUP_NONE
-#define TIMEGROUP_PARAMS TIMEGROUP_TIMEUTC
-#define IMUGROUP_PARAMS IMUGROUP_NONE
-#define GPSGROUP_PARAMS GPSGROUP_NONE
-#define ATTITUDEGROUP_PARAMS ATTITUDEGROUP_NONE
-#define INSGROUP_PARAMS INSGROUP_NONE
-
+extern UART_HandleTypeDef huart1;
 
 #define MAX_BINARY_OUTPUT_LENGTH 200
-#define DMA_RX_TIMEOUT 300
+const uint32_t  DMA_RX_TIMEOUT = 300;
+const uint8_t MS_WAIT_CAN = 10;
+const uint32_t NS_TO_S = 1000000000;
+const uint32_t NS_TO_MS = 1000000;
+const bool verbose = false;
+
 uint8_t USART1_Rx_Buffer[MAX_BINARY_OUTPUT_LENGTH];
 SemaphoreHandle_t USART1_DMA_Sempahore;
 
-void USART1_DMA_Rx_Complete_Callback(UART_HandleTypeDef *huart)
+const uint32_t ASCII_METERS = 109;
+
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) //this rebinds the generic _weak callback
 {
-	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-	xSemaphoreGiveFromISR(USART1_DMA_Sempahore, &xHigherPriorityTaskWoken);
-	portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+	if(huart == &huart1)
+		{
+			BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+			xSemaphoreGiveFromISR(USART1_DMA_Sempahore, &xHigherPriorityTaskWoken);
+			portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+		}
 }
 
-bool vnIMUSetup(){
-	//Setup DMA on Rx
-	HAL_UART_RegisterCallback(&huart1, HAL_UART_RX_COMPLETE_CB_ID, USART1_DMA_Rx_Complete_Callback);
-
-	//TODO: Read the WHOAMI registers or equivalent to verify IMU is connected, if not throw error
-		//Register ID 0x01: Offset 0 Model string[24] – Product model number, maximum length 24 characters.
-
-	//configure binary output for raw IMU data and full state estimate
-	uint8_t buffer[CONFIG_MSG_LENGTH];
-	size_t returnedLength;
-	VnError err = VnUartPacket_genWriteBinaryOutput1(buffer, CONFIG_MSG_LENGTH, VNERRORDETECTIONMODE_CHECKSUM, &returnedLength, ASYNCMODE_BOTH, RATE1_DIVISOR,COMMONGROUP_PARAMS,TIMEGROUP_PARAMS,IMUGROUP_PARAMS,GPSGROUP_PARAMS,ATTITUDEGROUP_PARAMS,INSGROUP_PARAMS, GPSGROUP_NONE);
-	if (err == E_NONE)
-	{
-		return HAL_OK == HAL_UART_Transmit(&huart1, buffer, returnedLength, 10); //Send the command to configure IMU output format
-		//TODO: Log error to logQueue
+static uint8_t decimalFromDouble2(double num){
+	uint16_t integer_part = (uint16_t)num;
+	double fractional_part = num - integer_part;
+	if (fractional_part*100 > 254){
+		printf_("Error: getDecimalFromDouble2: overflow");
+		return 0;
 	}
-	else
-	{
-		//TODO: Log error to logQueue
+	uint8_t decimal_part = (uint8_t)(fractional_part * 100); // This captures up to two decimal places which is the max safely stored by a 8bit uint, since max size is 255 it cant hold 999 only 99
+
+	return decimal_part;
+}
+
+static uint16_t decimalFromDouble4(double num){
+	uint16_t integer_part = (uint16_t)num;
+	double fractional_part = num - integer_part;
+	if (fractional_part*10000 > 65534){
+		printf_("Error: getDecimalFromDouble4: overflow");
+		return 0;
 	}
-	return false;
+	uint16_t decimal_part = (uint8_t)(fractional_part * 10000); // This captures up to 4 decimal places which is the max safely stored by a 16bit uint
+
+	return decimal_part;
+}
+
+static double minFromDeg(double deg){
+	return (deg -  (uint32_t)deg)  * 60;
+}
+
+static void send3VectorStateCanMsg_float(uint64_t time, float vector[3], uint8_t firstStateIDOfVector){
+	can_msg_t msg;
+	for (int i = 0; i < 3; i++) {
+		build_state_est_data_msg((uint32_t) time, &vector[i], firstStateIDOfVector + i, &msg);
+		xQueueSend(busQueue, &msg, MS_WAIT_CAN);
+	}
+}
+
+static void send3VectorStateCanMsg_double(uint64_t time, double vector[3], uint8_t firstStateIDOfVector){
+	float float_vector[3];
+	for (int i = 0; i < 3; i++) {
+		float_vector[i] = (float) vector[i];  // Convert double to float
+	}
+	send3VectorStateCanMsg_float(time, float_vector, firstStateIDOfVector);
 }
 
 
 void vnIMUHandler(void *argument)
 {
+	//HAL_UART_RegisterCallback(&huart4, HAL_UART_RX_COMPLETE_CB_ID, USART1_DMA_Rx_Complete_Callback); //TODO: use user-defined callback binding
 	USART1_DMA_Sempahore = xSemaphoreCreateBinary();
+	printf_("Starting...\r\n");
+	//logInfo("##VN Handler Task","2024-07-05-4:30pm");
 	for(;;)
 	{
-
+		//Begin a receive, until we read MAX_BINARY_OUTPUT_LENGTH or the line goes idle, indicating a shorter message
 		HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(&huart1, USART1_Rx_Buffer, MAX_BINARY_OUTPUT_LENGTH);
 		if(status != HAL_OK)
 		{
-			//yikes, log an error and try again
+			//this is not an error, its fine if the code errors here, dont put debug statment here
 		}
 		else
 		{
-			if(xSemaphoreTake(USART1_DMA_Sempahore, 100) != pdTRUE)
+			printf_("\r\n");
+			if(xSemaphoreTake(USART1_DMA_Sempahore, 100) != pdTRUE) //this semaphore is given by the DMA Rx interrupt, indicating we got UART data
 			{
-				//we timed out, throw an error
+				//we timed out, we did not see valid data
 			}
 			else
 			{
+				//We got some data. Parse it.
 				VnUartPacket packet;
 				packet.curExtractLoc = 0;
 				packet.data = USART1_Rx_Buffer;
 				packet.length = MAX_BINARY_OUTPUT_LENGTH;
-				uint16_t *dump;
-				uint16_t time_group;
-				uint16_t imu_group;
-				uint16_t gps_group;
-				uint16_t ins_group;
 
-				if(VnUartPacket_type(&packet) == PACKETTYPE_BINARY)
-				{
-					//TODO: Detect message type properly
-					VnUartPacket_parseBinaryOutput(&packet, dump, dump, dump, dump, &time_group, &imu_group, &gps_group, dump, &ins_group, dump);
-					if(time_group & TIMEGROUP_TIMEUTC)
+
+					if(VnUartPacket_type(&packet) == PACKETTYPE_BINARY)
 					{
-						//logMsg_t msg;
-						//TimeUtc timestamp = VnUartPacket_extractTimeUtc(&packet);
-						//sprintf(msg.data, "%d:%d:%d", timestamp.hour, timestamp.min, timestamp.sec);
-						//xQueueSend(logQueue, &msg, 10);
-					}
-					if(imu_group != IMUGROUP_NONE)
-					{
-						//assume this is the IMU type message we expect
-						//TODO: Build a valid IMU message for state est and push it to queue
-					}
-					if(gps_group != GPSGROUP_NONE)
-					{
-						//decode the GPS data and push it to log
-						//Every so often, build GPS canlib messages and send them over the bus as well
-						//also we have 2 GPSs... no provisions in canlib for THAT
-					}
-					if(ins_group != INSGROUP_NONE)
-					{
-						//fancy state estimation results!
-						//dump these to the logging queue
+						size_t packetLength = VnUartPacket_computeBinaryPacketLength(packet.data);
+
+						if (packetLength>MAX_BINARY_OUTPUT_LENGTH){
+							printf_("Memory Overflow!\n\n\r\n");
+							continue;
+						}
+
+
+						if (verbose){
+							printf_("Data recived: ");
+							for(int i = 0; i < MAX_BINARY_OUTPUT_LENGTH; i++) {
+								printf_("0x%x ", USART1_Rx_Buffer[i]);
+							}
+							printf_("\r\n");
+						}
+
+						if (packetLength == 53){
+							can_msg_t msg;
+
+							uint64_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
+
+							vec3d pos = VnUartPacket_extractVec3d(&packet);
+							uint8_t numSatellites = VnUartPacket_extractInt8(&packet);
+							vec3f postUncertainty = VnUartPacket_extractVec3f(&packet);
+
+							uint32_t quality_ = sqrt(pow(postUncertainty.c[0], 2) + pow(postUncertainty.c[1], 2) + pow(postUncertainty.c[2], 2)); //the higher the number the worse the quality
+							uint8_t quality = (uint8_t) quality_; //cast should truncate
+
+							char msgAsString[300]  = {0};
+							sprintf_(msgAsString, "Time: %lli, pos: (Lat: %.3f, Lon: %.3f, Alt: %.3f) +- (%.3f, %.3f, %.3f) using %d satellites \r\n", time_startup, pos.c[0],pos.c[1],pos.c[2], postUncertainty.c[0],postUncertainty.c[1],postUncertainty.c[2], numSatellites);
+							printf_(msgAsString);
+
+							//Logging + CAN
+							build_gps_lon_msg((uint32_t) time_startup, (uint8_t) pos.c[1], (uint8_t) minFromDeg(pos.c[1]), decimalFromDouble4(minFromDeg(pos.c[1])), (int) (pos.c[1] >= 0) ? 'N' : 'S', &msg);
+							xQueueSend(busQueue, &msg, MS_WAIT_CAN);
+							build_gps_lat_msg((uint32_t) time_startup, (uint8_t) pos.c[1], (uint8_t) minFromDeg(pos.c[1]), decimalFromDouble4(minFromDeg(pos.c[1])), (int) (pos.c[1] >= 0) ? 'E' : 'W', &msg);
+							xQueueSend(busQueue, &msg, MS_WAIT_CAN);
+							build_gps_alt_msg((uint32_t) time_startup, (uint16_t)pos.c[2], decimalFromDouble2(pos.c[2]), (uint8_t) 'M', &msg);
+							xQueueSend(busQueue, &msg, MS_WAIT_CAN);
+							build_gps_info_msg((uint32_t) time_startup, numSatellites, quality, &msg);
+							xQueueSend(busQueue, &msg, MS_WAIT_CAN);
+
+							logInfo("VN Group 1", msgAsString);
+
+
+						}
+
+						//Binary Output #2 92 bytes | Time startup (Common), Angular rate (IMU), Ypr (Attitude), PosEcef (INS), VelEcef (INS), LinAccelEcef (INS)
+						else if (packetLength == 92){
+							uint64_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
+
+							vec3f angularRate = VnUartPacket_extractVec3f(&packet); //rad/s
+							vec3f yprAngles = VnUartPacket_extractVec3f(&packet); //deg
+
+							vec3d posEcef = VnUartPacket_extractVec3d(&packet); //m
+							vec3f velEcef = VnUartPacket_extractVec3f(&packet); //m/s
+							vec3f linAccelEcef = VnUartPacket_extractVec3f(&packet); //m/s^2 NOT INCLUDING GRAVITY
+
+
+
+							char msgAsString[3000] = {0};
+							sprintf_(msgAsString,"Time: %lli, Angular Rate: (X: %.3f, Y: %.3f, Z: %.3f), YPR Angles: (Yaw: %.3f, Pitch: %.3f, Roll: %.3f), Pos ECEF: (X: %.3f, Y: %.3f, Z: %.3f), Vel ECEF: (X: %.3f, Y: %.3f, Z: %.3f), Lin Accel ECEF: (X: %.3f, Y: %.3f, Z: %.3f)\r\n",
+															time_startup,
+															angularRate.c[0], angularRate.c[1], angularRate.c[2],
+															yprAngles.c[0], yprAngles.c[1], yprAngles.c[2],
+															posEcef.c[0], posEcef.c[1], posEcef.c[2],
+															velEcef.c[0], velEcef.c[1], velEcef.c[2],
+															linAccelEcef.c[0], linAccelEcef.c[1], linAccelEcef.c[2]);
+							printf_(msgAsString);
+
+
+							//Logging + CAN
+
+
+							send3VectorStateCanMsg_double(time_startup, posEcef.c,STATE_POS_X); //position
+							send3VectorStateCanMsg_float(time_startup, velEcef.c,STATE_VEL_X); //velocity
+							send3VectorStateCanMsg_float(time_startup, linAccelEcef.c,STATE_ACC_X); //acceleration
+							send3VectorStateCanMsg_float(time_startup, yprAngles.c,STATE_ANGLE_YAW); //angle; TODO: this is also sent by OUR state estimation, so we should expand the enum in canlib to distinguish
+							send3VectorStateCanMsg_float(time_startup, angularRate.c,STATE_RATE_YAW); //angle rate in XYZ (TODO: NEED TO CONVERT TO YPR)
+
+							logInfo("VN Group 2", msgAsString);
+
+
+
+						}
+
+						//Binary Output #3 42 bytes | UncompMag (IMU). UncompAccel (IMU), UncompGyro (IMU)
+
+						else if (packetLength == 52){
+							uint64_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
+
+							vec3f magVec = VnUartPacket_extractVec3f(&packet);
+							vec3f accelVec = VnUartPacket_extractVec3f(&packet);
+							vec3f gyroVec = VnUartPacket_extractVec3f(&packet);
+
+							printf_("Time: %lli, Mag: (X: %.3f, Y: %.3f, Z: %.3f), Accel: (X: %.3f, Y: %.3f, Z: %.3f), Angles: (X: %.3f, Y: %.3f, Z: %.3f)\r\n", time_startup, magVec.c[0], magVec.c[1], magVec.c[2], accelVec.c[0], accelVec.c[1], accelVec.c[2], gyroVec.c[0], gyroVec.c[1], gyroVec.c[2]);
+
+
+							rawIMUPacked data;
+							memcpy(data.accelerometer.array, accelVec.c, 3 * sizeof(float)); //TODO: z is aparentely the 2nd item, and y is the 3rd???
+							memcpy(data.gyroscope.array, gyroVec.c, 3 * sizeof(float));
+							memcpy(data.magnetometer.array, magVec.c, 3 * sizeof(float));
+							data.deltaTimems = 0; //TODO armaan I need time_startup here
+
+							xQueueOverwrite(IMUDataHandle, &data);
+
+						}
+
+						//unhandled message format
+						else{
+							printf_("unhandled message format!\r\n");
+							//logError(SOURCE_SENSOR, "unhandled message format!");
+						}
+						//printf_("size: %d\r\n", packetLength);
 					}
 
-				}
+					else {
+						//printf_("Not a valid binary packet\r\n");
+						//logError(SOURCE_SENSOR, "Non Binary Packet received");
+					}
 			}
 
 		}
 	}
 
 }
-*/
-

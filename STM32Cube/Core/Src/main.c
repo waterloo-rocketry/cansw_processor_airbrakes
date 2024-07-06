@@ -28,7 +28,6 @@
 #include "millis.h"
 #include "ICM-20948.h"
 
-#include "vn_handler.h"
 #include "log.h"
 #include "controller.h"
 #include "flight_phase.h"
@@ -38,6 +37,7 @@
 #include "can_handler.h"
 #include "otits.h"
 #include "sdmmc.h"
+#include "vn_handler.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -118,6 +118,7 @@ static void MX_TIM2_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
+//void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -211,6 +212,7 @@ int main(void)
   flightPhaseInit();
   healthCheckInit();
   controllerInit();
+  state_est_init();
 
   otitsRegister(test_defaultTaskPass, TEST_SOURCE_DEFAULT, "DefaultPass");
   otitsRegister(test_defaultTaskFail, TEST_SOURCE_DEFAULT, "DefaultFail");
@@ -225,14 +227,14 @@ int main(void)
   BaseType_t xReturned = pdPASS;
 
   //dunno if casting from CMSIS priorities is valid
-  //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", 2000, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
+  xReturned &= xTaskCreate(vnIMUHandler, "VN Task", 2000, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
   xReturned &= xTaskCreate(canHandlerTask, "CAN handler", 2000, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
   xReturned &= xTaskCreate(stateEstTask, "StateEst", 512, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
   xReturned &= xTaskCreate(trajectory_task, "traj", 512, NULL, (UBaseType_t) osPriorityNormal, &trajectoryTaskHandle);
-  xReturned &= xTaskCreate(logTask, "Logging", 1024, NULL, (UBaseType_t) osPriorityBelowNormal, &logTaskhandle);
+  xReturned &= xTaskCreate(logTask, "Logging", 1024, NULL, (UBaseType_t) osPriorityNormal, &logTaskhandle);
   xReturned &= xTaskCreate(healthCheckTask, "health checks", 512, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
-  //xReturned &= xTaskCreate(controlTask, "Controller", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
-  //xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 2000, NULL, (UBaseType_t) osPriorityAboveNormal, &controllerHandle);
+  xReturned &= xTaskCreate(controlTask, "Controller", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
+  xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 2000, NULL, (UBaseType_t) osPriorityAboveNormal, &controllerHandle);
 #ifdef TEST_MODE
   xReturned &= xTaskCreate(otitsTask, "oTITS", 512, NULL, (UBaseType_t) osPriorityNormal, &oTITSHandle);
 #endif
@@ -1021,13 +1023,22 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
 	/* Infinite loop */
+//	uint32_t index = 0;
+//	uint8_t temp_buf[1];
+//	uint8_t rx_buf[100] = {0};
+//	int isSizeRxed = 0;
+//	uint16_t size = 0;
+
+	//HAL_UART_Receive_DMA(&huart4, rx_buf, 1);
 	for(;;)
 	{
 		char buffer[] = "hello world!\r\n";
-		printf_(buffer);
+		//printf_(buffer);
 		//logDebug(0, "test messsssage");
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
+		//printf_("hello world\n");
 		osDelay(1000);
+
 	}
   /* USER CODE END 5 */
 }

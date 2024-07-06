@@ -5,8 +5,7 @@
  *      Author: joedo
  */
 
-#include "FreeRTOS.h"
-#include "task.h"
+
 #include "ICM-20948.h"
 #include "Fusion.h"
 #include "vn_handler.h"
@@ -17,13 +16,35 @@
 
 #define TASK_DELAY_TICKS 20 // TODO: what is actual delay time?
 #define SAMPLE_RATE 100 // replace this with actual sample rate
-#define USE_ICM 1
+#define USE_ICM 0
 
 extern xQueueHandle angleQueue;
+
+QueueHandle_t IMUDataHandle;
+
+bool unpackIMUData(FusionVector *gyroscope, FusionVector *accelerometer, FusionVector *magnetometer, uint32_t *deltaTimems)
+{
+	rawIMUPacked data;
+	if(xQueueReceive(IMUDataHandle, &data, 50) == pdTRUE)
+	{
+		*gyroscope = data.gyroscope;
+		*accelerometer = data.accelerometer;
+		*magnetometer = data.magnetometer;
+		*deltaTimems = data.deltaTimems;
+		return true;
+	}
+	return false;
+}
+
+void state_est_init()
+{
+	IMUDataHandle = xQueueCreate(1, sizeof(rawIMUPacked));
+}
 
 void stateEstTask(void *arguments) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
     float previousTimestamp = 0;
+
 
     // Define calibration (replace with actual calibration data if available)
     //all of these have this missing braces error..... that seems to just be a bug...?
@@ -123,16 +144,12 @@ void stateEstTask(void *arguments) {
         previousTimestamp = timestamp;
 
 #else
-        //wait for the VN data buffer mutex to be available
-        if(xSemaphoreTake(vnIMUResultMutex, 100) != pdTRUE) {
-            //we timed out, something is holding onto the mutex
-        }
-
         uint32_t deltaTimeMS;
-        writeIMUData(&gyroscope, &accelerometer, &magnetometer, &deltaTimeMS);
-        float deltaTime = (float) deltaTimeMS / 1000.0; //yes I realized deltaTime was a float in s after the fact sue me
-
-        xSemaphoreGive(vnIMUResultMutex);
+		 if(unpackIMUData(&gyroscope, &accelerometer, &magnetometer, &deltaTimeMS) == false)
+		 {
+			 logError("state estimation", "Failed to get VN raw IMU data");
+		 }
+		 float deltaTime = (float) deltaTimeMS / 1000.0; //yes I realized deltaTime was a float in s after the fact sue me
 #endif
 
         // Apply calibration
