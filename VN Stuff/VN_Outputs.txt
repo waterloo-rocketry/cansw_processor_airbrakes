@@ -1,0 +1,18 @@
+First group: 53 bytes
+
+Time startup (Common), PosLla (common), NumSats (gnss), GnssPosUncertainty (gnss)
+
+FA 09 41 00 08 02 F8 EC 9E 4C BB 05 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 CD C5 27 4C CD C5 27 4C CD C5 27 4C 5C 7E
+
+
+
+Second group: 92 bytes
+Time startup (Common), Angular rate (IMU), Ypr (Attitude), PosEcef (INS), VelEcef (INS), LinAccelEcef (INS)
+
+FA 35 01 00 00 04 02 00 24 01 F8 40 95 C1 CC 07 00 00 C2 C4 51 3A 90 96 4D B9 42 8F 87 BA 33 80 D1 C0 8F 2B 13 3D AA B0 B3 C2 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 8C E9 C6 3C F8 EA 8C 3C 00 6A BE BC 75 71
+
+Third group: 42 bytes
+
+UncompMag (IMU). UncompAccel (IMU), UncompGyro (IMU)
+
+FA 04 0E 00 73 FE B2 3E 09 DD 40 BF AA A0 38 3D C6 C0 0E 3D 4B 7E 1C 41 3E CB 29 BD 3B E3 0A 3A 4C AD 92 BB D2 CC 1D 3B F0 3D
