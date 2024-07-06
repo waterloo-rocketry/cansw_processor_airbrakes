@@ -16,7 +16,7 @@ extern "C" {
 
 // TODO: determine optimal numbers for these
 /* max length of log data string (bytes) */
-#define MAX_MSG_LENGTH 256
+#define MAX_MSG_LENGTH 1000
 /* size of one log buffer (bytes) */
 #define LOG_BUFFER_SIZE 8192
 /* number of log buffers */

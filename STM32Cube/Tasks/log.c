@@ -162,12 +162,16 @@ void logTask(void *argument) {
     FRESULT res = FR_OK;
 
     res |= f_mount(&fs, "", 0);
+
     res |= f_mkdir(logsPath);
+
     initUniqueLogFileName();
 
     FIL logfile;
     res |= f_open(&logfile, logFileName, FA_CREATE_ALWAYS);
+
     res |= f_close(&logfile);
+
 
     if (res != FR_OK && res != FR_EXIST) {
         // flag init error
@@ -176,10 +180,11 @@ void logTask(void *argument) {
     // wait for a full buffer to appear in the queue; timeout is long - queues are not expected to fill up super quickly
     for (;;) {
 		if (xQueueReceive(fullBuffersQueue, &bufferToPrint, 1000000) == pdPASS) {
-            	(void)f_open(&logfile, logFileName, FA_OPEN_APPEND | FA_WRITE);
+				FRESULT result = FR_OK;
+			    result |= f_open(&logfile, logFileName, FA_OPEN_APPEND | FA_WRITE);
                 // buffers fill from 0, so `index` conveniently indicates how many chars of data there are to print
-            	(void)f_write(&logfile, bufferToPrint->buffer, bufferToPrint->index, NULL);
-            	(void)f_close(&logfile);
+			    result |= f_write(&logfile, bufferToPrint->buffer, bufferToPrint->index, NULL);
+			    result |= f_close(&logfile);
             	// uart print for testing
             	// !!!! Ensure the timeout (rn 3000) is long enough to transmit a whole log chunk !!!
             	// HAL_UART_Transmit(&huart4, bufferToPrint->buffer, bufferToPrint->index, 3000);
