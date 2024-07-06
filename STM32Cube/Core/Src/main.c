@@ -28,7 +28,6 @@
 #include "millis.h"
 #include "ICM-20948.h"
 
-//#include "vn_handler.h"
 #include "log.h"
 #include "controller.h"
 #include "flight_phase.h"
