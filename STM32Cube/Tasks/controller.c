@@ -46,7 +46,8 @@ void controlTask(void *argument)
 			last_ms = millis_();
 			airbrakesController.last_error = airbrakesController.error;
 
-			float extension = airbrakesController.controller_term_P + airbrakesController.controller_term_I - airbrakesController.controller_term_D;
+			float output = airbrakesController.controller_term_P + airbrakesController.controller_term_I - airbrakesController.controller_term_D;
+			float extension = 1.0 - output; //invert the controller output
 
 			if(extension > CONTROLLER_MAX_EXTENSION) extension = CONTROLLER_MAX_EXTENSION;
 			if(extension < CONTROLLER_MIN_EXTENSION) extension = CONTROLLER_MIN_EXTENSION;
@@ -56,7 +57,7 @@ void controlTask(void *argument)
 			if(extensionAllowed())
 			{
 				can_msg_t msg;
-				build_actuator_cmd_analog( (uint32_t) millis_(), ACTUATOR_AIRBRAKES_SERVO, extension, &msg);
+				build_actuator_cmd_analog( (uint32_t) millis_(), ACTUATOR_AIRBRAKES_SERVO, (uint8_t) (100 * extension), &msg);
 				xQueueSend(busQueue, &msg, 5); //If we are in the coast phase, command the airbrakes servo to the target extension value
 			}
 			printf_("extension: %f", extension);
