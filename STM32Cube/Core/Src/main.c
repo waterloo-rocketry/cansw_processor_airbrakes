@@ -226,12 +226,12 @@ int main(void)
   BaseType_t xReturned = pdPASS;
 
   //dunno if casting from CMSIS priorities is valid
-  xReturned &= xTaskCreate(vnIMUHandler, "VN Task", 2000, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
+  //xReturned &= xTaskCreate(vnIMUHandler, "VN Task", 2000, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
   xReturned &= xTaskCreate(canHandlerTask, "CAN handler", 2000, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
-  xReturned &= xTaskCreate(stateEstTask, "StateEst", 512, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
+  //xReturned &= xTaskCreate(stateEstTask, "StateEst", 512, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
   xReturned &= xTaskCreate(trajectory_task, "traj", 512, NULL, (UBaseType_t) osPriorityNormal, &trajectoryTaskHandle);
   xReturned &= xTaskCreate(logTask, "Logging", 1024, NULL, (UBaseType_t) osPriorityNormal, &logTaskhandle);
-  xReturned &= xTaskCreate(healthCheckTask, "health checks", 512, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
+  //xReturned &= xTaskCreate(healthCheckTask, "health checks", 512, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
   xReturned &= xTaskCreate(controlTask, "Controller", 2000, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
   xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 2000, NULL, (UBaseType_t) osPriorityAboveNormal, &controllerHandle);
 #ifdef TEST_MODE
@@ -1026,10 +1026,9 @@ void StartDefaultTask(void *argument)
 	{
 		//char buffer[] = "hello world!\r\n";
 		//printf_(buffer);
-    time = millis_();
+    float time = millis_();
     uint32_t alt =  0.0292*time*time*time - 6.7446*time*time + 315.51*time + 5400.9;
-    printf_("Test Alt: %lu", alt);
-    AltStruct altStruct = {alt, time};
+    AltTime altStruct = {alt, time};
     FusionEuler angles = {0.2, 0.2, 0.2}; //Need Rad ~ 11.5 deg
     xQueueOverwrite(angleQueue, &angles);
     xQueueSend(altQueue, &altStruct, 10);
