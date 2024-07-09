@@ -14,5 +14,6 @@
 #include <stdbool.h>
 
 void vnIMUHandler(void *argument);
+void vn_handler_init();
 
 #endif /* VN_HANDLER_H_ */

@@ -81,12 +81,15 @@ static void send3VectorStateCanMsg_double(uint64_t time, double vector[3], uint8
 	send3VectorStateCanMsg_float(time, float_vector, firstStateIDOfVector);
 }
 
+void vn_handler_init()
+{
+	HAL_StatusTypeDef status = HAL_UART_RegisterRxEventCallback(&huart1, VN_UASART1_RX_callback);
+	USART1_DMA_Sempahore = xSemaphoreCreateBinary();
+}
+
 
 void vnIMUHandler(void *argument)
 {
-	HAL_UART_RegisterRxEventCallback(&huart1, VN_UASART1_RX_callback);
-	USART1_DMA_Sempahore = xSemaphoreCreateBinary();
-
 	for(;;)
 	{
 		//Begin a receive, until we read MAX_BINARY_OUTPUT_LENGTH or the line goes idle, indicating a shorter message
