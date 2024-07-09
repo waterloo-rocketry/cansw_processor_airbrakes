@@ -33,6 +33,7 @@ typedef struct {
 } controller_t;
 
 extern QueueHandle_t apogeeQueue;
+extern QueueHandle_t targetQueue;
 
 void controllerInit();
 

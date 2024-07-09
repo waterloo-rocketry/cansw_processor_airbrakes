@@ -1,6 +1,8 @@
 #include "can_handler.h"
 #include "flight_phase.h"
 #include "trajectory.h"
+#include "controller.h"
+#include "state_estimation.h"
 #include "millis.h"
 
 xQueueHandle busQueue;
@@ -32,6 +34,15 @@ void can_handle_rx(const can_msg_t *message, uint32_t timestamp) {
 	    data.time = millis_();
 	    result = xQueueOverwriteFromISR(altQueue, &data, &xHigherPriorityTaskWoken);
 	    break;
+	case MSG_STATE_EST_CALIB:
+		uint8_t flag; //sent to processor low
+		uint16_t apogee;
+		if(get_state_est_calibration_msg(message, &flag, &apogee) && !flag) //left side is guaranteed to evaluate before right side
+		{
+			result |= xQueueSendFromISR(targetQueue, &apogee, &xHigherPriorityTaskWoken); //send new target apogee to controller
+			result |= xEventGroupSetBitsFromISR(calibrationEventHandle, RESET_FILTER_FLAG, &xHigherPriorityTaskWoken); //tell state estimation to reset filter algorithm
+		}
+		break;
 
 	default:
 	}

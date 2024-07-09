@@ -17,10 +17,12 @@
 #include "trajectory.h"
 
 QueueHandle_t apogeeQueue;
+QueueHandle_t targetQueue;
 
 void controllerInit()
 {
 	apogeeQueue = xQueueCreate(1, sizeof(float));
+	targetQueue = xQueueCreate(1, sizeof(uint16_t));
 }
 
 void controlTask(void *argument)
@@ -36,6 +38,14 @@ void controlTask(void *argument)
   /* Infinite loop */
 	for(;;)
 	{
+		uint16_t updated_target;
+		if(xQueueReceive(targetQueue, &updated_target, 0) == pdPASS)
+		{
+			airbrakesController.target_altitude = (float) updated_target;
+			can_msg_t msg;
+			build_state_est_calibration_msg((uint32_t) millis_(), 1, updated_target, &msg);
+			can_send(&msg);
+		}
 		if(xQueueReceive(apogeeQueue, &apogeeEstimate, 100) == pdTRUE)
 		{
 			//PID controller update

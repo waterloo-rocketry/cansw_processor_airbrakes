@@ -13,19 +13,22 @@
 #include "can_handler.h"
 #include "millis.h"
 #include "printf.h"
+#include "state_estimation.h"
 
 #define TASK_DELAY_TICKS 20 // TODO: what is actual delay time?
 #define SAMPLE_RATE 100 // replace this with actual sample rate
 #define USE_ICM 0
 
 extern xQueueHandle angleQueue;
-
 QueueHandle_t IMUDataHandle;
+EventGroupHandle_t calibrationEventHandle;
+
+#define RESET_FILTER_CMD (xEventGroupGetBits(calibrationEventHandle) & RESET_FILTER_FLAG)
 
 bool unpackIMUData(FusionVector *gyroscope, FusionVector *accelerometer, FusionVector *magnetometer, uint32_t *deltaTimems)
 {
 	rawIMUPacked data;
-	if(xQueueReceive(IMUDataHandle, &data, 50) == pdTRUE)
+	if(xQueueReceive(IMUDataHandle, &data, 100) == pdTRUE)
 	{
 		*gyroscope = data.gyroscope;
 		*accelerometer = data.accelerometer;
@@ -39,15 +42,14 @@ bool unpackIMUData(FusionVector *gyroscope, FusionVector *accelerometer, FusionV
 void state_est_init()
 {
 	IMUDataHandle = xQueueCreate(1, sizeof(rawIMUPacked));
+	calibrationEventHandle = xEventGroupCreate();
+	xEventGroupClearBits(calibrationEventHandle, 0xFFFF); //clear out the enitire group since API doesn't specify if values are initialized to 0
 }
 
 void stateEstTask(void *arguments) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
     float previousTimestamp = 0;
 
-
-    // Define calibration (replace with actual calibration data if available)
-    //all of these have this missing braces error..... that seems to just be a bug...?
     const FusionMatrix gyroscopeMisalignment = {
             .element = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
     };
@@ -67,7 +69,6 @@ void stateEstTask(void *arguments) {
             .axis = {0.0f, 0.0f, 0.0f}
     };
 
-    // TODO Figure out how to check soft and hard iron (?)
     const FusionMatrix softIronMatrix = {
             .element = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
     };
@@ -78,7 +79,6 @@ void stateEstTask(void *arguments) {
     // Create and Init Fusion objects
     FusionOffset offset;
     FusionAhrs ahrs;
-
     FusionOffsetInitialise(&offset, SAMPLE_RATE);
     FusionAhrsInitialise(&ahrs);
 
@@ -109,7 +109,14 @@ void stateEstTask(void *arguments) {
     FusionVector magnetometer;
 
     // This loop should repeat each time new gyroscope data is available
-    while (true) {
+    while (true)
+    {
+    	if(RESET_FILTER_CMD)
+    	{
+    		FusionAhrsReset(&ahrs);
+    		xEventGroupClearBits(calibrationEventHandle, RESET_FILTER_FLAG);
+    	}
+
 #if USE_ICM == 1
         //If using the ICM, do a synchronous (wrt to state estimation) read on all sensors
         float xData;
