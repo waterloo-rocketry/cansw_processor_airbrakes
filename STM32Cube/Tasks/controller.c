@@ -27,7 +27,8 @@ void controlTask(void *argument)
 {
 	float apogeeEstimate;
 	controller_t airbrakesController;
-	airbrakesController.target_altitude = 10000;
+	airbrakesController.last_error = 0;
+	airbrakesController.target_altitude = 7000;
 	float last_ms = millis_();
 	float initial_extension = 0;
 	xQueueOverwrite(extQueue, &initial_extension); //put a valid element in the queue so that trajectory prediction can actually run
@@ -41,25 +42,32 @@ void controlTask(void *argument)
 			airbrakesController.error = airbrakesController.target_altitude - apogeeEstimate;
 			airbrakesController.controller_term_P = airbrakesController.error * CONTROLLER_GAIN_P;
 			float dt = (millis_() - last_ms) / 1000.0; //time delay in s
-			airbrakesController.controller_term_I = airbrakesController.controller_term_I + CONTROLLER_GAIN_I * airbrakesController.error * dt; //Add some time measure here
-			airbrakesController.controller_term_D = CONTROLLER_GAIN_D * (airbrakesController.error - airbrakesController.last_error)/ dt; //here too
+			airbrakesController.controller_term_I = airbrakesController.controller_term_I + CONTROLLER_GAIN_I * airbrakesController.error * dt;
+			if(airbrakesController.controller_term_I > CONTROLLER_I_SATMAX) airbrakesController.controller_term_I = CONTROLLER_I_SATMAX;
+			if(airbrakesController.controller_term_I < -CONTROLLER_I_SATMAX) airbrakesController.controller_term_I = -CONTROLLER_I_SATMAX;
+
+			//prevent divide by 0 errors
+			if(dt < 0.0000001) airbrakesController.controller_term_D = 0;
+			else airbrakesController.controller_term_D = CONTROLLER_GAIN_D * (airbrakesController.error - airbrakesController.last_error) / dt;
+
 			last_ms = millis_();
 			airbrakesController.last_error = airbrakesController.error;
 
-			float extension = airbrakesController.controller_term_P + airbrakesController.controller_term_I - airbrakesController.controller_term_D;
+			float output = airbrakesController.controller_term_P + airbrakesController.controller_term_I - airbrakesController.controller_term_D;
+			float extension = 1.0 - output; //invert the controller output
 
 			if(extension > CONTROLLER_MAX_EXTENSION) extension = CONTROLLER_MAX_EXTENSION;
 			if(extension < CONTROLLER_MIN_EXTENSION) extension = CONTROLLER_MIN_EXTENSION;
 
+			printf_("extension: %f\n", extension);
 			xQueueOverwrite(extQueue, &extension); //make the new extension value available to trajectory prediction
-
 			if(extensionAllowed())
 			{
 				can_msg_t msg;
-				build_actuator_cmd_analog( (uint32_t) millis_(), ACTUATOR_AIRBRAKES_SERVO, extension, &msg);
+				build_actuator_cmd_analog( (uint32_t) millis_(), ACTUATOR_AIRBRAKES_SERVO, (uint8_t) (100 * extension), &msg);
 				xQueueSend(busQueue, &msg, 5); //If we are in the coast phase, command the airbrakes servo to the target extension value
 			}
-			printf_("extension: %f", extension);
+
 		}
 	}
 }

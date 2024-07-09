@@ -17,10 +17,11 @@
 extern UART_HandleTypeDef huart1;
 
 #define MAX_BINARY_OUTPUT_LENGTH 200
-#define DMA_RX_TIMEOUT 300
+const uint32_t  DMA_RX_TIMEOUT = 300;
 const uint8_t MS_WAIT_CAN = 10;
 const uint32_t NS_TO_S = 1000000000;
 const uint32_t NS_TO_MS = 1000000;
+const bool verbose = false;
 
 uint8_t USART1_Rx_Buffer[MAX_BINARY_OUTPUT_LENGTH];
 SemaphoreHandle_t USART1_DMA_Sempahore;
@@ -121,7 +122,7 @@ void vnIMUHandler(void *argument)
 							continue;
 						}
 
-						bool verbose = false;
+
 						if (verbose){
 							printf_("Data recived: ");
 							for(int i = 0; i < MAX_BINARY_OUTPUT_LENGTH; i++) {
