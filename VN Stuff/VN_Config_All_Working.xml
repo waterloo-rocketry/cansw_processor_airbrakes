@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<VectorNav_Sensor xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Model>VN-300T-CR</Model>
+  <HardwareRevision>2</HardwareRevision>
+  <SerialNumber>0100092383</SerialNumber>
+  <FirmwareVersion>0.5.0.5</FirmwareVersion>
+  <Register>
+    <Id>7</Id>
+    <Name>Async Data Output Freq</Name>
+    <Values>5;5</Values>
+  </Register>
+  <Register>
+    <Id>26</Id>
+    <Name>Reference Frame Rotation</Name>
+    <Values>+1.000000,+0.000000,+0.000000,+0.000000,+0.000000,-1.000000,+0.000000,+1.000000,+0.000000</Values>
+  </Register>
+  <Register>
+    <Id>75</Id>
+    <Name>Binary Output Message Configuration #1</Name>
+    <Values>3,200,09,0041,0208</Values>
+  </Register>
+  <Register>
+    <Id>76</Id>
+    <Name>Binary Output Message Configuration #2</Name>
+    <Values>3,150,35,0001,0400,0002,0124</Values>
+  </Register>
+  <Register>
+    <Id>77</Id>
+    <Name>Binary Output Message Configuration #3</Name>
+    <Values>3,100,05,0001,000E</Values>
+  </Register>
+</VectorNav_Sensor>
