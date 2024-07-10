@@ -16,7 +16,10 @@
 
 #define SAMPLE_RATE_HZ 1 //Hz; Need to set to match VN data rate
 #define TASK_DELAY_TICKS 1000 / SAMPLE_RATE_HZ
+
+#ifndef USE_ICM //Default use ICM to off
 #define USE_ICM 0 //Enable to pull raw IMU data from connected ICM-24098 IMU breakout
+#endif
 
 extern xQueueHandle angleQueue;
 QueueHandle_t IMUDataHandle;
@@ -144,40 +147,43 @@ void stateEstTask(void *arguments) {
 		 {
 			 logError("state estimation", "Failed to get VN raw IMU data");
 		 }
-		 float deltaTime = imuTimestamp - previousTimestamp;
-		 previousTimestamp = imuTimestamp;
+		 else
+		 {
+			 float deltaTime = imuTimestamp - previousTimestamp;
+			 previousTimestamp = imuTimestamp;
 #endif
 
-        // Apply calibration
-        gyroscope = FusionCalibrationInertial(gyroscope, gyroscopeMisalignment, gyroscopeSensitivity, gyroscopeOffset);
-        accelerometer = FusionCalibrationInertial(accelerometer, accelerometerMisalignment, accelerometerSensitivity, accelerometerOffset);
-        magnetometer = FusionCalibrationMagnetic(magnetometer, softIronMatrix, hardIronOffset);
+			// Apply calibration
+			gyroscope = FusionCalibrationInertial(gyroscope, gyroscopeMisalignment, gyroscopeSensitivity, gyroscopeOffset);
+			accelerometer = FusionCalibrationInertial(accelerometer, accelerometerMisalignment, accelerometerSensitivity, accelerometerOffset);
+			magnetometer = FusionCalibrationMagnetic(magnetometer, softIronMatrix, hardIronOffset);
 
-        // Update gyroscope offset correction algorithm
-        gyroscope = FusionOffsetUpdate(&offset, gyroscope);
+			// Update gyroscope offset correction algorithm
+			gyroscope = FusionOffsetUpdate(&offset, gyroscope);
 
-        // Update gyroscope AHRS algorithm
-        FusionAhrsUpdate(&ahrs, gyroscope, accelerometer, magnetometer, deltaTime);
+			// Update gyroscope AHRS algorithm
+			FusionAhrsUpdate(&ahrs, gyroscope, accelerometer, magnetometer, deltaTime);
 
-        // Calculate algorithm outputs
-        const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
+			// Calculate algorithm outputs
+			const FusionEuler euler = FusionQuaternionToEuler(FusionAhrsGetQuaternion(&ahrs));
 
-        // Send angle estimation to queue for trajectory pred
-        xQueueOverwrite(angleQueue, &euler);
+			// Send angle estimation to queue for trajectory pred
+			xQueueOverwrite(angleQueue, &euler);
 
-        can_msg_t msg;
-        if(build_state_est_data_msg(69, &euler.angle.roll, STATE_ANGLE_ROLL, &msg)) xQueueSend(busQueue, &msg, 10);
-        if(build_state_est_data_msg(70, &euler.angle.pitch, STATE_ANGLE_PITCH, &msg)) xQueueSend(busQueue, &msg, 10);
-        if(build_state_est_data_msg(71, &euler.angle.yaw, STATE_ANGLE_YAW, &msg)) xQueueSend(busQueue, &msg, 10);
+			can_msg_t msg;
+			if(build_state_est_data_msg(69, &euler.angle.roll, STATE_ANGLE_ROLL, &msg)) xQueueSend(busQueue, &msg, 10);
+			if(build_state_est_data_msg(70, &euler.angle.pitch, STATE_ANGLE_PITCH, &msg)) xQueueSend(busQueue, &msg, 10);
+			if(build_state_est_data_msg(71, &euler.angle.yaw, STATE_ANGLE_YAW, &msg)) xQueueSend(busQueue, &msg, 10);
 
-        logInfo("stateEst", "EuRoll %f, EuPitch %f, EuYaw %f", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
-        printf_("STATE_EST:EuRoll %f, EuPitch %f, EuYaw %f\n", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
-        //printf_("EuRoll %f, EuPitch %f, EuYaw %f\n", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
+			logInfo("stateEst", "EuRoll %f, EuPitch %f, EuYaw %f", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
+			printf_(">EuRoll:%.2f\n>EuPitch:%.2f\n>EuYaw:%.2f\n", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
 
-        //Push acceleration values for debugging
-        const FusionVector earth = FusionAhrsGetEarthAcceleration(&ahrs);
-        logDebug("stateEst", "AccelX %d, AccelY %d, AccelZ %d", earth.axis.x, earth.axis.y, earth.axis.z);
-
-        vTaskDelayUntil(&xLastWakeTime, TASK_DELAY_TICKS);
+			//Push acceleration values for debugging
+			const FusionVector earth = FusionAhrsGetEarthAcceleration(&ahrs);
+			logDebug("stateEst", "AccelX %d, AccelY %d, AccelZ %d", earth.axis.x, earth.axis.y, earth.axis.z);
+#if USE_ICM == 0
+		 }
+#endif
+         vTaskDelayUntil(&xLastWakeTime, TASK_DELAY_TICKS);
     }
 }

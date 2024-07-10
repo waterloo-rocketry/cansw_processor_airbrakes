@@ -115,7 +115,6 @@ void vnIMUHandler(void *argument)
 				packet.data = USART1_Rx_Buffer;
 				packet.length = MAX_BINARY_OUTPUT_LENGTH;
 
-
 					if(VnUartPacket_type(&packet) == PACKETTYPE_BINARY)
 					{
 						size_t packetLength = VnUartPacket_computeBinaryPacketLength(packet.data);
@@ -188,7 +187,6 @@ void vnIMUHandler(void *argument)
 															linAccelEcef.c[0], linAccelEcef.c[1], linAccelEcef.c[2]);
 							//printf_(msgAsString);
 
-
 							//Logging + CAN
 							send3VectorStateCanMsg_double(time_startup, posEcef.c,STATE_POS_X); //position
 							send3VectorStateCanMsg_float(time_startup, velEcef.c,STATE_VEL_X); //velocity
@@ -197,8 +195,6 @@ void vnIMUHandler(void *argument)
 							send3VectorStateCanMsg_float(time_startup, angularRate.c,STATE_RATE_YAW); //angle rate in XYZ (TODO: NEED TO CONVERT TO YPR)
 
 							logInfo("VN Group 2", msgAsString);
-
-
 
 						}
 
@@ -210,8 +206,7 @@ void vnIMUHandler(void *argument)
 							vec3f accelVec = VnUartPacket_extractVec3f(&packet); //m/s^2
 							vec3f gyroVec = VnUartPacket_extractVec3f(&packet); //rad/s
 
-							printf_("Time: %lli, Mag: (X: %.3f, Y: %.3f, Z: %.3f), Accel: (X: %.3f, Y: %.3f, Z: %.3f), Angles: (X: %.3f, Y: %.3f, Z: %.3f)\r\n", time_startup_ns / NS_TO_MS, magVec.c[0], magVec.c[1], magVec.c[2], accelVec.c[0], accelVec.c[1], accelVec.c[2], gyroVec.c[0], gyroVec.c[1], gyroVec.c[2]);
-
+							//printf_("Time: %lli, Mag: (X: %.3f, Y: %.3f, Z: %.3f), Accel: (X: %.3f, Y: %.3f, Z: %.3f), Angles: (X: %.3f, Y: %.3f, Z: %.3f)\r\n", time_startup_ns / NS_TO_MS, magVec.c[0], magVec.c[1], magVec.c[2], accelVec.c[0], accelVec.c[1], accelVec.c[2], gyroVec.c[0], gyroVec.c[1], gyroVec.c[2]);
 							rawIMUPacked data;
 							for(int i = 0; i < 3; i++)
 							{
@@ -219,7 +214,12 @@ void vnIMUHandler(void *argument)
 								accelVec.c[i] = accelVec.c[i] / g; //m/s^2 to gs
 								//magnetometer units are arbitrary for Fusion
 							}
-							memcpy(data.accelerometer.array, accelVec.c, 3 * sizeof(float)); //TODO: z is aparentely the 2nd item, and y is the 3rd???
+
+//							printf_(">MAGX:%.4f\n>MAGY:%.4f\n>MAGZ:%.4f\n", magVec.c[0], magVec.c[1], magVec.c[2]);
+//							printf_(">ACCX:%.2f\n>ACCY:%.2f\n>ACCZ:%.2f\n", accelVec.c[0], accelVec.c[1], accelVec.c[2]);
+//							printf_(">GYRX:%.2f\n>GYRY:%.2f\n>GYRZ:%.2f\n", gyroVec.c[0], gyroVec.c[1], gyroVec.c[2]);
+
+							memcpy(data.accelerometer.array, accelVec.c, 3 * sizeof(float));
 							memcpy(data.gyroscope.array, gyroVec.c, 3 * sizeof(float));
 							memcpy(data.magnetometer.array, magVec.c, 3 * sizeof(float));
 							data.TimeS = time_startup_ns / (float) NS_TO_S;
