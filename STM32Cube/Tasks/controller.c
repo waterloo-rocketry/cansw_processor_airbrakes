@@ -44,7 +44,7 @@ void controlTask(void *argument)
 			airbrakesController.target_altitude = (float) updated_target;
 			can_msg_t msg;
 			build_state_est_calibration_msg((uint32_t) millis_(), 1, updated_target, &msg);
-			can_send(&msg);
+			xQueueSend(busQueue, &msg, 100);
 		}
 		if(xQueueReceive(apogeeQueue, &apogeeEstimate, 100) == pdTRUE)
 		{
