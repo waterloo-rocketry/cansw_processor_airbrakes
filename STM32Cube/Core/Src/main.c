@@ -213,6 +213,7 @@ int main(void)
   healthCheckInit();
   controllerInit();
   state_est_init();
+  vn_handler_init();
 
   otitsRegister(test_defaultTaskPass, TEST_SOURCE_DEFAULT, "DefaultPass");
   otitsRegister(test_defaultTaskFail, TEST_SOURCE_DEFAULT, "DefaultFail");

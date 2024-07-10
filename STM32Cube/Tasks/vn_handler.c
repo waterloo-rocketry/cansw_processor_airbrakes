@@ -21,16 +21,15 @@ const uint32_t  DMA_RX_TIMEOUT = 300;
 const uint8_t MS_WAIT_CAN = 10;
 const uint32_t NS_TO_S = 1000000000;
 const uint32_t NS_TO_MS = 1000000;
+const uint32_t ASCII_METERS = 109;
 const bool verbose = false;
 
 uint8_t USART1_Rx_Buffer[MAX_BINARY_OUTPUT_LENGTH];
 SemaphoreHandle_t USART1_DMA_Sempahore;
 
-const uint32_t ASCII_METERS = 109;
-
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size) //this rebinds the generic _weak callback
+void VN_UASART1_RX_callback(UART_HandleTypeDef *huart, uint16_t Pos)
 {
-	if(huart == &huart1)
+	if(huart == &huart1 && huart->RxEventType == 0x02U) //IDLE event on USART1
 		{
 			BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 			xSemaphoreGiveFromISR(USART1_DMA_Sempahore, &xHigherPriorityTaskWoken);
@@ -82,13 +81,17 @@ static void send3VectorStateCanMsg_double(uint64_t time, double vector[3], uint8
 	send3VectorStateCanMsg_float(time, float_vector, firstStateIDOfVector);
 }
 
+bool vn_handler_init()
+{
+	HAL_StatusTypeDef status = HAL_UART_RegisterRxEventCallback(&huart1, VN_UASART1_RX_callback);
+	USART1_DMA_Sempahore = xSemaphoreCreateBinary();
+
+	return (status == HAL_OK) && (USART1_DMA_Sempahore != NULL);
+}
+
 
 void vnIMUHandler(void *argument)
 {
-	//HAL_UART_RegisterCallback(&huart4, HAL_UART_RX_COMPLETE_CB_ID, USART1_DMA_Rx_Complete_Callback); //TODO: use user-defined callback binding
-	USART1_DMA_Sempahore = xSemaphoreCreateBinary();
-	printf_("Starting...\r\n");
-	//logInfo("##VN Handler Task","2024-07-05-4:30pm");
 	for(;;)
 	{
 		//Begin a receive, until we read MAX_BINARY_OUTPUT_LENGTH or the line goes idle, indicating a shorter message
