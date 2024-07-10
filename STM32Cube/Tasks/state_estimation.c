@@ -14,7 +14,7 @@
 #include "millis.h"
 #include "printf.h"
 
-#define SAMPLE_RATE_HZ 10 //Hz; Need to set to match VN data rate
+#define SAMPLE_RATE_HZ 1 //Hz; Need to set to match VN data rate
 #define TASK_DELAY_TICKS 1000 / SAMPLE_RATE_HZ
 #define USE_ICM 0 //Enable to pull raw IMU data from connected ICM-24098 IMU breakout
 
@@ -37,7 +37,7 @@ bool unpackIMUData(FusionVector *gyroscope, FusionVector *accelerometer, FusionV
 
 bool state_est_init()
 {
-	IMUDataHandle = xQueueCreate(2, sizeof(rawIMUPacked));
+	IMUDataHandle = xQueueCreate(3, sizeof(rawIMUPacked));
 	return IMUDataHandle != NULL;
 }
 
@@ -171,6 +171,7 @@ void stateEstTask(void *arguments) {
         if(build_state_est_data_msg(71, &euler.angle.yaw, STATE_ANGLE_YAW, &msg)) xQueueSend(busQueue, &msg, 10);
 
         logInfo("stateEst", "EuRoll %f, EuPitch %f, EuYaw %f", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
+        printf_("STATE_EST:EuRoll %f, EuPitch %f, EuYaw %f\n", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
         //printf_("EuRoll %f, EuPitch %f, EuYaw %f\n", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
 
         //Push acceleration values for debugging

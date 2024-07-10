@@ -148,7 +148,7 @@ void vnIMUHandler(void *argument)
 
 							char msgAsString[300]  = {0};
 							sprintf_(msgAsString, "Time: %lli, pos: (Lat: %.3f, Lon: %.3f, Alt: %.3f) +- (%.3f, %.3f, %.3f) using %d satellites \r\n", time_startup, pos.c[0],pos.c[1],pos.c[2], postUncertainty.c[0],postUncertainty.c[1],postUncertainty.c[2], numSatellites);
-							printf_(msgAsString);
+							//printf_(msgAsString);
 
 							//Logging + CAN
 							build_gps_lon_msg((uint32_t) time_startup, (uint8_t) pos.c[1], (uint8_t) minFromDeg(pos.c[1]), decimalFromDouble4(minFromDeg(pos.c[1])), (int) (pos.c[1] >= 0) ? 'N' : 'S', &msg);
@@ -186,7 +186,7 @@ void vnIMUHandler(void *argument)
 															posEcef.c[0], posEcef.c[1], posEcef.c[2],
 															velEcef.c[0], velEcef.c[1], velEcef.c[2],
 															linAccelEcef.c[0], linAccelEcef.c[1], linAccelEcef.c[2]);
-							printf_(msgAsString);
+							//printf_(msgAsString);
 
 
 							//Logging + CAN
@@ -223,7 +223,7 @@ void vnIMUHandler(void *argument)
 							memcpy(data.gyroscope.array, gyroVec.c, 3 * sizeof(float));
 							memcpy(data.magnetometer.array, magVec.c, 3 * sizeof(float));
 							data.TimeS = time_startup_ns / (float) NS_TO_S;
-							xQueueOverwrite(IMUDataHandle, &data); //send to state estimation
+							xQueueSend(IMUDataHandle, &data, 0); //send to state estimation
 						}
 						else {
 							//printf_("unhandled message format!\r\n");
