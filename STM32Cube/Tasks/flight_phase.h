@@ -14,13 +14,13 @@
 #include "stm32h7xx_hal.h"
 #include "cmsis_os.h"
 
-typedef enum FLIGHT_PHASE {
+typedef enum {
 	PHASE_PRELAUNCH = 0,
 	PHASE_BOOST,
 	PHASE_COAST,
 	PHASE_DESCENT,
 	PHASE_LANDED
-};
+} FLIGHT_PHASE;
 
 extern EventGroupHandle_t flightPhaseEventsHandle;
 #define INJ_OPEN_BIT 0x1
@@ -28,6 +28,6 @@ extern EventGroupHandle_t flightPhaseEventsHandle;
 
 bool extensionAllowed();
 void flightPhaseTask(void * argument);
-void flightPhaseInit();
+bool flightPhaseInit();
 
 #endif /* FLIGHT_PHASE_H_ */
