@@ -15,15 +15,15 @@
 
 typedef struct
 {
-	uint32_t deltaTimems;
-	FusionVector gyroscope;
-	FusionVector accelerometer;
-	FusionVector magnetometer;
+	float TimeS; //timestamp in s
+	FusionVector gyroscope; //dps
+	FusionVector accelerometer; //g
+	FusionVector magnetometer; //Gauss
 } rawIMUPacked;
 
 extern QueueHandle_t IMUDataHandle;
 
 void stateEstTask(void *arguments);
-void state_est_init();
+bool state_est_init();
 
 #endif /* STATE_ESTIMATION_H_ */

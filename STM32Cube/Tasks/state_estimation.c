@@ -14,40 +14,37 @@
 #include "millis.h"
 #include "printf.h"
 
-#define TASK_DELAY_TICKS 20 // TODO: what is actual delay time?
-#define SAMPLE_RATE 100 // replace this with actual sample rate
-#define USE_ICM 0
+#define SAMPLE_RATE_HZ 10 //Hz; Need to set to match VN data rate
+#define TASK_DELAY_TICKS 1000 / SAMPLE_RATE_HZ
+#define USE_ICM 0 //Enable to pull raw IMU data from connected ICM-24098 IMU breakout
 
 extern xQueueHandle angleQueue;
-
 QueueHandle_t IMUDataHandle;
 
-bool unpackIMUData(FusionVector *gyroscope, FusionVector *accelerometer, FusionVector *magnetometer, uint32_t *deltaTimems)
+bool unpackIMUData(FusionVector *gyroscope, FusionVector *accelerometer, FusionVector *magnetometer, float *TimeS)
 {
 	rawIMUPacked data;
-	if(xQueueReceive(IMUDataHandle, &data, 50) == pdTRUE)
+	if(xQueueReceive(IMUDataHandle, &data, 0) == pdTRUE)
 	{
 		*gyroscope = data.gyroscope;
 		*accelerometer = data.accelerometer;
 		*magnetometer = data.magnetometer;
-		*deltaTimems = data.deltaTimems;
+		*TimeS = data.TimeS;
 		return true;
 	}
 	return false;
 }
 
-void state_est_init()
+bool state_est_init()
 {
-	IMUDataHandle = xQueueCreate(1, sizeof(rawIMUPacked));
+	IMUDataHandle = xQueueCreate(2, sizeof(rawIMUPacked));
+	return IMUDataHandle != NULL;
 }
 
 void stateEstTask(void *arguments) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
     float previousTimestamp = 0;
 
-
-    // Define calibration (replace with actual calibration data if available)
-    //all of these have this missing braces error..... that seems to just be a bug...?
     const FusionMatrix gyroscopeMisalignment = {
             .element = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
     };
@@ -67,7 +64,6 @@ void stateEstTask(void *arguments) {
             .axis = {0.0f, 0.0f, 0.0f}
     };
 
-    // TODO Figure out how to check soft and hard iron (?)
     const FusionMatrix softIronMatrix = {
             .element = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
     };
@@ -79,17 +75,17 @@ void stateEstTask(void *arguments) {
     FusionOffset offset;
     FusionAhrs ahrs;
 
-    FusionOffsetInitialise(&offset, SAMPLE_RATE);
+    FusionOffsetInitialise(&offset, SAMPLE_RATE_HZ);
     FusionAhrsInitialise(&ahrs);
 
     // Set AHRS algorithm settings
      const FusionAhrsSettings settings = {
              .convention = FusionConventionNwu,
              .gain = 0.5f,
-             .gyroscopeRange = 2000.0f, // checked, this is correct
+             .gyroscopeRange = 2000.0f,
              .accelerationRejection = 10.0f,
              .magneticRejection = 10.0f,
-             .recoveryTriggerPeriod = 5 * SAMPLE_RATE, /* 5 seconds */
+             .recoveryTriggerPeriod = 5 * SAMPLE_RATE_HZ,
      };
      FusionAhrsSetSettings(&ahrs, &settings);
 
@@ -108,7 +104,6 @@ void stateEstTask(void *arguments) {
     FusionVector accelerometer;
     FusionVector magnetometer;
 
-    // This loop should repeat each time new gyroscope data is available
     while (true) {
 #if USE_ICM == 1
         //If using the ICM, do a synchronous (wrt to state estimation) read on all sensors
@@ -144,12 +139,13 @@ void stateEstTask(void *arguments) {
         previousTimestamp = timestamp;
 
 #else
-        uint32_t deltaTimeMS;
-		 if(unpackIMUData(&gyroscope, &accelerometer, &magnetometer, &deltaTimeMS) == false)
+        float imuTimestamp;
+		 if(unpackIMUData(&gyroscope, &accelerometer, &magnetometer, &imuTimestamp) == false)
 		 {
 			 logError("state estimation", "Failed to get VN raw IMU data");
 		 }
-		 float deltaTime = (float) deltaTimeMS / 1000.0; //yes I realized deltaTime was a float in s after the fact sue me
+		 float deltaTime = imuTimestamp - previousTimestamp;
+		 previousTimestamp = imuTimestamp;
 #endif
 
         // Apply calibration

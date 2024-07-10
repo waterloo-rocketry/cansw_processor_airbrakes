@@ -17,11 +17,13 @@
 extern UART_HandleTypeDef huart1;
 
 #define MAX_BINARY_OUTPUT_LENGTH 200
-const uint32_t  DMA_RX_TIMEOUT = 300;
+const uint32_t DMA_RX_TIMEOUT = 250;
 const uint8_t MS_WAIT_CAN = 10;
 const uint32_t NS_TO_S = 1000000000;
 const uint32_t NS_TO_MS = 1000000;
 const uint32_t ASCII_METERS = 109;
+const float RAD_TO_DEG = 180 / M_PI;
+const float g = 9.81;
 const bool verbose = false;
 
 uint8_t USART1_Rx_Buffer[MAX_BINARY_OUTPUT_LENGTH];
@@ -94,16 +96,14 @@ void vnIMUHandler(void *argument)
 {
 	for(;;)
 	{
-		//Begin a receive, until we read MAX_BINARY_OUTPUT_LENGTH or the line goes idle, indicating a shorter message
-		HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(&huart1, USART1_Rx_Buffer, MAX_BINARY_OUTPUT_LENGTH);
+		HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(&huart1, USART1_Rx_Buffer, MAX_BINARY_OUTPUT_LENGTH); //Begin a receive, until we read MAX_BINARY_OUTPUT_LENGTH or the line goes idle, indicating a shorter message
 		if(status != HAL_OK)
 		{
-			//this is not an error, its fine if the code errors here, dont put debug statment here
+			//this really should not error if we are getting Vn messages at the expected rate
 		}
 		else
 		{
-			printf_("\r\n");
-			if(xSemaphoreTake(USART1_DMA_Sempahore, 100) != pdTRUE) //this semaphore is given by the DMA Rx interrupt, indicating we got UART data
+			if(xSemaphoreTake(USART1_DMA_Sempahore, DMA_RX_TIMEOUT) != pdTRUE) //this semaphore is given by the DMA Rx interrupt, indicating we got UART data
 			{
 				//we timed out, we did not see valid data
 			}
@@ -190,8 +190,6 @@ void vnIMUHandler(void *argument)
 
 
 							//Logging + CAN
-
-
 							send3VectorStateCanMsg_double(time_startup, posEcef.c,STATE_POS_X); //position
 							send3VectorStateCanMsg_float(time_startup, velEcef.c,STATE_VEL_X); //velocity
 							send3VectorStateCanMsg_float(time_startup, linAccelEcef.c,STATE_ACC_X); //acceleration
@@ -204,39 +202,39 @@ void vnIMUHandler(void *argument)
 
 						}
 
-						//Binary Output #3 42 bytes | UncompMag (IMU). UncompAccel (IMU), UncompGyro (IMU)
-
+						//Binary Output #3 52 bytes | Time startup (Common), UncompMag (IMU). UncompAccel (IMU), UncompGyro (IMU)
 						else if (packetLength == 52){
-							uint64_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
+							uint64_t time_startup_ns = VnUartPacket_extractUint64(&packet); //time in ns
 
-							vec3f magVec = VnUartPacket_extractVec3f(&packet);
-							vec3f accelVec = VnUartPacket_extractVec3f(&packet);
-							vec3f gyroVec = VnUartPacket_extractVec3f(&packet);
+							vec3f magVec = VnUartPacket_extractVec3f(&packet); //Gauss
+							vec3f accelVec = VnUartPacket_extractVec3f(&packet); //m/s^2
+							vec3f gyroVec = VnUartPacket_extractVec3f(&packet); //rad/s
 
-							printf_("Time: %lli, Mag: (X: %.3f, Y: %.3f, Z: %.3f), Accel: (X: %.3f, Y: %.3f, Z: %.3f), Angles: (X: %.3f, Y: %.3f, Z: %.3f)\r\n", time_startup, magVec.c[0], magVec.c[1], magVec.c[2], accelVec.c[0], accelVec.c[1], accelVec.c[2], gyroVec.c[0], gyroVec.c[1], gyroVec.c[2]);
-
+							printf_("Time: %lli, Mag: (X: %.3f, Y: %.3f, Z: %.3f), Accel: (X: %.3f, Y: %.3f, Z: %.3f), Angles: (X: %.3f, Y: %.3f, Z: %.3f)\r\n", time_startup_ns / NS_TO_MS, magVec.c[0], magVec.c[1], magVec.c[2], accelVec.c[0], accelVec.c[1], accelVec.c[2], gyroVec.c[0], gyroVec.c[1], gyroVec.c[2]);
 
 							rawIMUPacked data;
+							for(int i = 0; i < 3; i++)
+							{
+								gyroVec.c[i] = gyroVec.c[i] * RAD_TO_DEG; //rad/s to deg/s
+								accelVec.c[i] = accelVec.c[i] / g; //m/s^2 to gs
+								//magnetometer units are arbitrary for Fusion
+							}
 							memcpy(data.accelerometer.array, accelVec.c, 3 * sizeof(float)); //TODO: z is aparentely the 2nd item, and y is the 3rd???
 							memcpy(data.gyroscope.array, gyroVec.c, 3 * sizeof(float));
 							memcpy(data.magnetometer.array, magVec.c, 3 * sizeof(float));
-							data.deltaTimems = 0; //TODO armaan I need time_startup here
-
-							xQueueOverwrite(IMUDataHandle, &data);
-
+							data.TimeS = time_startup_ns / (float) NS_TO_S;
+							xQueueOverwrite(IMUDataHandle, &data); //send to state estimation
 						}
-
-						//unhandled message format
-						else{
-							printf_("unhandled message format!\r\n");
-							//logError(SOURCE_SENSOR, "unhandled message format!");
+						else {
+							//printf_("unhandled message format!\r\n");
+							logError("VN", "unhandled message format!");
 						}
 						//printf_("size: %d\r\n", packetLength);
 					}
 
 					else {
 						//printf_("Not a valid binary packet\r\n");
-						//logError(SOURCE_SENSOR, "Non Binary Packet received");
+						logError("VN", "Non Binary Packet received");
 					}
 			}
 
