@@ -81,10 +81,12 @@ static void send3VectorStateCanMsg_double(uint64_t time, double vector[3], uint8
 	send3VectorStateCanMsg_float(time, float_vector, firstStateIDOfVector);
 }
 
-void vn_handler_init()
+bool vn_handler_init()
 {
 	HAL_StatusTypeDef status = HAL_UART_RegisterRxEventCallback(&huart1, VN_UASART1_RX_callback);
 	USART1_DMA_Sempahore = xSemaphoreCreateBinary();
+
+	return (status == HAL_OK) && (USART1_DMA_Sempahore != NULL);
 }
 
 
