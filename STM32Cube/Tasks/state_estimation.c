@@ -13,6 +13,7 @@
 #include "can_handler.h"
 #include "millis.h"
 #include "printf.h"
+#include "state_estimation.h"
 
 #define SAMPLE_RATE_HZ 1 //Hz; Need to set to match VN data rate
 #define TASK_DELAY_TICKS 1000 / SAMPLE_RATE_HZ
@@ -23,11 +24,12 @@
 
 extern xQueueHandle angleQueue;
 QueueHandle_t IMUDataHandle;
+EventGroupHandle_t calibrationEventHandle;
 
 bool unpackIMUData(FusionVector *gyroscope, FusionVector *accelerometer, FusionVector *magnetometer, float *TimeS)
 {
 	rawIMUPacked data;
-	if(xQueueReceive(IMUDataHandle, &data, 0) == pdTRUE)
+	if(xQueueReceive(IMUDataHandle, &data, 50) == pdTRUE)
 	{
 		*gyroscope = data.gyroscope;
 		*accelerometer = data.accelerometer;
@@ -40,8 +42,10 @@ bool unpackIMUData(FusionVector *gyroscope, FusionVector *accelerometer, FusionV
 
 bool state_est_init()
 {
+	calibrationEventHandle = xEventGroupCreate();
+	xEventGroupClearBits(calibrationEventHandle, 0xFFFF); //clear out the enitire group since API doesn't specify if values are initialized to 0
 	IMUDataHandle = xQueueCreate(3, sizeof(rawIMUPacked));
-	return IMUDataHandle != NULL;
+	return IMUDataHandle != NULL && calibrationEventHandle != NULL;
 }
 
 void stateEstTask(void *arguments) {
@@ -107,7 +111,15 @@ void stateEstTask(void *arguments) {
     FusionVector accelerometer;
     FusionVector magnetometer;
 
-    while (true) {
+    // This loop should repeat each time new gyroscope data is available
+    while (true)
+    {
+    	if(RESET_FILTER_CMD)
+    	{
+    		FusionAhrsReset(&ahrs);
+    		xEventGroupClearBits(calibrationEventHandle, RESET_FILTER_FLAG);
+    	}
+
 #if USE_ICM == 1
         //If using the ICM, do a synchronous (wrt to state estimation) read on all sensors
         float xData;

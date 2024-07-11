@@ -12,6 +12,9 @@
 #include "Fusion.h"
 #include "FreeRTOS.h"
 #include "queue.h"
+#include "event_groups.h"
+
+#define RESET_FILTER_FLAG 0x1
 
 typedef struct
 {
@@ -22,6 +25,7 @@ typedef struct
 } rawIMUPacked;
 
 extern QueueHandle_t IMUDataHandle;
+extern EventGroupHandle_t calibrationEventHandle;
 
 void stateEstTask(void *arguments);
 bool state_est_init();
