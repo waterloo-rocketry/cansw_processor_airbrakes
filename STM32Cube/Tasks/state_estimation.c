@@ -22,6 +22,8 @@
 #define USE_ICM 0 //Enable to pull raw IMU data from connected ICM-24098 IMU breakout
 #endif
 
+#define RESET_FILTER_CMD (xEventGroupGetBits(calibrationEventHandle) & RESET_FILTER_FLAG)
+
 extern xQueueHandle angleQueue;
 QueueHandle_t IMUDataHandle;
 EventGroupHandle_t calibrationEventHandle;
