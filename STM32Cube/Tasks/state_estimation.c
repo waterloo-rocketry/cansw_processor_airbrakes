@@ -192,9 +192,6 @@ void stateEstTask(void *arguments) {
 			logInfo("stateEst", "EuRoll %f, EuPitch %f, EuYaw %f", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
 			//printf_(">EuRoll:%.2f\n>EuPitch:%.2f\n>EuYaw:%.2f\n", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
 
-			//Push acceleration values for debugging
-			const FusionVector earth = FusionAhrsGetEarthAcceleration(&ahrs);
-			logDebug("stateEst", "AccelX %d, AccelY %d, AccelZ %d", earth.axis.x, earth.axis.y, earth.axis.z);
 #if USE_ICM == 0
 		 }
 #endif
