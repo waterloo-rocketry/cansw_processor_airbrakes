@@ -190,7 +190,7 @@ void stateEstTask(void *arguments) {
 			if(build_state_est_data_msg(71, &euler.angle.yaw, STATE_ANGLE_YAW, &msg)) xQueueSend(busQueue, &msg, 10);
 
 			logInfo("stateEst", "EuRoll %f, EuPitch %f, EuYaw %f", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
-			printf_(">EuRoll:%.2f\n>EuPitch:%.2f\n>EuYaw:%.2f\n", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
+			//printf_(">EuRoll:%.2f\n>EuPitch:%.2f\n>EuYaw:%.2f\n", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
 
 			//Push acceleration values for debugging
 			const FusionVector earth = FusionAhrsGetEarthAcceleration(&ahrs);
