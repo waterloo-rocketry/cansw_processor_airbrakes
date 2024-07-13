@@ -89,7 +89,7 @@ void stateEstTask(void *arguments) {
 
     // Set AHRS algorithm settings
      const FusionAhrsSettings settings = {
-             .convention = FusionConventionNwu,
+             .convention = FusionConventionNed,
              .gain = 0.5f,
              .gyroscopeRange = 2000.0f,
              .accelerationRejection = 10.0f,
