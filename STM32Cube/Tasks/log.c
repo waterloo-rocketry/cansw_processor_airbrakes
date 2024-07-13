@@ -9,6 +9,11 @@ static log_buffer logBuffers[NUM_LOG_BUFFERS];
 static int CURRENT_BUFFER = 0;
 static SemaphoreHandle_t logWriteMutex;
 
+static int droppedMsgs = 0;
+static int fullBuffMoments = 0;
+static int critErrs = 0;
+static int noFullBuffMoments = 0;
+
 // Queue of full buffers ready for output. Typically a max of `n - 1` buffers will be in queue as
 // the nth buffer is being dumped. But leave space for all `n` buffers in case queueReceive is
 // delayed. Otherwise, CURRENT_BUFFER can get stuck on a full buffer that's outside the queue.
@@ -73,6 +78,7 @@ bool logGeneric(const char* source, LogLevel_t level, const char* msg, va_list m
 
     // there can only be 1 log writer at once
     if (xSemaphoreTake(logWriteMutex, 50) != pdPASS) {
+        droppedMsgs++;
         return false;
         // timed out while waiting to log - maybe too many tasks are waiting to log. this should never happen?
     }
@@ -82,6 +88,8 @@ bool logGeneric(const char* source, LogLevel_t level, const char* msg, va_list m
     
     // if current buffer is full, then all of them must be full. ERROR!!! do not proceed
     if (currentBuffer->isFull) {
+        fullBuffMoments++;
+        droppedMsgs++;
         xSemaphoreGive(logWriteMutex);
         return false;
     }
@@ -112,6 +120,7 @@ bool logGeneric(const char* source, LogLevel_t level, const char* msg, va_list m
         // if full, send this buffer to output queue and rotate to next buffer
         if (xQueueSendToBack(fullBuffersQueue, &currentBuffer, 0) != pdPASS) {
             // if queue is full, all buffers are already in queue. how did we get here ??? ERROR!!!!
+            critErrs++;
             xSemaphoreGive(logWriteMutex);
             return false;
         }
@@ -179,7 +188,7 @@ void logTask(void *argument) {
 
     // wait for a full buffer to appear in the queue; timeout is long - queues are not expected to fill up super quickly
     for (;;) {
-		if (xQueueReceive(fullBuffersQueue, &bufferToPrint, 1000000) == pdPASS) {
+		if (xQueueReceive(fullBuffersQueue, &bufferToPrint, 10000) == pdPASS) {
 				FRESULT result = FR_OK;
 			    result |= f_open(&logfile, logFileName, FA_OPEN_APPEND | FA_WRITE);
                 // buffers fill from 0, so `index` conveniently indicates how many chars of data there are to print
@@ -190,6 +199,9 @@ void logTask(void *argument) {
             	// HAL_UART_Transmit(&huart4, bufferToPrint->buffer, bufferToPrint->index, 3000);
                 bufferToPrint->index = 0;
                 bufferToPrint->isFull = false;    
+        } else {
+            noFullBuffMoments++;
         }
+		logInfo("log", "%d %d %d %d", droppedMsgs, fullBuffMoments, critErrs, noFullBuffMoments);
     }
 }
