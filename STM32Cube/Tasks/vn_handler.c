@@ -97,6 +97,37 @@ bool vn_handler_init()
 
 void vnIMUHandler(void *argument)
 {
+    TickType_t last = xTaskGetTickCount();
+    while (1) {
+        int t1 = xTaskGetTickCount();
+
+        logInfo("VN#1", "%ds, lat/lon/alt (%.3f, %.3f, %.3f) +-(%.3f, %.3f, %.3f), %d sats",
+            xTaskGetTickCount(), 1233.123, 1233.123, 1233.123, 3435.345, 3435.345, 3345.345, 56);
+
+        int t2 = xTaskGetTickCount();
+
+        int diff1 = t2 - t1;
+        vTaskDelayUntil(&last, 50);
+
+        int t3 = xTaskGetTickCount();
+
+        logInfo("VN#2", "%ds, AngRate (%.3f, %.3f, %.3f), YPR (%.3f, %.3f, %.3f), PosECEF (%.3f, %.3f, %.3f), VelECEF (%.3f, %.3f, %.3f), LinAccECEF (%.3f, %.3f, %.3f)",
+                                                                    xTaskGetTickCount(),
+                                                                    12343.123, 12345333.123, 12343.123,
+                                                                    12353.123, 12433.123, 125533.123,
+                                                                    12343.123, 12333.123, 14233.123,
+                                                                    12343.123, 12453433.123, 1233.123,
+                                                                    123343.123, 1233.123, 1235343.123);
+
+        int t4 = xTaskGetTickCount();
+
+        int diff2 = t4 - t3;
+
+        // BREAKPOINT HERE TO CHECK DIFF1 AND DIFF2 WHICH INDICATE HOW LONG EACH LOGINFO TAKES
+        vTaskDelayUntil(&last, 50);
+    }
+
+
 	for(;;)
 	{
 		HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(&huart1, USART1_Rx_Buffer, MAX_BINARY_OUTPUT_LENGTH); //Begin a receive, until we read MAX_BINARY_OUTPUT_LENGTH or the line goes idle, indicating a shorter message
@@ -160,7 +191,7 @@ void vnIMUHandler(void *argument)
 							build_gps_info_msg((uint32_t) time_startup, numSatellites, quality, &msg);
 							xQueueSend(busQueue, &msg, MS_WAIT_CAN);
 
-							logInfo("VN#1", "%ds, lat/lon/alt (%.3f, %.3f, %.3f) +-(%.3f, %.3f, %.3f), %d sats\n",
+							logInfo("VN#1", "%ds, lat/lon/alt (%.3f, %.3f, %.3f) +-(%.3f, %.3f, %.3f), %d sats",
 							        time_startup, pos.c[0],pos.c[1],pos.c[2],
 							        postUncertainty.c[0],postUncertainty.c[1],postUncertainty.c[2],
 							        numSatellites);
@@ -186,7 +217,7 @@ void vnIMUHandler(void *argument)
 							send3VectorStateCanMsg_float(time_startup, yprAngles.c,STATE_ANGLE_YAW); //angle; TODO: this is also sent by OUR state estimation, so we should expand the enum in canlib to distinguish
 							send3VectorStateCanMsg_float(time_startup, angularRate.c,STATE_RATE_YAW); //angle rate in XYZ (TODO: NEED TO CONVERT TO YPR)
 
-                            logInfo("VN#2", "%ds, AngRate (%.3f, %.3f, %.3f), YPR (%.3f, %.3f, %.3f), PosECEF (%.3f, %.3f, %.3f), VelECEF (%.3f, %.3f, %.3f), LinAccECEF (%.3f, %.3f, %.3f)\n",
+                            logInfo("VN#2", "%ds, AngRate (%.3f, %.3f, %.3f), YPR (%.3f, %.3f, %.3f), PosECEF (%.3f, %.3f, %.3f), VelECEF (%.3f, %.3f, %.3f), LinAccECEF (%.3f, %.3f, %.3f)",
                                                             time_startup,
                                                             angularRate.c[0], angularRate.c[1], angularRate.c[2],
                                                             yprAngles.c[0], yprAngles.c[1], yprAngles.c[2],
