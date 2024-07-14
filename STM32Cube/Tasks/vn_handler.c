@@ -195,8 +195,6 @@ void vnIMUHandler(void *argument)
 							SDGroup1Counter++;
 							CANGroup1Counter++;
 
-						
-
 							if (SDGroup1Counter >= SD_RATE_DIVISOR_GROUP1){
 	                            logInfo("VN#1", "%ds, lat/lon/alt (%.3f, %.3f, %.3f) +-(%.3f, %.3f, %.3f), %d sats\n",
 	                                    time_startup, pos.c[0],pos.c[1],pos.c[2],
