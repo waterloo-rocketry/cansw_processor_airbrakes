@@ -69,7 +69,7 @@ void controlTask(void *argument)
 			if(extension > CONTROLLER_MAX_EXTENSION) extension = CONTROLLER_MAX_EXTENSION;
 			if(extension < CONTROLLER_MIN_EXTENSION) extension = CONTROLLER_MIN_EXTENSION;
 
-			printf_("extension: %f\n", extension);
+//			printf_("extension: %f\n", extension);
 			logInfo("controller", "ext: %d", extension * 100);
 
 			if(extensionAllowed())
