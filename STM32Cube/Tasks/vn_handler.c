@@ -165,7 +165,8 @@ void vnIMUHandler(void *argument)
 						size_t packetLength = VnUartPacket_computeBinaryPacketLength(packet.data);
 
 						if (packetLength>MAX_BINARY_OUTPUT_LENGTH){
-							printf_("Memory Overflow!\n\n\r\n");
+							//printf_("Memory Overflow!\n\n\r\n");
+						    logError("VN", "Mem overflow");
 							continue;
 						}
 
@@ -182,7 +183,7 @@ void vnIMUHandler(void *argument)
 						if (packetLength == 53){
 							can_msg_t msg;
 
-							uint64_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
+							uint32_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
 
 							vec3d pos = VnUartPacket_extractVec3d(&packet);
 							uint8_t numSatellites = VnUartPacket_extractInt8(&packet);
@@ -197,9 +198,10 @@ void vnIMUHandler(void *argument)
 						
 
 							if (SDGroup1Counter >= SD_RATE_DIVISOR_GROUP1){
-								char msgAsString[300]  = {0};
-								sprintf_(msgAsString, "Time: %lli, pos: (Lat: %.3f, Lon: %.3f, Alt: %.3f) +- (%.3f, %.3f, %.3f) using %d satellites \r\n", time_startup, pos.c[0],pos.c[1],pos.c[2], postUncertainty.c[0],postUncertainty.c[1],postUncertainty.c[2], numSatellites);
-								logInfo("VN Group 1", msgAsString);
+	                            logInfo("VN#1", "%ds, lat/lon/alt (%.3f, %.3f, %.3f) +-(%.3f, %.3f, %.3f), %d sats\n",
+	                                    time_startup, pos.c[0],pos.c[1],pos.c[2],
+	                                    postUncertainty.c[0],postUncertainty.c[1],postUncertainty.c[2],
+	                                    numSatellites);
 								//printf_(msgAsString);
 
 								SDGroup1Counter = 0;
@@ -219,15 +221,11 @@ void vnIMUHandler(void *argument)
 
 								CANGroup1Counter = 0;
 							}
-
-
-
-
 						}
 
 						//Binary Output #2 92 bytes | Time startup (Common), Angular rate (IMU), Ypr (Attitude), PosEcef (INS), VelEcef (INS), LinAccelEcef (INS)
 						else if (packetLength == 92){
-							uint64_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
+							uint32_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
 
 							vec3f angularRate = VnUartPacket_extractVec3f(&packet); //rad/s
 							vec3f yprAngles = VnUartPacket_extractVec3f(&packet); //deg
@@ -241,16 +239,13 @@ void vnIMUHandler(void *argument)
 
 
 							if (SDGroup2Counter >= SD_RATE_DIVISOR_GROUP2){
-								char msgAsString[3000] = {0};
-								sprintf_(msgAsString,"Time: %lli, Angular Rate: (X: %.3f, Y: %.3f, Z: %.3f), YPR Angles: (Yaw: %.3f, Pitch: %.3f, Roll: %.3f), Pos ECEF: (X: %.3f, Y: %.3f, Z: %.3f), Vel ECEF: (X: %.3f, Y: %.3f, Z: %.3f), Lin Accel ECEF: (X: %.3f, Y: %.3f, Z: %.3f)\r\n",
-																time_startup,
-																angularRate.c[0], angularRate.c[1], angularRate.c[2],
-																yprAngles.c[0], yprAngles.c[1], yprAngles.c[2],
-																posEcef.c[0], posEcef.c[1], posEcef.c[2],
-																velEcef.c[0], velEcef.c[1], velEcef.c[2],
-																linAccelEcef.c[0], linAccelEcef.c[1], linAccelEcef.c[2]);
-								logInfo("VN Group 2", msgAsString);
-								//printf_(msgAsString);
+	                            logInfo("VN#2", "%ds, AngRate (%.3f, %.3f, %.3f), YPR (%.3f, %.3f, %.3f), PosECEF (%.3f, %.3f, %.3f), VelECEF (%.3f, %.3f, %.3f), LinAccECEF (%.3f, %.3f, %.3f)\n",
+	                                                            time_startup,
+	                                                            angularRate.c[0], angularRate.c[1], angularRate.c[2],
+	                                                            yprAngles.c[0], yprAngles.c[1], yprAngles.c[2],
+	                                                            posEcef.c[0], posEcef.c[1], posEcef.c[2],
+	                                                            velEcef.c[0], velEcef.c[1], velEcef.c[2],
+	                                                            linAccelEcef.c[0], linAccelEcef.c[1], linAccelEcef.c[2]);
 								SDGroup2Counter = 0;
 							}
 
@@ -264,7 +259,6 @@ void vnIMUHandler(void *argument)
 
 								CANGroup2Counter=0;
 							}
-
 						}
 
 						//Binary Output #3 52 bytes | Time startup (Common), UncompMag (IMU). UncompAccel (IMU), UncompGyro (IMU)
