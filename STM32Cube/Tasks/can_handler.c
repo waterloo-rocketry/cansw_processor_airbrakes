@@ -61,6 +61,7 @@ void canHandlerTask(void *argument) {
         //Block the thread until we see data in the bus queue or 1 sec elapses
         if(xQueueReceive(busQueue, &tx_msg, 1000) == pdTRUE) { //Returns pdTRUE if we got a message, pdFALSE if timed out
             can_send(&tx_msg);
+            vTaskDelay(1);
             HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_10); //write and toggle D3 when we send a CAN message
         }
     }

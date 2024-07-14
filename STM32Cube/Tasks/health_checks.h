@@ -18,7 +18,7 @@
 #define ADC1_VOLTAGE_V(counts) (counts / ADC1_MAX_COUNTS * ADC1_VREF)
 #define ADC1_CURR_mA(voltage) (voltage / INA180A3_GAIN / R_SENSE )
 
-#define MAX_CURR_5V_mA 500
+#define MAX_CURR_5V_mA 100
 
 bool healthCheckInit();
 void healthCheckTask(void *argument);

@@ -63,7 +63,7 @@ void stateEstTask(void *arguments) {
             .axis = {0.0f, 0.0f, 0.0f}
     };
     const FusionMatrix accelerometerMisalignment = {
-                .element = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
+			.element = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
         };
     const FusionVector accelerometerSensitivity = {
             .axis = {1.0f, 1.0f, 1.0f}
@@ -185,9 +185,9 @@ void stateEstTask(void *arguments) {
 			xQueueOverwrite(angleQueue, &euler);
 
 			can_msg_t msg;
-			if(build_state_est_data_msg(69, &euler.angle.roll, STATE_ANGLE_ROLL, &msg)) xQueueSend(busQueue, &msg, 10);
-			if(build_state_est_data_msg(70, &euler.angle.pitch, STATE_ANGLE_PITCH, &msg)) xQueueSend(busQueue, &msg, 10);
-			if(build_state_est_data_msg(71, &euler.angle.yaw, STATE_ANGLE_YAW, &msg)) xQueueSend(busQueue, &msg, 10);
+			if(build_state_est_data_msg(millis_(), &euler.angle.roll, STATE_ANGLE_ROLL, &msg)) xQueueSend(busQueue, &msg, 10);
+			if(build_state_est_data_msg(millis_(), &euler.angle.pitch, STATE_ANGLE_PITCH, &msg)) xQueueSend(busQueue, &msg, 10);
+			if(build_state_est_data_msg(millis_(), &euler.angle.yaw, STATE_ANGLE_YAW, &msg)) xQueueSend(busQueue, &msg, 10);
 
 			logInfo("stateEst", "EuRoll %f, EuPitch %f, EuYaw %f", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
 			//printf_(">EuRoll:%.2f\n>EuPitch:%.2f\n>EuYaw:%.2f\n", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
