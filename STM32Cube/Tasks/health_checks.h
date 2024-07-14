@@ -9,9 +9,6 @@
 #define HEALTH_CHECKS_H_
 
 #include <stdbool.h>
-#include "stm32h7xx_hal.h"
-#include "FreeRTOS.h"
-#include "task.h"
 
 #define ADC1_MAX_COUNTS 65535.0
 #define ADC1_VREF 3.3

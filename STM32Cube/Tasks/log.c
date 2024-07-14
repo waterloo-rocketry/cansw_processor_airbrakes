@@ -1,5 +1,6 @@
 #include "sdmmc.h"
 #include "log.h"
+#include "ff.h"
 
 #include <stdarg.h>
 #include "printf.h"

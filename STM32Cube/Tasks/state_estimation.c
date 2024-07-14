@@ -5,14 +5,13 @@
  *      Author: joedo
  */
 
+#include "millis.h"
+#include "printf.h"
 
 #include "ICM-20948.h"
-#include "Fusion.h"
 #include "vn_handler.h"
 #include "log.h"
 #include "can_handler.h"
-#include "millis.h"
-#include "printf.h"
 #include "state_estimation.h"
 
 #define SAMPLE_RATE_HZ 1 //Hz; Need to set to match VN data rate
@@ -118,6 +117,7 @@ void stateEstTask(void *arguments) {
     {
     	if(RESET_FILTER_CMD)
     	{
+    	    logInfo("stateEst", "reset filter");
     		FusionAhrsReset(&ahrs);
     		xEventGroupClearBits(calibrationEventHandle, RESET_FILTER_FLAG);
     	}
@@ -159,7 +159,7 @@ void stateEstTask(void *arguments) {
         float imuTimestamp;
 		 if(unpackIMUData(&gyroscope, &accelerometer, &magnetometer, &imuTimestamp) == false)
 		 {
-			 logError("state estimation", "Failed to get VN raw IMU data");
+			 logError("stateEst", "Failed to get VN raw IMU data");
 		 }
 		 else
 		 {

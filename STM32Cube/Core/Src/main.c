@@ -1034,12 +1034,13 @@ void StartDefaultTask(void *argument)
 	//HAL_UART_Receive_DMA(&huart4, rx_buf, 1);
 	for(;;)
 	{
-		char buffer[] = "hello world!\r\n";
+		//char buffer[] = "hello world!\r\n";
 		//printf_(buffer);
 		//logDebug(0, "test messsssage");
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 		//printf_("hello world\n");
-		osDelay(1000);
+		//osDelay(1000);
+		vTaskDelay(1000);
 
 	}
   /* USER CODE END 5 */
