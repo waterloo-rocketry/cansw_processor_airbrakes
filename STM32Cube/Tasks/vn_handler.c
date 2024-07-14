@@ -28,6 +28,15 @@ const uint32_t ASCII_METERS = 109;
 const float RAD_TO_DEG = 180 / M_PI;
 const float g = 9.81;
 const bool verbose = false;
+const uint8_t SD_RATE_DIVISOR_GROUP1 = 5;
+const uint8_t CAN_RATE_DIVISOR_GROUP1 = 1;
+const uint8_t CAN_RATE_DIVISOR_GROUP2 = 1;
+const uint8_t SD_RATE_DIVISOR_GROUP2 = 5;
+
+uint8_t SDGroup1Counter=0;
+uint8_t CANGroup1Counter=0;
+uint8_t SDGroup2Counter=0;
+uint8_t CANGroup2Counter=0;
 
 uint8_t USART1_Rx_Buffer[MAX_BINARY_OUTPUT_LENGTH];
 SemaphoreHandle_t USART1_DMA_Sempahore;
@@ -123,8 +132,7 @@ void vnIMUHandler(void *argument)
 						size_t packetLength = VnUartPacket_computeBinaryPacketLength(packet.data);
 
 						if (packetLength>MAX_BINARY_OUTPUT_LENGTH){
-							//printf_("Memory Overflow!\n\n\r\n");
-						    logError("VN", "Mem overflow");
+							printf_("Memory Overflow!\n\n\r\n");
 							continue;
 						}
 
@@ -137,10 +145,11 @@ void vnIMUHandler(void *argument)
 							printf_("\r\n");
 						}*/
 
+						//Group #1
 						if (packetLength == 53){
 							can_msg_t msg;
 
-							uint32_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
+							uint64_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
 
 							vec3d pos = VnUartPacket_extractVec3d(&packet);
 							uint8_t numSatellites = VnUartPacket_extractInt8(&packet);
@@ -149,28 +158,43 @@ void vnIMUHandler(void *argument)
 							uint32_t quality_ = sqrt(pow(postUncertainty.c[0], 2) + pow(postUncertainty.c[1], 2) + pow(postUncertainty.c[2], 2)); //the higher the number the worse the quality
 							uint8_t quality = (uint8_t) quality_; //cast should truncate
 
+							SDGroup1Counter++;
+							CANGroup1Counter++;
 
-							//Logging + CAN
-							build_gps_lon_msg((uint32_t) time_startup, (uint8_t) pos.c[1], (uint8_t) minFromDeg(pos.c[1]), decimalFromDouble4(minFromDeg(pos.c[1])), (int) (pos.c[1] >= 0) ? 'N' : 'S', &msg);
-							xQueueSend(busQueue, &msg, MS_WAIT_CAN);
-							build_gps_lat_msg((uint32_t) time_startup, (uint8_t) pos.c[1], (uint8_t) minFromDeg(pos.c[1]), decimalFromDouble4(minFromDeg(pos.c[1])), (int) (pos.c[1] >= 0) ? 'E' : 'W', &msg);
-							xQueueSend(busQueue, &msg, MS_WAIT_CAN);
-							build_gps_alt_msg((uint32_t) time_startup, (uint16_t)pos.c[2], decimalFromDouble2(pos.c[2]), (uint8_t) 'M', &msg);
-							xQueueSend(busQueue, &msg, MS_WAIT_CAN);
-							build_gps_info_msg((uint32_t) time_startup, numSatellites, quality, &msg);
-							xQueueSend(busQueue, &msg, MS_WAIT_CAN);
+						
 
-							logInfo("VN#1", "%ds, lat/lon/alt (%.3f, %.3f, %.3f) +-(%.3f, %.3f, %.3f), %d sats\n",
-							        time_startup, pos.c[0],pos.c[1],pos.c[2],
-							        postUncertainty.c[0],postUncertainty.c[1],postUncertainty.c[2],
-							        numSatellites);
+							if (SDGroup1Counter >= SD_RATE_DIVISOR_GROUP1){
+								char msgAsString[300]  = {0};
+								sprintf_(msgAsString, "Time: %lli, pos: (Lat: %.3f, Lon: %.3f, Alt: %.3f) +- (%.3f, %.3f, %.3f) using %d satellites \r\n", time_startup, pos.c[0],pos.c[1],pos.c[2], postUncertainty.c[0],postUncertainty.c[1],postUncertainty.c[2], numSatellites);
+								logInfo("VN Group 1", msgAsString);
+								//printf_(msgAsString);
+
+								SDGroup1Counter = 0;
+							}
+
+
+							if (CANGroup1Counter >= CAN_RATE_DIVISOR_GROUP1){
+								//Logging + CAN
+								build_gps_lon_msg((uint32_t) time_startup, (uint8_t) pos.c[1], (uint8_t) minFromDeg(pos.c[1]), decimalFromDouble4(minFromDeg(pos.c[1])), (int) (pos.c[1] >= 0) ? 'N' : 'S', &msg);
+								xQueueSend(busQueue, &msg, MS_WAIT_CAN);
+								build_gps_lat_msg((uint32_t) time_startup, (uint8_t) pos.c[1], (uint8_t) minFromDeg(pos.c[1]), decimalFromDouble4(minFromDeg(pos.c[1])), (int) (pos.c[1] >= 0) ? 'E' : 'W', &msg);
+								xQueueSend(busQueue, &msg, MS_WAIT_CAN);
+								build_gps_alt_msg((uint32_t) time_startup, (uint16_t)pos.c[2], decimalFromDouble2(pos.c[2]), (uint8_t) 'M', &msg);
+								xQueueSend(busQueue, &msg, MS_WAIT_CAN);
+								build_gps_info_msg((uint32_t) time_startup, numSatellites, quality, &msg);
+								xQueueSend(busQueue, &msg, MS_WAIT_CAN);
+
+								CANGroup1Counter = 0;
+							}
+
+
 
 
 						}
 
 						//Binary Output #2 92 bytes | Time startup (Common), Angular rate (IMU), Ypr (Attitude), PosEcef (INS), VelEcef (INS), LinAccelEcef (INS)
 						else if (packetLength == 92){
-							uint32_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
+							uint64_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
 
 							vec3f angularRate = VnUartPacket_extractVec3f(&packet); //rad/s
 							vec3f yprAngles = VnUartPacket_extractVec3f(&packet); //deg
@@ -179,20 +203,35 @@ void vnIMUHandler(void *argument)
 							vec3f velEcef = VnUartPacket_extractVec3f(&packet); //m/s
 							vec3f linAccelEcef = VnUartPacket_extractVec3f(&packet); //m/s^2 NOT INCLUDING GRAVITY
 
-							//Logging + CAN
-							send3VectorStateCanMsg_double(time_startup, posEcef.c,STATE_POS_X); //position
-							send3VectorStateCanMsg_float(time_startup, velEcef.c,STATE_VEL_X); //velocity
-							send3VectorStateCanMsg_float(time_startup, linAccelEcef.c,STATE_ACC_X); //acceleration
-							send3VectorStateCanMsg_float(time_startup, yprAngles.c,STATE_ANGLE_YAW); //angle; TODO: this is also sent by OUR state estimation, so we should expand the enum in canlib to distinguish
-							send3VectorStateCanMsg_float(time_startup, angularRate.c,STATE_RATE_YAW); //angle rate in XYZ (TODO: NEED TO CONVERT TO YPR)
+							SDGroup2Counter++;
+							CANGroup2Counter++;
 
-                            logInfo("VN#2", "%ds, AngRate (%.3f, %.3f, %.3f), YPR (%.3f, %.3f, %.3f), PosECEF (%.3f, %.3f, %.3f), VelECEF (%.3f, %.3f, %.3f), LinAccECEF (%.3f, %.3f, %.3f)\n",
-                                                            time_startup,
-                                                            angularRate.c[0], angularRate.c[1], angularRate.c[2],
-                                                            yprAngles.c[0], yprAngles.c[1], yprAngles.c[2],
-                                                            posEcef.c[0], posEcef.c[1], posEcef.c[2],
-                                                            velEcef.c[0], velEcef.c[1], velEcef.c[2],
-                                                            linAccelEcef.c[0], linAccelEcef.c[1], linAccelEcef.c[2]);
+
+							if (SDGroup2Counter >= SD_RATE_DIVISOR_GROUP2){
+								char msgAsString[3000] = {0};
+								sprintf_(msgAsString,"Time: %lli, Angular Rate: (X: %.3f, Y: %.3f, Z: %.3f), YPR Angles: (Yaw: %.3f, Pitch: %.3f, Roll: %.3f), Pos ECEF: (X: %.3f, Y: %.3f, Z: %.3f), Vel ECEF: (X: %.3f, Y: %.3f, Z: %.3f), Lin Accel ECEF: (X: %.3f, Y: %.3f, Z: %.3f)\r\n",
+																time_startup,
+																angularRate.c[0], angularRate.c[1], angularRate.c[2],
+																yprAngles.c[0], yprAngles.c[1], yprAngles.c[2],
+																posEcef.c[0], posEcef.c[1], posEcef.c[2],
+																velEcef.c[0], velEcef.c[1], velEcef.c[2],
+																linAccelEcef.c[0], linAccelEcef.c[1], linAccelEcef.c[2]);
+								logInfo("VN Group 2", msgAsString);
+								//printf_(msgAsString);
+								SDGroup2Counter = 0;
+							}
+
+							if (CANGroup2Counter >= CAN_RATE_DIVISOR_GROUP2){
+								//Logging + CAN
+								send3VectorStateCanMsg_double(time_startup, posEcef.c,STATE_POS_X); //position
+								send3VectorStateCanMsg_float(time_startup, velEcef.c,STATE_VEL_X); //velocity
+								send3VectorStateCanMsg_float(time_startup, linAccelEcef.c,STATE_ACC_X); //acceleration
+								send3VectorStateCanMsg_float(time_startup, yprAngles.c,STATE_ANGLE_YAW); //angle; TODO: this is also sent by OUR state estimation, so we should expand the enum in canlib to distinguish
+								send3VectorStateCanMsg_float(time_startup, angularRate.c,STATE_RATE_YAW); //angle rate in XYZ (TODO: NEED TO CONVERT TO YPR)
+
+								CANGroup2Counter=0;
+							}
+
 						}
 
 						//Binary Output #3 52 bytes | Time startup (Common), UncompMag (IMU). UncompAccel (IMU), UncompGyro (IMU)
