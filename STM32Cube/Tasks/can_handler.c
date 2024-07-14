@@ -4,6 +4,7 @@
 #include "controller.h"
 #include "state_estimation.h"
 #include "millis.h"
+#include "log.h"
 
 xQueueHandle busQueue;
 

@@ -5,11 +5,14 @@
  *      Author: Jacob Gordon
  */
 
+#include <math.h>
+
+#include "Fusion.h"
+
 #include "trajectory.h"
 #include "controller.h"
 #include "otits.h"
-#include <math.h>
-#include "Fusion.h"
+#include "log.h"
 
 #define GRAV_AT_SEA_LVL 9.80665 //m/s^2
 #define EARTH_MEAN_RADIUS 6371009 //m
@@ -283,6 +286,7 @@ void trajectory_task(void * argument){
                         float vely = (altTime.alt-prev_alt)*1000.0/(altTime.time-prev_time);
                         float velx = vely*tan(angles.angle.pitch);
                         float apogee = get_max_altitude(vely,velx, altTime.alt, ext, ROCKET_BURNOUT_MASS);
+                        logInfo("traj", "%f", apogee);
                         xQueueOverwrite(apogeeQueue, &apogee);
                     }
                     prev_alt = altTime.alt;
@@ -291,7 +295,7 @@ void trajectory_task(void * argument){
             }
 
         }
-        vTaskDelay(20); // TODO: for testing so this blocks
+      //  vTaskDelay(20); // TODO: for testing so this blocks
     }
 }
 void trajectory_init(){

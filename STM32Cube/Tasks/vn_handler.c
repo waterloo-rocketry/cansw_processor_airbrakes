@@ -3,16 +3,19 @@
  *  Created on: Mar 24, 2024
  *      Author: joedo*/
 
-#include "stm32h7xx_hal.h"
-#include "vn_handler.h"
-#include "vn/protocol/upack.h"
-#include "log.h"
-#include "state_estimation.h"
-#include "printf.h"
-#include "can_handler.h"
 #include <math.h>
 #include <string.h>
-#include "stdbool.h"
+
+#include "stm32h7xx_hal.h"
+
+#include "vn/protocol/upack.h"
+#include "printf.h"
+
+#include "log.h"
+#include "state_estimation.h"
+#include "vn_handler.h"
+#include "can_handler.h"
+
 
 extern UART_HandleTypeDef huart1;
 
