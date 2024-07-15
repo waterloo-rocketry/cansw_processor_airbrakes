@@ -17,10 +17,12 @@ extern "C" {
 // TODO: determine optimal numbers for these
 /* max length of log data string (bytes) */
 #define MAX_MSG_LENGTH 256
+/* number of full-length msgs in 1 buffer */
+#define MSGS_PER_BUFFER 64
 /* size of one log buffer (bytes) */
-#define LOG_BUFFER_SIZE 8192
+#define LOG_BUFFER_SIZE MAX_MSG_LENGTH * MSGS_PER_BUFFER
 /* number of log buffers */
-#define NUM_LOG_BUFFERS 3
+#define NUM_LOG_BUFFERS 2
 
 /**
  * Log Level
@@ -31,15 +33,6 @@ typedef enum {
     LOG_LVL_INFO = 'I',   // Info (data from sensors, etc)
     LOG_LVL_DEBUG = 'D',  // Only for debugging on the ground
 } LogLevel_t;
-
-/**
- * Buffer holding one block of log msgs
-*/
-typedef struct log_buffer {
-    uint16_t index;
-    char buffer[LOG_BUFFER_SIZE];
-    bool isFull;
-} log_buffer;
 
 /**
  * Create buffers, mutexes, etc
