@@ -217,7 +217,7 @@ void logTask(void *argument) {
 
     // wait for a full buffer to appear in the queue; timeout is long - queues are not expected to fill up super quickly
     for (;;) {
-		if (xQueueReceive(fullBuffersQueue, &bufferToPrint, 1000000) == pdPASS) {
+		if (xQueueReceive(fullBuffersQueue, &bufferToPrint, 5000) == pdPASS) {
 				FRESULT result = FR_OK;
                 result |= f_open(&logfile, logFileName, FA_OPEN_APPEND | FA_WRITE);
                 // print entire buffer for max efficiency and prevent data loss in case file closing fails
@@ -228,12 +228,12 @@ void logTask(void *argument) {
             	// HAL_UART_Transmit(&huart4, bufferToPrint->buffer, bufferToPrint->index, 3000);
 
                 // don't need mutex here - anyone who tries to acquire this log will get prevented by isFull=true
-                memset(bufferToPrint->buffer, 0, LOG_BUFFER_SIZE);
+                memset(bufferToPrint->buffer, (int) '*', LOG_BUFFER_SIZE);
                 bufferToPrint->currMsgNum = 0;
                 bufferToPrint->isFull = false;
         } else {
             noFullBuffMoments++;
         }
-        logInfo("log", "%d %d %d %d %d %d", droppedMsgs, fullBuffMoments, logWriteTimeouts, invalidRegionMoments, critErrs, noFullBuffMoments);
+        logInfo("lo`g", "%d %d %d %d %d %d", droppedMsgs, fullBuffMoments, logWriteTimeouts, invalidRegionMoments, critErrs, noFullBuffMoments);
     }
 }
