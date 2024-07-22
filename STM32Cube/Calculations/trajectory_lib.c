@@ -53,6 +53,9 @@ float interpolate_drag(float extension, float velocity, float altitude) {
         extension = 1;
     }
 
+    float x = (velocity - 273.9) / 148.7;
+    float y = (altitude - 5000) / 3172;
+
     Cubic2VariablePolynomial coeffs[11] = {
         { 232.2951, 244.7010, -75.1435, 64.3402, -79.5220, 11.7309, -0.8306, -20.4344, 9.7041, -0.6148 },
         { 235.8993, 249.2100, -76.2767, 65.8251, -81.2931, 12.0289, -0.8408, -21.0236, 9.9787, -0.7853 },
@@ -69,10 +72,10 @@ float interpolate_drag(float extension, float velocity, float altitude) {
 
     int index = (int) (extension * 10.0f);
     if (extension * 10.0f == index) {
-        return evaluate_cubic_2_variable(&coeffs[index], velocity, altitude);
+        return evaluate_cubic_2_variable(&coeffs[index], x, y);
     }
-    float first = evaluate_cubic_2_variable(&coeffs[index], velocity, altitude);
-    float second = evaluate_cubic_2_variable(&coeffs[index + 1], velocity, altitude);
+    float first = evaluate_cubic_2_variable(&coeffs[index], x, y);
+    float second = evaluate_cubic_2_variable(&coeffs[index + 1], x, y);
     float diff = extension - ((float) ((int) extension));
     return diff * second + (1.0f - diff) * first;
 }
