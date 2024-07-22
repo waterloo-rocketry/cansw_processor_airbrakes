@@ -22,7 +22,6 @@
 
 xQueueHandle altQueue;
 xQueueHandle angleQueue;
-xQueueHandle extQueue;
 
 float rocket_area(float extension);
 float velocity_derivative(float force, float mass);
@@ -275,9 +274,8 @@ void trajectory_task(void * argument){
     {
         AltTime altTime;
         FusionEuler angles;
-        float ext;
+        const float ext = 0.5;
         if(xQueueReceive(altQueue, &altTime, 10) == pdTRUE) {
-            if(xQueuePeek(extQueue, &ext, 10)== pdTRUE) {
                 if(xQueuePeek(angleQueue, &angles, 100) == pdTRUE) {
                     if(prev_alt != 0xFFFF) {
                         float vely = (altTime.alt-prev_alt)*1000.0/(altTime.time-prev_time);
@@ -288,7 +286,6 @@ void trajectory_task(void * argument){
                     prev_alt = altTime.alt;
                     prev_time = altTime.time;
                 }
-            }
 
         }
         vTaskDelay(20); // TODO: for testing so this blocks
@@ -297,6 +294,5 @@ void trajectory_task(void * argument){
 void trajectory_init(){
     altQueue = xQueueCreate(1, sizeof(AltTime));
     angleQueue = xQueueCreate(1, sizeof(FusionEuler));
-    extQueue = xQueueCreate(1, sizeof(float));
     otitsRegister(test_apogeeQueue, TEST_SOURCE_TRAJ, "apogeeQ");
 }
