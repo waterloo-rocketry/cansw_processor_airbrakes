@@ -268,7 +268,7 @@ Otits_Result_t test_apogeeQueue() {
 
 void trajectory_task(void * argument){    
     float prev_time = -1;
-    uint16_t prev_alt = 0xFFFF;
+    int32_t prev_alt = INT_MAX;
     
     for(;;)
     {
@@ -277,7 +277,7 @@ void trajectory_task(void * argument){
         const float ext = 0.5;
         if(xQueueReceive(altQueue, &altTime, 10) == pdTRUE) {
                 if(xQueuePeek(angleQueue, &angles, 100) == pdTRUE) {
-                    if(prev_alt != 0xFFFF) {
+                    if(prev_alt != INT_MAX) {
                         float vely = (altTime.alt-prev_alt)*1000.0/(altTime.time-prev_time);
                         float velx = vely*tan(angles.angle.pitch);
                         float apogee = get_max_altitude(vely,velx, altTime.alt, ext, ROCKET_BURNOUT_MASS);
