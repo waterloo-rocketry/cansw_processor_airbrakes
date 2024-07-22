@@ -70,6 +70,7 @@
 									<listOptionValue builtIn="false" value="../Core/ThreadSafe"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/processor_board/canlib}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/processor_board/Tasks}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/processor_board/Calculations}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/vnproglib/c/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/Fusion/Fusion}&quot;"/>
 								</option>
