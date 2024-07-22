@@ -9,6 +9,7 @@
 #include "controller.h"
 #include "otits.h"
 #include <math.h>
+#include <limits.h>
 #include "Fusion.h"
 
 #define GRAV_AT_SEA_LVL 9.80665 //m/s^2
