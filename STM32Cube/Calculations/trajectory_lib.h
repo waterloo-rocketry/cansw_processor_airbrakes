@@ -1,7 +1,7 @@
 #ifndef TRAJECTORY_LIB_H_
 #define TRAJECTORY_LIB_H_
 
-#define ROCKET_BURNOUT_MASS 39.564  // kg
+#define ROCKET_BURNOUT_MASS 39.609  // kg
 
 /**@return drag force acting on rocket
  * @param extension of air brakes, used for adjusting rocket area and

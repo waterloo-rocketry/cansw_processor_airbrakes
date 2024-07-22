@@ -4,9 +4,6 @@
 
 #define GRAV_AT_SEA_LVL 9.80665         // m/s^2
 #define EARTH_MEAN_RADIUS 6371009       // m
-#define AIRBRAKES_MAX_AREA 0.004993538  // m^2
-#define ROCKET_BASE_AREA 0.0182412538   // m^2
-#define SIM_ALTITUDE 1000  // All drag sims conducted at 1000m above sea level
 #define TOL 0.00001
 #define TIME_STEP 0.05  // s
 
