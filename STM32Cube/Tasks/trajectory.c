@@ -7,139 +7,14 @@
 
 #include "trajectory.h"
 
-#include <math.h>
-
 #include "Fusion.h"
 #include "controller.h"
-#include "../Calculations/drag.h"
 #include "otits.h"
-
-#define GRAV_AT_SEA_LVL 9.80665         // m/s^2
-#define EARTH_MEAN_RADIUS 6371009       // m
-#define AIRBRAKES_MAX_AREA 0.004993538  // m^2
-#define ROCKET_BASE_AREA 0.0182412538   // m^2
-#define SIM_ALTITUDE 1000  // All drag sims conducted at 1000m above sea level
-#define TOL 0.00001
-#define ROCKET_BURNOUT_MASS 39.564  // kg
-#define TIME_STEP 0.05              // s
+#include "trajectory_lib.h"
 
 xQueueHandle altQueue;
 xQueueHandle angleQueue;
 xQueueHandle extQueue;
-
-float velocity_derivative(float force, float mass);
-float gravitational_acceleration(float altitude);
-float interpolate_cd(float extension, float velocity, float altitude);
-RK4State rk4(float h, float mass, float extension, RK4State state);
-float get_max_altitude(float velY, float velX, float altitude,
-                       float airbrake_ext, float mass);
-
-/**
- * @param altitude (m)
- * @return acceleration due to gravity (m/s^2)
- */
-float gravitational_acceleration(float altitude) {
-    return GRAV_AT_SEA_LVL *
-           pow(EARTH_MEAN_RADIUS / (EARTH_MEAN_RADIUS + altitude), 2);
-}
-
-/**
- * @return Cd value corresponding to interpolated drag force
- */
-float interpolate_cd(float extension, float velocity, float altitude) {
-    float drag_force = interpolate_drag(extension, velocity, altitude);
-    return 2 * drag_force /
-           (air_density(altitude) * rocket_area(extension) *
-            (velocity * velocity));  // Cd
-}
-
-/**
- * @param airbrake_ext extension of airbrakes, 0-1
- * @param mass of rocket (kg)
- * @param velX, velocity in X direction (m/s)
- * @param velY, velocity in Y direction (m/s)
- * @param alt, altitude (m)
- * @return forces acting on rocket in the X and Y directions (N)
- */
-Forces get_forces(float extension, float mass, float velX, float velY,
-                  float alt) {
-    Forces forces;
-    float velT = sqrt(velY * velY + velX * velX);
-    float Fd = -interpolate_drag(extension, velT, alt);  // force of drag (N)
-    float Fg = -gravitational_acceleration(alt) * mass;  // force of gravity (N)
-    forces.Fy = Fd * velY / velT + Fg;
-    forces.Fx = Fd * velX / velT;
-    return forces;
-}
-
-/**
- * rk4 method to integrate altitude from velocity, and integrate velocity from
- * acceleration (force/mass)
- * @param h time step
- * @param extension of airbrakes, 0-1
- * @param mass of rocket (kg)
- * @param state, including altitude (m) and velocity in X and Y directions (m/s)
- * @return updated altitude and velocity integrals after one rk4 step
- */
-RK4State rk4(float h, float mass, float extension, RK4State state) {
-    Forces forces;
-    // Force / mass = acceleration
-    forces = get_forces(extension, mass, state.velX, state.velY, state.alt);
-    float ka1 = h * state.velY;
-    float kvY1 = h * forces.Fy / mass;
-    float kvX1 = h * forces.Fx / mass;
-
-    forces = get_forces(extension, mass, state.velX + kvX1 / 2,
-                        state.velY + kvY1 / 2, state.alt + ka1 / 2);
-    float ka2 = h * (state.velY + h * kvY1 / 2);
-    float kvY2 = h * forces.Fy / mass;
-    float kvX2 = h * forces.Fx / mass;
-
-    forces = get_forces(extension, mass, state.velX + kvX2 / 2,
-                        state.velY + kvY2 / 2, state.alt + ka2 / 2);
-    float ka3 = h * (state.velY + h * kvY2 / 2);
-    float kvY3 = h * forces.Fy / mass;
-    float kvX3 = h * forces.Fx / mass;
-
-    forces = get_forces(extension, mass, state.velX + kvX3, state.velY + kvY3,
-                        state.alt + ka3);
-    float ka4 = h * (state.velY + h * kvY3);
-    float kvY4 = h * forces.Fy / mass;
-    float kvX4 = h * forces.Fx / mass;
-
-    RK4State updatedState;
-    updatedState.alt = (state.alt + (ka1 + 2 * ka2 + 2 * ka3 + ka4) / 6);
-    updatedState.velY = (state.velY + (kvY1 + 2 * kvY2 + 2 * kvY3 + kvY4) / 6);
-    updatedState.velX = (state.velX + (kvX1 + 2 * kvX2 + 2 * kvX3 + kvX4) / 6);
-
-    return updatedState;
-}
-
-/** @return max apogee
- * @param velocity vertical velocity (m/s)
- * @param altitude (m)
- * @param airbrake_ext extension of airbrakes, 0-1
- * @param mass (kg)
- */
-float get_max_altitude(float velY, float velX, float altitude,
-                       float airbrake_ext, float mass) {
-    float prevAlt = 0.0;  // variable to store previous altitude
-
-    RK4State states;
-
-    states.alt = altitude;
-    states.velY = velY;
-    states.velX = velX;
-
-    while (states.alt >= prevAlt) {
-        prevAlt =
-            states.alt;  // to check if altitude is decreasing to exit the loop
-        states = rk4(TIME_STEP, mass, airbrake_ext,
-                     states);  // update velocity and altitude
-    }
-
-    return prevAlt;
-}
 
 /*
  * Test that the apogee queue is not frozen, and values are within reason

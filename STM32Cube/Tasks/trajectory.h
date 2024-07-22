@@ -18,19 +18,6 @@ extern xQueueHandle extQueue;
 void trajectory_task(void* argument);
 void trajectory_init(void);
 
-// Struct with the data iterated in RK4 method
-typedef struct RK4StateStruct {
-    float velY;  // m/s
-    float velX;  // m/s
-    float alt;   // m
-} RK4State;
-
-// Struct with the forces acting on the rocket
-typedef struct ForceStruct {
-    float Fy;  // N
-    float Fx;  // N
-} Forces;
-
 // Struct for recieving altitude data, could replace with import
 typedef struct AltStruct {
     int32_t alt;  // altitude in m
