@@ -63,7 +63,7 @@ void stateEstTask(void *arguments) {
             .axis = {0.0f, 0.0f, 0.0f}
     };
     const FusionMatrix accelerometerMisalignment = {
-			.element = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
+                .element = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
         };
     const FusionVector accelerometerSensitivity = {
             .axis = {1.0f, 1.0f, 1.0f}

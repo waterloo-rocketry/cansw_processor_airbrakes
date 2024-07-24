@@ -226,7 +226,7 @@ void vnIMUHandler(void *argument)
 								send3VectorStateCanMsg_double(time_startup, posEcef.c,STATE_POS_X); //position
 								send3VectorStateCanMsg_float(time_startup, velEcef.c,STATE_VEL_X); //velocity
 								send3VectorStateCanMsg_float(time_startup, linAccelEcef.c,STATE_ACC_X); //acceleration
-								//send3VectorStateCanMsg_float(time_startup, yprAngles.c,STATE_ANGLE_YAW); //angle; TODO: this is also sent by OUR state estimation, so we should expand the enum in canlib to distinguish
+								send3VectorStateCanMsg_float(time_startup, yprAngles.c,STATE_ANGLE_YAW); //angle;
 								send3VectorStateCanMsg_float(time_startup, angularRate.c,STATE_RATE_YAW); //angle rate in XYZ (TODO: NEED TO CONVERT TO YPR)
 
 								CANGroup2Counter=0;
