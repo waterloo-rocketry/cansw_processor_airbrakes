@@ -4,17 +4,18 @@
  *  Created on: Apr 14, 2024
  *      Author: joedo
  */
+#include "stm32h7xx_hal.h"
+
+#include <math.h>
+
+#include "printf.h"
+#include "millis.h"
 
 #include "controller.h"
-#include "FreeRTOS.h"
-#include "queue.h"
-#include "stm32h7xx_hal.h"
-#include <math.h>
-#include "millis.h"
 #include "flight_phase.h"
 #include "can_handler.h"
-#include "printf.h"
 #include "trajectory.h"
+#include "log.h"
 
 QueueHandle_t apogeeQueue;
 QueueHandle_t targetQueue;
