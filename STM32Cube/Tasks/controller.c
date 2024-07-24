@@ -4,17 +4,18 @@
  *  Created on: Apr 14, 2024
  *      Author: joedo
  */
+#include "stm32h7xx_hal.h"
+
+#include <math.h>
+
+#include "printf.h"
+#include "millis.h"
 
 #include "controller.h"
-#include "FreeRTOS.h"
-#include "queue.h"
-#include "stm32h7xx_hal.h"
-#include <math.h>
-#include "millis.h"
 #include "flight_phase.h"
 #include "can_handler.h"
-#include "printf.h"
 #include "trajectory.h"
+#include "log.h"
 
 QueueHandle_t apogeeQueue;
 QueueHandle_t targetQueue;
@@ -69,7 +70,8 @@ void controlTask(void *argument)
 			if(extension > CONTROLLER_MAX_EXTENSION) extension = CONTROLLER_MAX_EXTENSION;
 			if(extension < CONTROLLER_MIN_EXTENSION) extension = CONTROLLER_MIN_EXTENSION;
 
-			printf_("extension: %f\n", extension);
+			//printf_("extension: %f\n", extension);
+			logInfo("controller", "ext: %d", extension * 100);
 			xQueueOverwrite(extQueue, &extension); //make the new extension value available to trajectory prediction
 			if(extensionAllowed())
 			{

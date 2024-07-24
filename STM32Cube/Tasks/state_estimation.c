@@ -5,14 +5,13 @@
  *      Author: joedo
  */
 
+#include "millis.h"
+#include "printf.h"
 
 #include "ICM-20948.h"
-#include "Fusion.h"
 #include "vn_handler.h"
 #include "log.h"
 #include "can_handler.h"
-#include "millis.h"
-#include "printf.h"
 #include "state_estimation.h"
 
 #define SAMPLE_RATE_HZ 1 //Hz; Need to set to match VN data rate
@@ -118,6 +117,7 @@ void stateEstTask(void *arguments) {
     {
     	if(RESET_FILTER_CMD)
     	{
+    	    logInfo("stateEst", "reset filter");
     		FusionAhrsReset(&ahrs);
     		xEventGroupClearBits(calibrationEventHandle, RESET_FILTER_FLAG);
     	}
@@ -159,7 +159,7 @@ void stateEstTask(void *arguments) {
         float imuTimestamp;
 		 if(unpackIMUData(&gyroscope, &accelerometer, &magnetometer, &imuTimestamp) == false)
 		 {
-			 logError("state estimation", "Failed to get VN raw IMU data");
+			 logError("stateEst", "Failed to get VN raw IMU data");
 		 }
 		 else
 		 {
@@ -185,9 +185,9 @@ void stateEstTask(void *arguments) {
 			xQueueOverwrite(angleQueue, &euler);
 
 			can_msg_t msg;
-			if(build_state_est_data_msg(69, &euler.angle.roll, STATE_FILTER_ROLL, &msg)) xQueueSend(busQueue, &msg, 10);
-			if(build_state_est_data_msg(70, &euler.angle.pitch, STATE_FILTER_PITCH, &msg)) xQueueSend(busQueue, &msg, 10);
-			if(build_state_est_data_msg(71, &euler.angle.yaw, STATE_FILTER_YAW, &msg)) xQueueSend(busQueue, &msg, 10);
+			if(build_state_est_data_msg(millis_(), &euler.angle.roll, STATE_ANGLE_ROLL, &msg)) xQueueSend(busQueue, &msg, 10);
+			if(build_state_est_data_msg(millis_(), &euler.angle.pitch, STATE_ANGLE_PITCH, &msg)) xQueueSend(busQueue, &msg, 10);
+			if(build_state_est_data_msg(millis_(), &euler.angle.yaw, STATE_ANGLE_YAW, &msg)) xQueueSend(busQueue, &msg, 10);
 
 			logInfo("stateEst", "EuRoll %f, EuPitch %f, EuYaw %f", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
 			//printf_(">EuRoll:%.2f\n>EuPitch:%.2f\n>EuYaw:%.2f\n", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);

@@ -4,3 +4,4 @@ STM32Cube/Release/*
 **/.metadata
 **/.settings
 **/.vscode
+*.orig
