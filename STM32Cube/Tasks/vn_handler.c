@@ -3,16 +3,19 @@
  *  Created on: Mar 24, 2024
  *      Author: joedo*/
 
-#include "stm32h7xx_hal.h"
-#include "vn_handler.h"
-#include "vn/protocol/upack.h"
-#include "log.h"
-#include "state_estimation.h"
-#include "printf.h"
-#include "can_handler.h"
 #include <math.h>
 #include <string.h>
-#include "stdbool.h"
+
+#include "stm32h7xx_hal.h"
+
+#include "vn/protocol/upack.h"
+#include "printf.h"
+
+#include "log.h"
+#include "state_estimation.h"
+#include "vn_handler.h"
+#include "can_handler.h"
+
 
 extern UART_HandleTypeDef huart1;
 
@@ -26,8 +29,8 @@ const float RAD_TO_DEG = 180 / M_PI;
 const float g = 9.81;
 const bool verbose = false;
 const uint8_t SD_RATE_DIVISOR_GROUP1 = 5;
-const uint8_t CAN_RATE_DIVISOR_GROUP1 = 1;
-const uint8_t CAN_RATE_DIVISOR_GROUP2 = 1;
+const uint8_t CAN_RATE_DIVISOR_GROUP1 = 5;
+const uint8_t CAN_RATE_DIVISOR_GROUP2 = 5;
 const uint8_t SD_RATE_DIVISOR_GROUP2 = 5;
 
 uint8_t SDGroup1Counter=0;
@@ -134,13 +137,13 @@ void vnIMUHandler(void *argument)
 						}
 
 
-						if (verbose){
+						/*if (verbose){
 							printf_("Data recived: ");
 							for(int i = 0; i < MAX_BINARY_OUTPUT_LENGTH; i++) {
 								printf_("0x%x ", USART1_Rx_Buffer[i]);
 							}
 							printf_("\r\n");
-						}
+						}*/
 
 						//Group #1
 						if (packetLength == 53){
@@ -158,6 +161,7 @@ void vnIMUHandler(void *argument)
 							SDGroup1Counter++;
 							CANGroup1Counter++;
 
+						
 
 							if (SDGroup1Counter >= SD_RATE_DIVISOR_GROUP1){
 								char msgAsString[300]  = {0};
@@ -222,7 +226,7 @@ void vnIMUHandler(void *argument)
 								send3VectorStateCanMsg_double(time_startup, posEcef.c,STATE_POS_X); //position
 								send3VectorStateCanMsg_float(time_startup, velEcef.c,STATE_VEL_X); //velocity
 								send3VectorStateCanMsg_float(time_startup, linAccelEcef.c,STATE_ACC_X); //acceleration
-								send3VectorStateCanMsg_float(time_startup, yprAngles.c,STATE_ANGLE_YAW); //angle; TODO: this is also sent by OUR state estimation, so we should expand the enum in canlib to distinguish
+								send3VectorStateCanMsg_float(time_startup, yprAngles.c,STATE_ANGLE_YAW); //angle;
 								send3VectorStateCanMsg_float(time_startup, angularRate.c,STATE_RATE_YAW); //angle rate in XYZ (TODO: NEED TO CONVERT TO YPR)
 
 								CANGroup2Counter=0;

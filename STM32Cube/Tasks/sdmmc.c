@@ -1,6 +1,11 @@
+#include <string.h>
+
+#include "ff.h"
+#include "FreeRTOS.h"
+#include "task.h"
+
 #include "sdmmc.h"
 #include "otits.h"
-#include <string.h>
 
 const char *logsPath = "/LOGS"; //path to the log file directory on the SD card
 char logFileName[LOG_FILE_NAME_SIZE];

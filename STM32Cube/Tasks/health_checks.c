@@ -5,11 +5,16 @@
  *      Author: joedo
  */
 
+#include "FreeRTOS.h"
+#include "stm32h7xx_hal.h"
+
+#include "printf.h"
+#include "millis.h"
+
 #include "health_checks.h"
 #include "log.h"
 #include "can_handler.h"
 #include "otits.h"
-#include "printf.h"
 
 extern ADC_HandleTypeDef hadc1;
 
@@ -54,6 +59,7 @@ bool healthCheckInit() {
 
 void healthCheckTask(void *argument)
 {
+  TickType_t lastWakeTime = xTaskGetTickCount();
   /* Infinite loop */
   for (;;)
   {
@@ -76,7 +82,7 @@ void healthCheckTask(void *argument)
     uint8_t current_data[2];
     current_data[0] = adc1_current_mA >> 8 & 0xFF;
     current_data[1] = adc1_current_mA & 0xFF;
-    build_board_stat_msg(0, E_5V_OVER_CURRENT, current_data, 2, &msg);
+    build_board_stat_msg(millis_(), E_5V_OVER_CURRENT, current_data, 2, &msg);
     xQueueSend(busQueue, &msg, 10);
     } else {
     // E nominal
@@ -89,9 +95,10 @@ void healthCheckTask(void *argument)
     xQueueSend(busQueue, &msg, 10);
 
 
+    logError("health", "over current %dmA", adc1_current_mA);
     }
 
-    vTaskDelay(100);
+    vTaskDelayUntil(&lastWakeTime, 1000);
   }
   /* USER CODE END healthCheckTask */
 }

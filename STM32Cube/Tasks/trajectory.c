@@ -5,11 +5,15 @@
  *      Author: Jacob Gordon
  */
 
+#include <math.h>
+#include <limits.h>
+
+#include "Fusion.h"
+
 #include "trajectory.h"
 #include "controller.h"
 #include "otits.h"
-#include <math.h>
-#include "Fusion.h"
+#include "log.h"
 
 #define GRAV_AT_SEA_LVL 9.80665 //m/s^2
 #define EARTH_MEAN_RADIUS 6371009 //m
@@ -22,7 +26,6 @@
 
 xQueueHandle altQueue;
 xQueueHandle angleQueue;
-xQueueHandle extQueue;
 
 float rocket_area(float extension);
 float velocity_derivative(float force, float mass);
@@ -269,26 +272,25 @@ Otits_Result_t test_apogeeQueue() {
 
 void trajectory_task(void * argument){    
     float prev_time = -1;
-    uint16_t prev_alt = 0xFFFF;
+    int32_t prev_alt = INT_MAX;
     
     for(;;)
     {
         AltTime altTime;
         FusionEuler angles;
-        float ext;
+        const float ext = 0.5;
         if(xQueueReceive(altQueue, &altTime, 10) == pdTRUE) {
-            if(xQueuePeek(extQueue, &ext, 10)== pdTRUE) {
                 if(xQueuePeek(angleQueue, &angles, 100) == pdTRUE) {
-                    if(prev_alt != 0xFFFF) {
+                    if(prev_alt != INT_MAX) {
                         float vely = (altTime.alt-prev_alt)*1000.0/(altTime.time-prev_time);
                         float velx = vely*tan(angles.angle.pitch);
                         float apogee = get_max_altitude(vely,velx, altTime.alt, ext, ROCKET_BURNOUT_MASS);
+                        logInfo("traj", "%f", apogee);
                         xQueueOverwrite(apogeeQueue, &apogee);
                     }
                     prev_alt = altTime.alt;
                     prev_time = altTime.time;
                 }
-            }
 
         }
         vTaskDelay(20); // TODO: for testing so this blocks
@@ -297,6 +299,5 @@ void trajectory_task(void * argument){
 void trajectory_init(){
     altQueue = xQueueCreate(1, sizeof(AltTime));
     angleQueue = xQueueCreate(1, sizeof(FusionEuler));
-    extQueue = xQueueCreate(1, sizeof(float));
     otitsRegister(test_apogeeQueue, TEST_SOURCE_TRAJ, "apogeeQ");
 }

@@ -9,10 +9,9 @@
 #define FLIGHT_PHASE_H_
 
 #include <stdbool.h>
+
 #include "FreeRTOS.h"
 #include "event_groups.h"
-#include "stm32h7xx_hal.h"
-#include "cmsis_os.h"
 
 typedef enum {
 	PHASE_PRELAUNCH = 0,
