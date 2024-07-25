@@ -78,6 +78,17 @@ void healthCheckTask(void *argument)
     current_data[1] = adc1_current_mA & 0xFF;
     build_board_stat_msg(0, E_5V_OVER_CURRENT, current_data, 2, &msg);
     xQueueSend(busQueue, &msg, 10);
+    } else {
+    // E nominal
+    can_msg_t msg;
+    built_board_stat_msg(0, E_NOMINAL, NULL, 0, &msg);
+    xQueueSend(busQueue, &msg, 10);
+
+    // Current Draw Message
+    build_analog_data_msg(0, SENSOR_BATT_CUR, adc1_current_mA, &msg);
+    xQueueSend(busQueue, &msg, 10);
+
+
     }
 
     vTaskDelay(100);
