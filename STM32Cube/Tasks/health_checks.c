@@ -87,11 +87,11 @@ void healthCheckTask(void *argument)
     } else {
     // E nominal
     can_msg_t msg;
-    built_board_stat_msg(0, E_NOMINAL, NULL, 0, &msg);
+    build_board_stat_msg(0, E_NOMINAL, NULL, 0, &msg);
     xQueueSend(busQueue, &msg, 10);
 
     // Current Draw Message
-    build_analog_data_msg(0, SENSOR_BATT_CUR, adc1_current_mA, &msg);
+    build_analog_data_msg(0, SENSOR_BATT_CURR, adc1_current_mA, &msg);
     xQueueSend(busQueue, &msg, 10);
 
 
