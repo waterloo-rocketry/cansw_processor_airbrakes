@@ -31,6 +31,11 @@
 	</natures>
 	<linkedResources>
 		<link>
+			<name>Calculations</name>
+			<type>2</type>
+			<locationURI>PROJECT_LOC/Calculations</locationURI>
+		</link>
+		<link>
 			<name>Fusion</name>
 			<type>2</type>
 			<locationURI>PROJECT_LOC/Fusion</locationURI>
