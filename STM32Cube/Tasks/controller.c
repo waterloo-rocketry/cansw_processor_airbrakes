@@ -17,6 +17,9 @@
 #include "trajectory.h"
 #include "log.h"
 
+#define MIN_EXTENSION_CMD 24
+#define MAX_EXTENSION_CMD 100
+
 QueueHandle_t apogeeQueue;
 QueueHandle_t targetQueue;
 
@@ -70,10 +73,12 @@ void controlTask(void *argument)
 			if(extension > CONTROLLER_MAX_EXTENSION) extension = CONTROLLER_MAX_EXTENSION;
 			if(extension < CONTROLLER_MIN_EXTENSION) extension = CONTROLLER_MIN_EXTENSION;
 
+			uint8_t cmd_extension = extension * (MAX_EXTENSION_CMD - MIN_EXTENSION_CMD) + MIN_EXTENSION_CMD;
+
 			can_msg_t msg;
-			build_actuator_cmd_analog( (uint32_t) millis_(), ACTUATOR_AIRBRAKES_SERVO, (uint8_t) (100 * extension), &msg);
+			build_actuator_cmd_analog( (uint32_t) millis_(), ACTUATOR_AIRBRAKES_SERVO, cmd_extension, &msg);
 			xQueueSend(busQueue, &msg, 5); //If we are in the coast phase, command the airbrakes servo to the target extension value
-			logInfo("controller", "ext CMD: %d", extension * 100);
+			logInfo("controller", "ext CMD: %d", cmd_extension);
 			printf_("extension: %f\n", extension);
 
 		}
