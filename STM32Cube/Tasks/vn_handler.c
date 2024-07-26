@@ -106,38 +106,38 @@ bool vn_handler_init()
 
 void vnIMUHandler(void *argument)
 {
-/************************** TESTING CODE *****************************/
-    TickType_t last = xTaskGetTickCount();
-            while (1) {
-                int t1 = xTaskGetTickCount();
-
-                bool pass1 = logInfo("VN#1", "%ds, lat/lon/alt (%.3f, %.3f, %.3f) +-(%.3f, %.3f, %.3f), %d sats",
-                    xTaskGetTickCount(), 1233.123, 1233.123, 1233.123, 3435.345, 3435.345, 3345.345, 56);
-
-                int t2 = xTaskGetTickCount();
-
-                int diff1 = t2 - t1;
-                vTaskDelayUntil(&last, 25);
-
-                int t3 = xTaskGetTickCount();
-
-                bool pass2 = logInfo("VN#2", "%ds, AngRate (%.3f, %.3f, %.3f), YPR (%.3f, %.3f, %.3f), PosECEF (%.3f, %.3f, %.3f), VelECEF (%.3f, %.3f, %.3f), LinAccECEF (%.3f, %.3f, %.3f)",
-                                                                            xTaskGetTickCount(),
-                                                                            12343.123, 12345333.123, 12343.123,
-                                                                            12353.123, 12433.123, 125533.123,
-                                                                            12343.123, 12333.123, 14233.123,
-                                                                            12343.123, 12453433.123, 1233.123,
-                                                                            123343.123, 1233.123, 1235343.123);
-
-                int t4 = xTaskGetTickCount();
-
-                int diff2 = t4 - t3;
-
-                // BREAKPOINT HERE TO READ diff1 AND diff2 WHICH INDICATE HOW LONG EACH LOGINFO TOOK
-                // ALSO READ pass1 AND pass2 TO VERIFY THE LOGINFOS ACTUALLY WORKED
-                vTaskDelayUntil(&last, 25);
-            }
-/************************** END TESTING CODE *****************************/
+///************************** TESTING CODE *****************************/
+//    TickType_t last = xTaskGetTickCount();
+//            while (1) {
+//                int t1 = xTaskGetTickCount();
+//
+//                bool pass1 = logInfo("VN#1", "%ds, lat/lon/alt (%.3f, %.3f, %.3f) +-(%.3f, %.3f, %.3f), %d sats",
+//                    xTaskGetTickCount(), 1233.123, 1233.123, 1233.123, 3435.345, 3435.345, 3345.345, 56);
+//
+//                int t2 = xTaskGetTickCount();
+//
+//                int diff1 = t2 - t1;
+//                vTaskDelayUntil(&last, 25);
+//
+//                int t3 = xTaskGetTickCount();
+//
+//                bool pass2 = logInfo("VN#2", "%ds, AngRate (%.3f, %.3f, %.3f), YPR (%.3f, %.3f, %.3f), PosECEF (%.3f, %.3f, %.3f), VelECEF (%.3f, %.3f, %.3f), LinAccECEF (%.3f, %.3f, %.3f)",
+//                                                                            xTaskGetTickCount(),
+//                                                                            12343.123, 12345333.123, 12343.123,
+//                                                                            12353.123, 12433.123, 125533.123,
+//                                                                            12343.123, 12333.123, 14233.123,
+//                                                                            12343.123, 12453433.123, 1233.123,
+//                                                                            123343.123, 1233.123, 1235343.123);
+//
+//                int t4 = xTaskGetTickCount();
+//
+//                int diff2 = t4 - t3;
+//
+//                // BREAKPOINT HERE TO READ diff1 AND diff2 WHICH INDICATE HOW LONG EACH LOGINFO TOOK
+//                // ALSO READ pass1 AND pass2 TO VERIFY THE LOGINFOS ACTUALLY WORKED
+//                vTaskDelayUntil(&last, 25);
+//            }
+///************************** END TESTING CODE *****************************/
 
 	for(;;)
 	{
