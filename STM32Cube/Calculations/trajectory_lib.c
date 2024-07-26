@@ -87,7 +87,7 @@ float interpolate_drag(float extension, float velocity, float altitude) {
     }
     float first = evaluate_cubic_2_variable(&coeffs[index], x, y);
     float second = evaluate_cubic_2_variable(&coeffs[index + 1], x, y);
-    float diff = extension - ((float)((int)extension));
+    float diff = (extension * 10.0f) - ((float)index);
     return diff * second + (1.0f - diff) * first;
 }
 
