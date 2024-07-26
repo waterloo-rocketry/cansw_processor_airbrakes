@@ -9,6 +9,7 @@
 #define STATE_ESTIMATION_H_
 
 #include "stm32h7xx_hal.h"
+
 #include "Fusion.h"
 #include "FreeRTOS.h"
 #include "queue.h"
