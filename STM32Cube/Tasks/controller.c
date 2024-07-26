@@ -4,17 +4,18 @@
  *  Created on: Apr 14, 2024
  *      Author: joedo
  */
+#include "stm32h7xx_hal.h"
+
+#include <math.h>
+
+#include "printf.h"
+#include "millis.h"
 
 #include "controller.h"
-#include "FreeRTOS.h"
-#include "queue.h"
-#include "stm32h7xx_hal.h"
-#include <math.h>
-#include "millis.h"
 #include "flight_phase.h"
 #include "can_handler.h"
-#include "printf.h"
 #include "trajectory.h"
+#include "log.h"
 
 QueueHandle_t apogeeQueue;
 QueueHandle_t targetQueue;
@@ -33,7 +34,6 @@ void controlTask(void *argument)
 	airbrakesController.target_altitude = 7000;
 	float last_ms = millis_();
 	float initial_extension = 0;
-	xQueueOverwrite(extQueue, &initial_extension); //put a valid element in the queue so that trajectory prediction can actually run
 
   /* Infinite loop */
 	for(;;)
@@ -64,13 +64,14 @@ void controlTask(void *argument)
 			airbrakesController.last_error = airbrakesController.error;
 
 			float output = airbrakesController.controller_term_P + airbrakesController.controller_term_I - airbrakesController.controller_term_D;
-			float extension = 1.0 - output; //invert the controller output
+			float extension = 0.5 - output; //invert the controller output - if we are undershooting retract, and if we are overshooting, extend
 
 			if(extension > CONTROLLER_MAX_EXTENSION) extension = CONTROLLER_MAX_EXTENSION;
 			if(extension < CONTROLLER_MIN_EXTENSION) extension = CONTROLLER_MIN_EXTENSION;
 
-			printf_("extension: %f\n", extension);
-			xQueueOverwrite(extQueue, &extension); //make the new extension value available to trajectory prediction
+//			printf_("extension: %f\n", extension);
+			logInfo("controller", "ext: %d", extension * 100);
+
 			if(extensionAllowed())
 			{
 				can_msg_t msg;

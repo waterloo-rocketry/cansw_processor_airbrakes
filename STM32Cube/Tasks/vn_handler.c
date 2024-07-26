@@ -3,16 +3,19 @@
  *  Created on: Mar 24, 2024
  *      Author: joedo*/
 
-#include "stm32h7xx_hal.h"
-#include "vn_handler.h"
-#include "vn/protocol/upack.h"
-#include "log.h"
-#include "state_estimation.h"
-#include "printf.h"
-#include "can_handler.h"
 #include <math.h>
 #include <string.h>
-#include "stdbool.h"
+
+#include "stm32h7xx_hal.h"
+
+#include "vn/protocol/upack.h"
+#include "printf.h"
+
+#include "log.h"
+#include "state_estimation.h"
+#include "vn_handler.h"
+#include "can_handler.h"
+
 
 extern UART_HandleTypeDef huart1;
 
@@ -26,8 +29,8 @@ const float RAD_TO_DEG = 180 / M_PI;
 const float g = 9.81;
 const bool verbose = false;
 const uint8_t SD_RATE_DIVISOR_GROUP1 = 5;
-const uint8_t CAN_RATE_DIVISOR_GROUP1 = 1;
-const uint8_t CAN_RATE_DIVISOR_GROUP2 = 1;
+const uint8_t CAN_RATE_DIVISOR_GROUP1 = 5;
+const uint8_t CAN_RATE_DIVISOR_GROUP2 = 5;
 const uint8_t SD_RATE_DIVISOR_GROUP2 = 5;
 
 uint8_t SDGroup1Counter=0;
@@ -103,6 +106,39 @@ bool vn_handler_init()
 
 void vnIMUHandler(void *argument)
 {
+///************************** TESTING CODE *****************************/
+//    TickType_t last = xTaskGetTickCount();
+//            while (1) {
+//                int t1 = xTaskGetTickCount();
+//
+//                bool pass1 = logInfo("VN#1", "%ds, lat/lon/alt (%.3f, %.3f, %.3f) +-(%.3f, %.3f, %.3f), %d sats",
+//                    xTaskGetTickCount(), 1233.123, 1233.123, 1233.123, 3435.345, 3435.345, 3345.345, 56);
+//
+//                int t2 = xTaskGetTickCount();
+//
+//                int diff1 = t2 - t1;
+//                vTaskDelayUntil(&last, 25);
+//
+//                int t3 = xTaskGetTickCount();
+//
+//                bool pass2 = logInfo("VN#2", "%ds, AngRate (%.3f, %.3f, %.3f), YPR (%.3f, %.3f, %.3f), PosECEF (%.3f, %.3f, %.3f), VelECEF (%.3f, %.3f, %.3f), LinAccECEF (%.3f, %.3f, %.3f)",
+//                                                                            xTaskGetTickCount(),
+//                                                                            12343.123, 12345333.123, 12343.123,
+//                                                                            12353.123, 12433.123, 125533.123,
+//                                                                            12343.123, 12333.123, 14233.123,
+//                                                                            12343.123, 12453433.123, 1233.123,
+//                                                                            123343.123, 1233.123, 1235343.123);
+//
+//                int t4 = xTaskGetTickCount();
+//
+//                int diff2 = t4 - t3;
+//
+//                // BREAKPOINT HERE TO READ diff1 AND diff2 WHICH INDICATE HOW LONG EACH LOGINFO TOOK
+//                // ALSO READ pass1 AND pass2 TO VERIFY THE LOGINFOS ACTUALLY WORKED
+//                vTaskDelayUntil(&last, 25);
+//            }
+///************************** END TESTING CODE *****************************/
+
 	for(;;)
 	{
 		HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(&huart1, USART1_Rx_Buffer, MAX_BINARY_OUTPUT_LENGTH); //Begin a receive, until we read MAX_BINARY_OUTPUT_LENGTH or the line goes idle, indicating a shorter message
@@ -129,24 +165,25 @@ void vnIMUHandler(void *argument)
 						size_t packetLength = VnUartPacket_computeBinaryPacketLength(packet.data);
 
 						if (packetLength>MAX_BINARY_OUTPUT_LENGTH){
-							printf_("Memory Overflow!\n\n\r\n");
+							//printf_("Memory Overflow!\n\n\r\n");
+						    logError("VN", "Mem overflow");
 							continue;
 						}
 
 
-						if (verbose){
+						/*if (verbose){
 							printf_("Data recived: ");
 							for(int i = 0; i < MAX_BINARY_OUTPUT_LENGTH; i++) {
 								printf_("0x%x ", USART1_Rx_Buffer[i]);
 							}
 							printf_("\r\n");
-						}
+						}*/
 
 						//Group #1
 						if (packetLength == 53){
 							can_msg_t msg;
 
-							uint64_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
+							uint32_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
 
 							vec3d pos = VnUartPacket_extractVec3d(&packet);
 							uint8_t numSatellites = VnUartPacket_extractInt8(&packet);
@@ -158,11 +195,11 @@ void vnIMUHandler(void *argument)
 							SDGroup1Counter++;
 							CANGroup1Counter++;
 
-
 							if (SDGroup1Counter >= SD_RATE_DIVISOR_GROUP1){
-								char msgAsString[300]  = {0};
-								sprintf_(msgAsString, "Time: %lli, pos: (Lat: %.3f, Lon: %.3f, Alt: %.3f) +- (%.3f, %.3f, %.3f) using %d satellites \r\n", time_startup, pos.c[0],pos.c[1],pos.c[2], postUncertainty.c[0],postUncertainty.c[1],postUncertainty.c[2], numSatellites);
-								logInfo("VN Group 1", msgAsString);
+	                            logInfo("VN#1", "%ds, lat/lon/alt (%.3f, %.3f, %.3f) +-(%.3f, %.3f, %.3f), %d sats\n",
+	                                    time_startup, pos.c[0],pos.c[1],pos.c[2],
+	                                    postUncertainty.c[0],postUncertainty.c[1],postUncertainty.c[2],
+	                                    numSatellites);
 								//printf_(msgAsString);
 
 								SDGroup1Counter = 0;
@@ -182,15 +219,11 @@ void vnIMUHandler(void *argument)
 
 								CANGroup1Counter = 0;
 							}
-
-
-
-
 						}
 
 						//Binary Output #2 92 bytes | Time startup (Common), Angular rate (IMU), Ypr (Attitude), PosEcef (INS), VelEcef (INS), LinAccelEcef (INS)
 						else if (packetLength == 92){
-							uint64_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
+							uint32_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
 
 							vec3f angularRate = VnUartPacket_extractVec3f(&packet); //rad/s
 							vec3f yprAngles = VnUartPacket_extractVec3f(&packet); //deg
@@ -204,16 +237,13 @@ void vnIMUHandler(void *argument)
 
 
 							if (SDGroup2Counter >= SD_RATE_DIVISOR_GROUP2){
-								char msgAsString[3000] = {0};
-								sprintf_(msgAsString,"Time: %lli, Angular Rate: (X: %.3f, Y: %.3f, Z: %.3f), YPR Angles: (Yaw: %.3f, Pitch: %.3f, Roll: %.3f), Pos ECEF: (X: %.3f, Y: %.3f, Z: %.3f), Vel ECEF: (X: %.3f, Y: %.3f, Z: %.3f), Lin Accel ECEF: (X: %.3f, Y: %.3f, Z: %.3f)\r\n",
-																time_startup,
-																angularRate.c[0], angularRate.c[1], angularRate.c[2],
-																yprAngles.c[0], yprAngles.c[1], yprAngles.c[2],
-																posEcef.c[0], posEcef.c[1], posEcef.c[2],
-																velEcef.c[0], velEcef.c[1], velEcef.c[2],
-																linAccelEcef.c[0], linAccelEcef.c[1], linAccelEcef.c[2]);
-								logInfo("VN Group 2", msgAsString);
-								//printf_(msgAsString);
+	                            logInfo("VN#2", "%ds, AngRate (%.3f, %.3f, %.3f), YPR (%.3f, %.3f, %.3f), PosECEF (%.3f, %.3f, %.3f), VelECEF (%.3f, %.3f, %.3f), LinAccECEF (%.3f, %.3f, %.3f)\n",
+	                                                            time_startup,
+	                                                            angularRate.c[0], angularRate.c[1], angularRate.c[2],
+	                                                            yprAngles.c[0], yprAngles.c[1], yprAngles.c[2],
+	                                                            posEcef.c[0], posEcef.c[1], posEcef.c[2],
+	                                                            velEcef.c[0], velEcef.c[1], velEcef.c[2],
+	                                                            linAccelEcef.c[0], linAccelEcef.c[1], linAccelEcef.c[2]);
 								SDGroup2Counter = 0;
 							}
 
@@ -222,12 +252,11 @@ void vnIMUHandler(void *argument)
 								send3VectorStateCanMsg_double(time_startup, posEcef.c,STATE_POS_X); //position
 								send3VectorStateCanMsg_float(time_startup, velEcef.c,STATE_VEL_X); //velocity
 								send3VectorStateCanMsg_float(time_startup, linAccelEcef.c,STATE_ACC_X); //acceleration
-								send3VectorStateCanMsg_float(time_startup, yprAngles.c,STATE_ANGLE_YAW); //angle; TODO: this is also sent by OUR state estimation, so we should expand the enum in canlib to distinguish
+								send3VectorStateCanMsg_float(time_startup, yprAngles.c,STATE_ANGLE_YAW); //angle;
 								send3VectorStateCanMsg_float(time_startup, angularRate.c,STATE_RATE_YAW); //angle rate in XYZ (TODO: NEED TO CONVERT TO YPR)
 
 								CANGroup2Counter=0;
 							}
-
 						}
 
 						//Binary Output #3 52 bytes | Time startup (Common), UncompMag (IMU). UncompAccel (IMU), UncompGyro (IMU)

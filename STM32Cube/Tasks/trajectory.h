@@ -13,7 +13,6 @@
 
 extern xQueueHandle altQueue;
 extern xQueueHandle angleQueue;
-extern xQueueHandle extQueue;
 
 void trajectory_task(void* argument);
 void trajectory_init(void);

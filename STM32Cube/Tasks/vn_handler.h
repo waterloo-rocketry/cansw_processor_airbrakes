@@ -8,9 +8,6 @@
 #ifndef VN_HANDLER_H_
 #define VN_HANDLER_H_
 
-#include "stm32h7xx_hal.h"
-#include "state_estimation.h"
-#include "Fusion.h"
 #include <stdbool.h>
 
 void vnIMUHandler(void *argument);
