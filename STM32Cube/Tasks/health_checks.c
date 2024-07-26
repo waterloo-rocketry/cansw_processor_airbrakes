@@ -84,6 +84,16 @@ void healthCheckTask(void *argument)
     current_data[1] = adc1_current_mA & 0xFF;
     build_board_stat_msg(millis_(), E_5V_OVER_CURRENT, current_data, 2, &msg);
     xQueueSend(busQueue, &msg, 10);
+    } else {
+    // E nominal
+    can_msg_t msg;
+    build_board_stat_msg(millis_(), E_NOMINAL, NULL, 0, &msg);
+    xQueueSend(busQueue, &msg, 10);
+
+    // Current Draw Message
+    build_analog_data_msg(millis_(), SENSOR_5V_CURR, adc1_current_mA, &msg);
+    xQueueSend(busQueue, &msg, 10);
+
 
     logError("health", "over current %dmA", adc1_current_mA);
     }
