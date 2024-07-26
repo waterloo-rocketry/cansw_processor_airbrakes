@@ -1,10 +1,22 @@
-#include "sdmmc.h"
-#include "log.h"
-#include "ff.h"
-
 #include <stdarg.h>
+#include "string.h"
+
+#include "ff.h"
 #include "printf.h"
 #include "otits.h"
+
+#include "sdmmc.h"
+#include "log.h"
+
+/**
+ * Buffer holding one block of log msgs
+*/
+typedef struct log_buffer {
+    int currMsgNum;
+    SemaphoreHandle_t currMsgNumMutex;
+    char buffer[LOG_BUFFER_SIZE];
+    bool isFull;
+} log_buffer;
 
 static log_buffer logBuffers[NUM_LOG_BUFFERS];
 static int CURRENT_BUFFER = 0;
@@ -12,6 +24,8 @@ static SemaphoreHandle_t logWriteMutex;
 
 static int droppedMsgs = 0;
 static int fullBuffMoments = 0;
+static int logWriteTimeouts = 0;
+static int invalidRegionMoments = 0;
 static int critErrs = 0;
 static int noFullBuffMoments = 0;
 
@@ -47,7 +61,7 @@ Otits_Result_t test_currentBufferFull() {
 
 bool logInit(void)
 {
-    fullBuffersQueue = xQueueCreate(NUM_LOG_BUFFERS - 1, sizeof(log_buffer*));
+    fullBuffersQueue = xQueueCreate(NUM_LOG_BUFFERS, sizeof(log_buffer*));
     logWriteMutex = xSemaphoreCreateMutex();
 
     if (fullBuffersQueue == NULL || logWriteMutex == NULL) {
@@ -55,8 +69,9 @@ bool logInit(void)
     }
 
     for (int i = 0; i < NUM_LOG_BUFFERS; i++) {
-        logBuffers[i].index = 0;
         logBuffers[i].isFull = false;
+        logBuffers[i].currMsgNum = 0;
+        logBuffers[i].currMsgNumMutex = xSemaphoreCreateMutex();
     }
     otitsRegister(test_currentBufferFull, TEST_SOURCE_LOGGER, "CurrBufFull");
     otitsRegister(test_logInfo, TEST_SOURCE_LOGGER, "LogInfo");
@@ -77,27 +92,48 @@ bool logGeneric(const char* source, LogLevel_t level, const char* msg, va_list m
     // get timestamp immediately so the following mutex wait time is irrelevant
     TickType_t timestamp = xTaskGetTickCount();
 
-    // there can only be 1 log writer at once
-    if (xSemaphoreTake(logWriteMutex, 50) != pdPASS) {
+    // protect this section of calculating which buffer is being used, must be done one at a time.
+    if (xSemaphoreTake(logWriteMutex, 10) != pdPASS) {
+        logWriteTimeouts++;
         droppedMsgs++;
-        return false;
-        // timed out while waiting to log - maybe too many tasks are waiting to log. this should never happen?
-    }
-    
-    // get the buffer here (only after taking writeMtx) since it's possible for buffers to rotate while waiting for the writeMtx
-    log_buffer* currentBuffer = &logBuffers[CURRENT_BUFFER];
-    
-    // if current buffer is full, then all of them must be full. ERROR!!! do not proceed
-    if (currentBuffer->isFull) {
-        fullBuffMoments++;
-        droppedMsgs++;
-        xSemaphoreGive(logWriteMutex);
         return false;
     }
 
-    // format and append the log header and msg
+    // get current buffer
+    log_buffer* currentBuffer = &logBuffers[CURRENT_BUFFER];
+
+    // if current buffer is full, then all of them must be full. ERROR!!! do not proceed
+    if (currentBuffer->isFull) {
+        xSemaphoreGive(logWriteMutex);
+        fullBuffMoments++;
+        droppedMsgs++;
+        return false;
+    }
+
+    // get the current msg number
+    int currMsgNum = currentBuffer->currMsgNum++;
+
+    // if this is the last msg of the buffer, rotate immediately so another task can start with a fresh buffer
+    if (currMsgNum == MSGS_PER_BUFFER - 1) {
+        // set isFull before sending to queue for extra protection
+        currentBuffer->isFull = true;
+        CURRENT_BUFFER = (CURRENT_BUFFER + 1) % NUM_LOG_BUFFERS;
+    }
+
+    // check that we didn't get an invalid region to write
+    if (currMsgNum >= MSGS_PER_BUFFER) {
+        invalidRegionMoments++;
+        droppedMsgs++;
+        return false;
+    }
+
+    // we now have a safe region to write in so the rest can be done concurrently without mutex protection
+    xSemaphoreGive(logWriteMutex);
+
+    // format and write the log msg
     int charsWritten = 0;
-    char* msgStart = currentBuffer->buffer + currentBuffer->index;
+    // move to the chunk of space that this msg owns in this buffer
+    char* msgStart = currentBuffer->buffer + currMsgNum * MAX_MSG_LENGTH;
 
     charsWritten += snprintf_(msgStart + charsWritten, MAX_MSG_LENGTH - charsWritten, "%c: [%d] %s ", level, (int) timestamp, source);
     if (charsWritten >= MAX_MSG_LENGTH) {
@@ -109,27 +145,22 @@ bool logGeneric(const char* source, LogLevel_t level, const char* msg, va_list m
         charsWritten = MAX_MSG_LENGTH; // -1 to ignore the '\0' that snprintf automatically counts
     }
 
-    // add \n in here instead of asking the sender to do it. This guarantees \n in all logs in case msg gets cut off
-    currentBuffer->buffer[currentBuffer->index + charsWritten] = '\n';
-    currentBuffer->index += charsWritten + 1; // + 1 for the '\n'
+    // move to the last char in this msg's chunk of space, and set it to \n
+    currentBuffer->buffer[currMsgNum * MAX_MSG_LENGTH + MAX_MSG_LENGTH - 1] = '\n';
 
-    // check if this buffer can fit another msg of up to `MAX_MSG_LENGTH + '\n'` chars
-    if (LOG_BUFFER_SIZE - currentBuffer->index <= MAX_MSG_LENGTH) {
-        // set isFull before sending to queue in case queue is full. this prevents other loggers from writing to it
-        currentBuffer->isFull = true;
-
+    // check if this msg is the last one in the buffer (-1 because zero-indexing)
+    if (currMsgNum == MSGS_PER_BUFFER - 1) {
         // if full, send this buffer to output queue and rotate to next buffer
         if (xQueueSendToBack(fullBuffersQueue, &currentBuffer, 0) != pdPASS) {
             // if queue is full, all buffers are already in queue. how did we get here ??? ERROR!!!!
             critErrs++;
-            xSemaphoreGive(logWriteMutex);
             return false;
         }
-
-        CURRENT_BUFFER = (CURRENT_BUFFER + 1) % NUM_LOG_BUFFERS;
+    } else if (currMsgNum > MSGS_PER_BUFFER - 1) {
+        // wtf we are NOT supposed to exceed the max number of msgs !!!!
+        critErrs++;
     }
 
-    xSemaphoreGive(logWriteMutex);
     return true;
 }
 
@@ -189,20 +220,29 @@ void logTask(void *argument) {
 
     // wait for a full buffer to appear in the queue; timeout is long - queues are not expected to fill up super quickly
     for (;;) {
-		if (xQueueReceive(fullBuffersQueue, &bufferToPrint, 10000) == pdPASS) {
-				FRESULT result = FR_OK;
-			    result |= f_open(&logfile, logFileName, FA_OPEN_APPEND | FA_WRITE);
-                // buffers fill from 0, so `index` conveniently indicates how many chars of data there are to print
-			    result |= f_write(&logfile, bufferToPrint->buffer, bufferToPrint->index, NULL);
-			    result |= f_close(&logfile);
-            	// uart print for testing
-            	// !!!! Ensure the timeout (rn 3000) is long enough to transmit a whole log chunk !!!
-            	// HAL_UART_Transmit(&huart4, bufferToPrint->buffer, bufferToPrint->index, 3000);
-                bufferToPrint->index = 0;
-                bufferToPrint->isFull = false;    
+		if (xQueueReceive(fullBuffersQueue, &bufferToPrint, 5000) == pdPASS) {
+		    TickType_t lastWakeTime = xTaskGetTickCount();
+		    // This is a hack solution in the case where the logGeneric that sends to queue is not the last logger to
+		    // finish snprintfing (ie, another logGeneric has a longer msg and takes longer to snprintf). This delay
+		    // assumes all snprintfs will finish within 5 ticks of receiving this buffer, which is a reasonable guess.
+		    vTaskDelayUntil(&lastWakeTime, 5);
+
+		    FRESULT result = FR_OK;
+		    result |= f_open(&logfile, logFileName, FA_OPEN_APPEND | FA_WRITE);
+            // print entire buffer for max efficiency and prevent data loss in case file closing fails
+            result |= f_write(&logfile, bufferToPrint->buffer, LOG_BUFFER_SIZE, NULL);
+            result |= f_close(&logfile);
+           // uart print for testing
+           // !!!! Ensure the timeout (rn 3000) is long enough to transmit a whole log chunk !!!
+           // HAL_UART_Transmit(&huart4, bufferToPrint->buffer, bufferToPrint->index, 3000);
+
+            // don't need mutex here - anyone who tries to acquire this log will get prevented by isFull=true
+            memset(bufferToPrint->buffer, 0, LOG_BUFFER_SIZE);
+            bufferToPrint->currMsgNum = 0;
+            bufferToPrint->isFull = false;
         } else {
             noFullBuffMoments++;
         }
-		logInfo("log", "%d %d %d %d", droppedMsgs, fullBuffMoments, critErrs, noFullBuffMoments);
+        logInfo("log", "%d %d %d %d %d %d", droppedMsgs, fullBuffMoments, logWriteTimeouts, invalidRegionMoments, critErrs, noFullBuffMoments);
     }
 }
