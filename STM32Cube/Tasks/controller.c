@@ -50,7 +50,7 @@ void controlTask(void *argument)
 			logInfo("controller", "Controller target updated to %d m", updated_target);
 		}
 
-		if(extensionAllowed() && xQueueReceive(apogeeQueue, &apogeeEstimate, 100) == pdTRUE)
+		if(xQueueReceive(apogeeQueue, &apogeeEstimate, 100) == pdTRUE && extensionAllowed())
 		{
 			//PID controller update
 			airbrakesController.error = airbrakesController.target_altitude - apogeeEstimate;
