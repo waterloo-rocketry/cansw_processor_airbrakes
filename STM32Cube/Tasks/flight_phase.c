@@ -11,8 +11,8 @@
 #include "log.h"
 #include "otits.h"
 
-#define BOOST_TIME_MS 10000 //time from inj valve open to motor bunout
-#define RECOVERY_DELAY_MS 15000 //time from inj valve open to recovery deployment
+#define BOOST_TIME_MS 15000 //time from inj valve open to motor bunout
+#define RECOVERY_DELAY_MS 90000 //time from inj valve open to recovery deployment
 
 static FLIGHT_PHASE flight_state = PHASE_PRELAUNCH;
 static float injOpenTime;
@@ -110,8 +110,7 @@ void flightPhaseTask(void *argument) {
 			flight_state = PHASE_DESCENT;
             logInfo("FlightPhase", "Entered descent phase at %fms", time);
 		}
-		//printf_("[%f] flight phase: %ds\n", time/1000, flight_state);
-		vTaskDelayUntil(&LastWakeTime, 10);
+		vTaskDelayUntil(&LastWakeTime, 50);
 	}
 }
 
