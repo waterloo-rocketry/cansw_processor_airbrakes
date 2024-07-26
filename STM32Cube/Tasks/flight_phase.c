@@ -110,7 +110,7 @@ void flightPhaseTask(void *argument) {
 			flight_state = PHASE_DESCENT;
             logInfo("FlightPhase", "Entered descent phase at %fms", time);
 		}
-		printf_("[%f] flight phase: %ds\n", time/1000, flight_state);
+		//printf_("[%f] flight phase: %ds\n", time/1000, flight_state);
 		vTaskDelayUntil(&LastWakeTime, 10);
 	}
 }
