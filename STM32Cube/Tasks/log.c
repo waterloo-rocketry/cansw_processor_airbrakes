@@ -7,6 +7,7 @@
 
 #include "sdmmc.h"
 #include "log.h"
+#include "ff.h"
 
 /**
  * Buffer holding one block of log msgs
