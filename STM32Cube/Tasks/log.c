@@ -105,6 +105,8 @@ bool logGeneric(const char* source, LogLevel_t level, const char* msg, va_list m
     // if current buffer is full, then all of them must be full. ERROR!!! do not proceed
     if (currentBuffer->isFull) {
         xSemaphoreGive(logWriteMutex);
+        fullBuffMoments++;
+        droppedMsgs++;
         return false;
     }
 
@@ -219,22 +221,28 @@ void logTask(void *argument) {
     // wait for a full buffer to appear in the queue; timeout is long - queues are not expected to fill up super quickly
     for (;;) {
 		if (xQueueReceive(fullBuffersQueue, &bufferToPrint, 5000) == pdPASS) {
-				FRESULT result = FR_OK;
-                result |= f_open(&logfile, logFileName, FA_OPEN_APPEND | FA_WRITE);
-                // print entire buffer for max efficiency and prevent data loss in case file closing fails
-                result |= f_write(&logfile, bufferToPrint->buffer, LOG_BUFFER_SIZE, NULL);
-                result |= f_close(&logfile);
-            	// uart print for testing
-            	// !!!! Ensure the timeout (rn 3000) is long enough to transmit a whole log chunk !!!
-            	// HAL_UART_Transmit(&huart4, bufferToPrint->buffer, bufferToPrint->index, 3000);
+		    TickType_t lastWakeTime = xTaskGetTickCount();
+		    // This is a hack solution in the case where the logGeneric that sends to queue is not the last logger to
+		    // finish snprintfing (ie, another logGeneric has a longer msg and takes longer to snprintf). This delay
+		    // assumes all snprintfs will finish within 5 ticks of receiving this buffer, which is a reasonable guess.
+		    vTaskDelayUntil(&lastWakeTime, 5);
 
-                // don't need mutex here - anyone who tries to acquire this log will get prevented by isFull=true
-                memset(bufferToPrint->buffer, (int) '*', LOG_BUFFER_SIZE);
-                bufferToPrint->currMsgNum = 0;
-                bufferToPrint->isFull = false;
+		    FRESULT result = FR_OK;
+		    result |= f_open(&logfile, logFileName, FA_OPEN_APPEND | FA_WRITE);
+            // print entire buffer for max efficiency and prevent data loss in case file closing fails
+            result |= f_write(&logfile, bufferToPrint->buffer, LOG_BUFFER_SIZE, NULL);
+            result |= f_close(&logfile);
+           // uart print for testing
+           // !!!! Ensure the timeout (rn 3000) is long enough to transmit a whole log chunk !!!
+           // HAL_UART_Transmit(&huart4, bufferToPrint->buffer, bufferToPrint->index, 3000);
+
+            // don't need mutex here - anyone who tries to acquire this log will get prevented by isFull=true
+            memset(bufferToPrint->buffer, 0, LOG_BUFFER_SIZE);
+            bufferToPrint->currMsgNum = 0;
+            bufferToPrint->isFull = false;
         } else {
             noFullBuffMoments++;
         }
-        logInfo("lo`g", "%d %d %d %d %d %d", droppedMsgs, fullBuffMoments, logWriteTimeouts, invalidRegionMoments, critErrs, noFullBuffMoments);
+        logInfo("log", "%d %d %d %d %d %d", droppedMsgs, fullBuffMoments, logWriteTimeouts, invalidRegionMoments, critErrs, noFullBuffMoments);
     }
 }
