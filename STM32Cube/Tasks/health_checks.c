@@ -60,7 +60,6 @@ bool healthCheckInit() {
 void healthCheckTask(void *argument)
 {
   TickType_t lastWakeTime = xTaskGetTickCount();
-  /* Infinite loop */
   for (;;)
   {
     HAL_ADC_Start(&hadc1);
@@ -69,36 +68,32 @@ void healthCheckTask(void *argument)
     uint16_t adc1_voltage_mV = ADC1_VOLTAGE_V(adc1_val)*1000;
     uint16_t adc1_current_mA = ADC1_CURR_mA(adc1_voltage_mV);
 
-    //Transmitting voltage
-    //printf_( "%u mV\r\n", (uint16_t) (adc1_voltage_mV));
-
-    //Transmitting current
-    //printf_("%u mA\r\n", (uint16_t) (adc1_current_mA) );;
-
     //Checking for over current
     if(adc1_current_mA > MAX_CURR_5V_mA)
     {
-    can_msg_t msg;
-    uint8_t current_data[2];
-    current_data[0] = adc1_current_mA >> 8 & 0xFF;
-    current_data[1] = adc1_current_mA & 0xFF;
-    build_board_stat_msg(millis_(), E_5V_OVER_CURRENT, current_data, 2, &msg);
-    xQueueSend(busQueue, &msg, 10);
-    } else {
-    // E nominal
-    can_msg_t msg;
-    build_board_stat_msg(millis_(), E_NOMINAL, NULL, 0, &msg);
-    xQueueSend(busQueue, &msg, 10);
+		can_msg_t msg;
+		uint8_t current_data[2];
+		current_data[0] = adc1_current_mA >> 8 & 0xFF;
+		current_data[1] = adc1_current_mA & 0xFF;
+		build_board_stat_msg(millis_(), E_5V_OVER_CURRENT, current_data, 2, &msg);
+		xQueueSend(busQueue, &msg, 10);
+    }
 
-    // Current Draw Message
-    build_analog_data_msg(millis_(), SENSOR_5V_CURR, adc1_current_mA, &msg);
-    xQueueSend(busQueue, &msg, 10);
+    else
+    {
+		// E nominal
+		can_msg_t msg;
+		build_board_stat_msg(millis_(), E_NOMINAL, NULL, 0, &msg);
+		xQueueSend(busQueue, &msg, 10);
 
+		// Current Draw Message
+		build_analog_data_msg(millis_(), SENSOR_5V_CURR, adc1_current_mA, &msg);
+		xQueueSend(busQueue, &msg, 10);
 
-    logError("health", "over current %dmA", adc1_current_mA);
+		logError("health", "over current %dmA", adc1_current_mA);
     }
 
     vTaskDelayUntil(&lastWakeTime, 1000);
   }
-  /* USER CODE END healthCheckTask */
+
 }

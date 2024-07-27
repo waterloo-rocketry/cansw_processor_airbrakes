@@ -119,7 +119,6 @@ static void MX_TIM2_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
-//void HAL_FDCAN_RxFifo1Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t RxFifo0ITs);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -235,9 +234,9 @@ int main(void)
   xReturned &= xTaskCreate(trajectory_task, "traj", 512, NULL, (UBaseType_t) osPriorityNormal, &trajectoryTaskHandle);
   xReturned &= xTaskCreate(logTask, "Logging", 1024, NULL, (UBaseType_t) osPriorityNormal, &logTaskhandle);
   xReturned &= xTaskCreate(healthCheckTask, "health checks", 512, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
-  xReturned &= xTaskCreate(controlTask, "Controller", 512, NULL, (UBaseType_t) osPriorityBelowNormal, &controllerHandle);
-  xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 512, NULL, (UBaseType_t) osPriorityAboveNormal, &flightPhaseHandle);
-#ifdef TEST_MODE
+  xReturned &= xTaskCreate(controlTask, "Controller", 512, NULL, (UBaseType_t) osPriorityNormal, &controllerHandle);
+  xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 512, NULL, (UBaseType_t) osPriorityNormal, &flightPhaseHandle);
+#if  defined(TEST_MODE) && defined(DEBUG)
   xReturned &= xTaskCreate(otitsTask, "oTITS", 512, NULL, (UBaseType_t) osPriorityNormal, &oTITSHandle);
 #endif
 
@@ -1026,23 +1025,11 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
 	/* Infinite loop */
-//	uint32_t index = 0;
-//	uint8_t temp_buf[1];
-//	uint8_t rx_buf[100] = {0};
-//	int isSizeRxed = 0;
-//	uint16_t size = 0;
 
-	//HAL_UART_Receive_DMA(&huart4, rx_buf, 1);
 	for(;;)
 	{
-		//char buffer[] = "hello world!\r\n";
-		//printf_(buffer);
-		//logDebug(0, "test messsssage");
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
-		//printf_("hello world\n");
-		//osDelay(1000);
 		vTaskDelay(1000);
-
 	}
   /* USER CODE END 5 */
 }

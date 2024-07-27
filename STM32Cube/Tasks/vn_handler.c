@@ -106,39 +106,6 @@ bool vn_handler_init()
 
 void vnIMUHandler(void *argument)
 {
-///************************** TESTING CODE *****************************/
-//    TickType_t last = xTaskGetTickCount();
-//            while (1) {
-//                int t1 = xTaskGetTickCount();
-//
-//                bool pass1 = logInfo("VN#1", "%ds, lat/lon/alt (%.3f, %.3f, %.3f) +-(%.3f, %.3f, %.3f), %d sats",
-//                    xTaskGetTickCount(), 1233.123, 1233.123, 1233.123, 3435.345, 3435.345, 3345.345, 56);
-//
-//                int t2 = xTaskGetTickCount();
-//
-//                int diff1 = t2 - t1;
-//                vTaskDelayUntil(&last, 25);
-//
-//                int t3 = xTaskGetTickCount();
-//
-//                bool pass2 = logInfo("VN#2", "%ds, AngRate (%.3f, %.3f, %.3f), YPR (%.3f, %.3f, %.3f), PosECEF (%.3f, %.3f, %.3f), VelECEF (%.3f, %.3f, %.3f), LinAccECEF (%.3f, %.3f, %.3f)",
-//                                                                            xTaskGetTickCount(),
-//                                                                            12343.123, 12345333.123, 12343.123,
-//                                                                            12353.123, 12433.123, 125533.123,
-//                                                                            12343.123, 12333.123, 14233.123,
-//                                                                            12343.123, 12453433.123, 1233.123,
-//                                                                            123343.123, 1233.123, 1235343.123);
-//
-//                int t4 = xTaskGetTickCount();
-//
-//                int diff2 = t4 - t3;
-//
-//                // BREAKPOINT HERE TO READ diff1 AND diff2 WHICH INDICATE HOW LONG EACH LOGINFO TOOK
-//                // ALSO READ pass1 AND pass2 TO VERIFY THE LOGINFOS ACTUALLY WORKED
-//                vTaskDelayUntil(&last, 25);
-//            }
-///************************** END TESTING CODE *****************************/
-
 	for(;;)
 	{
 		HAL_StatusTypeDef status = HAL_UARTEx_ReceiveToIdle_DMA(&huart1, USART1_Rx_Buffer, MAX_BINARY_OUTPUT_LENGTH); //Begin a receive, until we read MAX_BINARY_OUTPUT_LENGTH or the line goes idle, indicating a shorter message
@@ -165,25 +132,15 @@ void vnIMUHandler(void *argument)
 						size_t packetLength = VnUartPacket_computeBinaryPacketLength(packet.data);
 
 						if (packetLength>MAX_BINARY_OUTPUT_LENGTH){
-							//printf_("Memory Overflow!\n\n\r\n");
 						    logError("VN", "Mem overflow");
 							continue;
 						}
-
-
-						/*if (verbose){
-							printf_("Data recived: ");
-							for(int i = 0; i < MAX_BINARY_OUTPUT_LENGTH; i++) {
-								printf_("0x%x ", USART1_Rx_Buffer[i]);
-							}
-							printf_("\r\n");
-						}*/
 
 						//Group #1
 						if (packetLength == 53){
 							can_msg_t msg;
 
-							uint32_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
+							uint32_t time_startup = (uint32_t) VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
 
 							vec3d pos = VnUartPacket_extractVec3d(&packet);
 							uint8_t numSatellites = VnUartPacket_extractInt8(&packet);
@@ -200,7 +157,6 @@ void vnIMUHandler(void *argument)
 	                                    time_startup, pos.c[0],pos.c[1],pos.c[2],
 	                                    postUncertainty.c[0],postUncertainty.c[1],postUncertainty.c[2],
 	                                    numSatellites);
-								//printf_(msgAsString);
 
 								SDGroup1Counter = 0;
 							}
@@ -223,7 +179,7 @@ void vnIMUHandler(void *argument)
 
 						//Binary Output #2 92 bytes | Time startup (Common), Angular rate (IMU), Ypr (Attitude), PosEcef (INS), VelEcef (INS), LinAccelEcef (INS)
 						else if (packetLength == 92){
-							uint32_t time_startup = VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
+							uint32_t time_startup = (uint32_t) VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
 
 							vec3f angularRate = VnUartPacket_extractVec3f(&packet); //rad/s
 							vec3f yprAngles = VnUartPacket_extractVec3f(&packet); //deg
@@ -267,7 +223,6 @@ void vnIMUHandler(void *argument)
 							vec3f accelVec = VnUartPacket_extractVec3f(&packet); //m/s^2
 							vec3f gyroVec = VnUartPacket_extractVec3f(&packet); //rad/s
 
-							//printf_("Time: %lli, Mag: (X: %.3f, Y: %.3f, Z: %.3f), Accel: (X: %.3f, Y: %.3f, Z: %.3f), Angles: (X: %.3f, Y: %.3f, Z: %.3f)\r\n", time_startup_ns / NS_TO_MS, magVec.c[0], magVec.c[1], magVec.c[2], accelVec.c[0], accelVec.c[1], accelVec.c[2], gyroVec.c[0], gyroVec.c[1], gyroVec.c[2]);
 							rawIMUPacked data;
 							for(int i = 0; i < 3; i++)
 							{
@@ -290,11 +245,9 @@ void vnIMUHandler(void *argument)
 							//printf_("unhandled message format!\r\n");
 							logError("VN", "unhandled message format!");
 						}
-						//printf_("size: %d\r\n", packetLength);
 					}
 
 					else {
-						//printf_("Not a valid binary packet\r\n");
 						logError("VN", "Non Binary Packet received");
 					}
 			}

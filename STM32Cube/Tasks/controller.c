@@ -17,6 +17,9 @@
 #include "trajectory.h"
 #include "log.h"
 
+#define MIN_EXTENSION_CMD 24
+#define MAX_EXTENSION_CMD 100
+
 QueueHandle_t apogeeQueue;
 QueueHandle_t targetQueue;
 
@@ -33,7 +36,6 @@ void controlTask(void *argument)
 	airbrakesController.last_error = 0;
 	airbrakesController.target_altitude = 7000;
 	float last_ms = millis_();
-	float initial_extension = 0;
 
   /* Infinite loop */
 	for(;;)
@@ -45,8 +47,10 @@ void controlTask(void *argument)
 			can_msg_t msg;
 			build_state_est_calibration_msg((uint32_t) millis_(), 1, updated_target, &msg);
 			xQueueSend(busQueue, &msg, 100);
+			logInfo("controller", "Controller target updated to %d m", updated_target);
 		}
-		if(xQueueReceive(apogeeQueue, &apogeeEstimate, 100) == pdTRUE)
+
+		if(xQueueReceive(apogeeQueue, &apogeeEstimate, 100) == pdTRUE && extensionAllowed())
 		{
 			//PID controller update
 			airbrakesController.error = airbrakesController.target_altitude - apogeeEstimate;
@@ -69,15 +73,13 @@ void controlTask(void *argument)
 			if(extension > CONTROLLER_MAX_EXTENSION) extension = CONTROLLER_MAX_EXTENSION;
 			if(extension < CONTROLLER_MIN_EXTENSION) extension = CONTROLLER_MIN_EXTENSION;
 
-//			printf_("extension: %f\n", extension);
-			logInfo("controller", "ext: %d", extension * 100);
+			uint8_t cmd_extension = extension * (MAX_EXTENSION_CMD - MIN_EXTENSION_CMD) + MIN_EXTENSION_CMD;
 
-			if(extensionAllowed())
-			{
-				can_msg_t msg;
-				build_actuator_cmd_analog( (uint32_t) millis_(), ACTUATOR_AIRBRAKES_SERVO, (uint8_t) (100 * extension), &msg);
-				xQueueSend(busQueue, &msg, 5); //If we are in the coast phase, command the airbrakes servo to the target extension value
-			}
+			can_msg_t msg;
+			build_actuator_cmd_analog( (uint32_t) millis_(), ACTUATOR_AIRBRAKES_SERVO, cmd_extension, &msg);
+			xQueueSend(busQueue, &msg, 5); //If we are in the coast phase, command the airbrakes servo to the target extension value
+			logInfo("controller", "ext CMD: %d", cmd_extension);
+			//printf_("extension: %f\n", extension);
 
 		}
 	}

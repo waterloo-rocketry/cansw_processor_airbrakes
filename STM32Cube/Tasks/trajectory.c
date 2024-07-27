@@ -75,7 +75,7 @@ void trajectory_task(void* argument) {
                         float vely = (altTime.alt-prev_alt)*1000.0/(altTime.time-prev_time);
                         float velx = vely*tan(angles.angle.pitch);
                         float apogee = get_max_altitude(vely,velx, altTime.alt, ext, ROCKET_BURNOUT_MASS);
-                        logInfo("traj", "%f", apogee);
+                        logInfo("traj", "%fm", apogee);
                         xQueueOverwrite(apogeeQueue, &apogee);
                     }
                     prev_alt = altTime.alt;
@@ -83,7 +83,6 @@ void trajectory_task(void* argument) {
                 }
 
         }
-        vTaskDelay(20);  // TODO: for testing so this blocks
     }
 }
 void trajectory_init() {

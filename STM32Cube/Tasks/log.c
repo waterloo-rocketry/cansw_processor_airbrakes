@@ -233,9 +233,6 @@ void logTask(void *argument) {
             // print entire buffer for max efficiency and prevent data loss in case file closing fails
             result |= f_write(&logfile, bufferToPrint->buffer, LOG_BUFFER_SIZE, NULL);
             result |= f_close(&logfile);
-           // uart print for testing
-           // !!!! Ensure the timeout (rn 3000) is long enough to transmit a whole log chunk !!!
-           // HAL_UART_Transmit(&huart4, bufferToPrint->buffer, bufferToPrint->index, 3000);
 
             // don't need mutex here - anyone who tries to acquire this log will get prevented by isFull=true
             memset(bufferToPrint->buffer, 0, LOG_BUFFER_SIZE);
