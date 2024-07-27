@@ -6,6 +6,8 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 
+#define FT_TO_M 3.281
+
 extern FDCAN_HandleTypeDef hfdcan1;
 extern xQueueHandle busQueue;
 
