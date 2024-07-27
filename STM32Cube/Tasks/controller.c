@@ -79,7 +79,7 @@ void controlTask(void *argument)
 			build_actuator_cmd_analog( (uint32_t) millis_(), ACTUATOR_AIRBRAKES_SERVO, cmd_extension, &msg);
 			xQueueSend(busQueue, &msg, 5); //If we are in the coast phase, command the airbrakes servo to the target extension value
 			logInfo("controller", "ext CMD: %d", cmd_extension);
-			printf_("extension: %f\n", extension);
+			//printf_("extension: %f\n", extension);
 
 		}
 	}
