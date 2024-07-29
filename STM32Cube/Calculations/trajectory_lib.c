@@ -2,8 +2,8 @@
 
 #include <math.h>
 
-#define GRAV_AT_SEA_LVL 9.80665         // m/s^2
-#define EARTH_MEAN_RADIUS 6371009       // m
+#define GRAV_AT_SEA_LVL 9.80665    // m/s^2
+#define EARTH_MEAN_RADIUS 6371009  // m
 #define TOL 0.00001
 #define TIME_STEP 0.05  // s
 
@@ -52,6 +52,10 @@ float interpolate_drag(float extension, float velocity, float altitude) {
         extension = 0;
     } else if (extension > 1) {
         extension = 1;
+    }
+
+    if (velocity < 34.0f) {
+        return 0.0f;
     }
 
     float x = (velocity - 273.9f) / 148.7f;
