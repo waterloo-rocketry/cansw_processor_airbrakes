@@ -2,14 +2,14 @@
 
 #include "millis.h"
 
-void controller_state_init(ControllerState* state) {
+void controllerStateInit(ControllerState* state) {
     state->controller_term_I = 0.0f;
     state->last_error = 0.0f;
     state->last_ms = 0.0f;
     state->begun = false;
 }
 
-float control(ControllerState* state, float error) {
+float updateController(ControllerState* state, float error) {
     float controller_term_P = error * CONTROLLER_GAIN_P;
     float controller_term_D = 0.0f;
     if (state->begun) {

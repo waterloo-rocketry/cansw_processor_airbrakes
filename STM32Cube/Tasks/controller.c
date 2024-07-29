@@ -31,9 +31,8 @@ void controllerInit() {
 void controlTask(void* argument) {
     float apogeeEstimate;
     ControllerState controller_state;
-    controller_state_init(&controller_state);
+    controllerStateInit(&controller_state);
     float target_altitude = DEFAULT_TARGET_ALTITUDE_M;
-    float last_ms = millis_();
 
     /* Infinite loop */
     for (;;) {
@@ -51,8 +50,8 @@ void controlTask(void* argument) {
         if (xQueueReceive(apogeeQueue, &apogeeEstimate, 100) == pdTRUE &&
             extensionAllowed()) {
             // PID controller update
-            float output =
-                control(&controller_state, target_altitude - apogeeEstimate);
+            float output = updateController(&controller_state,
+                                            target_altitude - apogeeEstimate);
 
             float extension =
                 0.5 - output;  // invert the controller output - if we are

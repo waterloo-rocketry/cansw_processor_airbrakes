@@ -29,7 +29,7 @@ typedef struct {
      */
     float last_ms;
     /**
-     * Whether a call to control has been made.
+     * Whether a call to updateController has been made.
      */
     bool begun;
 } ControllerState;
@@ -37,11 +37,11 @@ typedef struct {
 /**
  * Initializes the state of the controller.
  */
-void controller_state_init(ControllerState* state);
+void controllerStateInit(ControllerState* state);
 
 /**
  * Applies and updates the controller. Returns the value of PID terms summed.
  */
-float control(ControllerState* state, float error);
+float updateController(ControllerState* state, float error);
 
 #endif
