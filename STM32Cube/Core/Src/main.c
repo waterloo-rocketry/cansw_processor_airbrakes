@@ -240,8 +240,9 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_QUEUES */
   sdmmcInit();
+#if USE_ICM == 1
   ICM_20948_init();
-
+#endif
   logInit();
   trajectory_init();
   canHandlerInit(); //create bus queue
