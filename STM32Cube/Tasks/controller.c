@@ -50,7 +50,7 @@ void controlTask(void* argument) {
         if (xQueueReceive(apogeeQueue, &apogeeEstimate, 100) == pdTRUE &&
             extensionAllowed()) {
             // PID controller update
-            float output = updateController(&controller_state,
+            float output = updateController(&controller_state, millis_(),
                                             target_altitude - apogeeEstimate);
 
             float extension =

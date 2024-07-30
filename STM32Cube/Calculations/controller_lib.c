@@ -1,7 +1,5 @@
 #include "controller_lib.h"
 
-#include "millis.h"
-
 void controllerStateInit(ControllerState* state) {
     state->controller_term_I = 0.0f;
     state->last_error = 0.0f;
@@ -9,11 +7,11 @@ void controllerStateInit(ControllerState* state) {
     state->begun = false;
 }
 
-float updateController(ControllerState* state, float error) {
+float updateController(ControllerState* state, float time_ms, float error) {
     float controller_term_P = error * CONTROLLER_GAIN_P;
     float controller_term_D = 0.0f;
     if (state->begun) {
-        float dt = (millis_() - state->last_ms) / 1000.0;  // time delay in s
+        float dt = (time_ms - state->last_ms) / 1000.0;  // time delay in s
         // Trapezoidal approximation
         state->controller_term_I +=
             CONTROLLER_GAIN_I * (state->last_error + error) * 0.5 * dt;

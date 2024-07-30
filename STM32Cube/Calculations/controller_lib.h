@@ -42,6 +42,6 @@ void controllerStateInit(ControllerState* state);
 /**
  * Applies and updates the controller. Returns the value of PID terms summed.
  */
-float updateController(ControllerState* state, float error);
+float updateController(ControllerState* state, float time_ms, float error);
 
 #endif
