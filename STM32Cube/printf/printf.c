@@ -1393,11 +1393,13 @@ int vfctprintf(void (*out)(char c, void* extra_arg), void* extra_arg, const char
 
 int printf_(const char* format, ...)
 {
+#ifdef DEBUG
   va_list args;
   va_start(args, format);
   const int ret = vprintf_(format, args);
   va_end(args);
   return ret;
+#endif
 }
 
 int sprintf_(char* s, const char* format, ...)
