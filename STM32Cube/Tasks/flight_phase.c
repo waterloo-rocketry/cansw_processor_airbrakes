@@ -117,3 +117,7 @@ void flightPhaseTask(void *argument) {
 bool extensionAllowed() {
 	return flight_state == PHASE_COAST;
 }
+
+bool recoveryPhase() {
+	return flight_state == PHASE_DESCENT;
+}

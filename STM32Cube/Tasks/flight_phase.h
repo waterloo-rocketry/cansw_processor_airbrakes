@@ -28,6 +28,7 @@ extern EventGroupHandle_t flightPhaseEventsHandle;
 
 
 bool extensionAllowed();
+
 void flightPhaseTask(void * argument);
 bool flightPhaseInit();
 

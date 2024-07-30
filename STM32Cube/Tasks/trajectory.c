@@ -79,7 +79,7 @@ void trajectory_task(void* argument) {
                     //to prevent the bit being prematurely set at startup due to weird numerical stuff, we only check this condition while in coast phase
                     if(extensionAllowed() && (vely < RECOVERY_MIN_VELOCITY) ) xEventGroupSetBits(flightPhaseEventsHandle, RECOVERY_DEPLOYMENT_BIT);
 
-                    float velx = vely*tan(angles.angle.pitch);
+                    float velx = vely / tan(angles.angle.pitch / 180.0 * M_PI); //state est measures pitch from horizontal
                     float apogee = get_max_altitude(vely,velx, altTime.alt, ext, ROCKET_BURNOUT_MASS);
                     logInfo("traj", "%fm", apogee);
                     xQueueOverwrite(apogeeQueue, &apogee);
