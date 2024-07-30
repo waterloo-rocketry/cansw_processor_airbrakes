@@ -281,7 +281,7 @@ int main(void)
   xReturned &= xTaskCreate(controlTask, "Controller", 512, NULL, (UBaseType_t) osPriorityNormal, &controllerHandle);
   xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 512, NULL, (UBaseType_t) osPriorityNormal, &flightPhaseHandle);
 #if  defined(TEST_MODE) && defined(DEBUG)
-  xReturned &= xTaskCreate(otitsTask, "oTITS", 512, NULL, (UBaseType_t) osPriorityNormal, &oTITSHandle);
+  xReturned &= xTaskCreate(otitsTask, "oTITS", 1024, NULL, (UBaseType_t) osPriorityNormal, &oTITSHandle);
 #endif
 
   if(xReturned != pdPASS)
