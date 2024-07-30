@@ -191,7 +191,6 @@ void stateEstTask(void *arguments) {
 
 			logInfo("stateEst", "EuRoll %f, EuPitch %f, EuYaw %f", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
 			//printf_(">EuRoll:%.2f\n>EuPitch:%.2f\n>EuYaw:%.2f\n", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
-			printf_("Orientation: %.2f, %.2f, %.2f\n", euler.angle.roll, euler.angle.pitch, euler.angle.yaw);
 
 #if USE_ICM == 0
 		 }
