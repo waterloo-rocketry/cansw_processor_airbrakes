@@ -4,22 +4,18 @@
  *  Created on: Apr 14, 2024
  *      Author: joedo
  */
-#include "stm32h7xx_hal.h"
+#include "controller.h"
 
 #include <math.h>
 
 #include "can_handler.h"
 #include "controller_lib.h"
 #include "flight_phase.h"
+#include "log.h"
 #include "millis.h"
 #include "printf.h"
-#include "millis.h"
-
-#include "controller.h"
-#include "flight_phase.h"
-#include "can_handler.h"
+#include "stm32h7xx_hal.h"
 #include "trajectory.h"
-#include "log.h"
 
 #define MIN_EXTENSION_CMD 24
 #define MAX_EXTENSION_CMD 100
@@ -30,7 +26,6 @@ QueueHandle_t targetQueue;
 bool controllerInit() {
 	apogeeQueue = xQueueCreate(1, sizeof(float));
 	targetQueue = xQueueCreate(1, sizeof(uint16_t));
-}
 
 	if (apogeeQueue == NULL || targetQueue == NULL) return false;
 
