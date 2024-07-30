@@ -23,9 +23,13 @@
 QueueHandle_t apogeeQueue;
 QueueHandle_t targetQueue;
 
-void controllerInit() {
-    apogeeQueue = xQueueCreate(1, sizeof(float));
-    targetQueue = xQueueCreate(1, sizeof(uint16_t));
+bool controllerInit() {
+	apogeeQueue = xQueueCreate(1, sizeof(float));
+	targetQueue = xQueueCreate(1, sizeof(uint16_t));
+
+	if (apogeeQueue == NULL || targetQueue == NULL) return false;
+
+	return true;
 }
 
 void controlTask(void* argument) {

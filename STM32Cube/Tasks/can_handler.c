@@ -72,7 +72,9 @@ void canHandlerTask(void *argument) {
     }
 }
 
-void canHandlerInit(void) {
+bool canHandlerInit(void) {
 	busQueue = xQueueCreate(16, sizeof(can_msg_t));
-	can_init_stm(&hfdcan1, can_handle_rx);
+	if (busQueue == NULL) return false;
+	if (!can_init_stm(&hfdcan1, can_handle_rx)) return false;
+	return true;
 }

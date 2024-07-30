@@ -8,6 +8,8 @@
 #ifndef CONTROLLER_H_
 #define CONTROLLER_H_
 
+#include <stdbool.h>
+
 #include "FreeRTOS.h"
 #include "queue.h"
 
@@ -21,7 +23,7 @@
 extern QueueHandle_t apogeeQueue;
 extern QueueHandle_t targetQueue;
 
-void controllerInit();
+bool controllerInit();
 
 void controlTask(void* argument);
 

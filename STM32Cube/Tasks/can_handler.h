@@ -13,6 +13,6 @@ extern xQueueHandle busQueue;
 
 void can_handle_rx(const can_msg_t *message, uint32_t timestamp);
 void canHandlerTask(void *argument);
-void canHandlerInit(void);
+bool canHandlerInit(void);
 
 #endif

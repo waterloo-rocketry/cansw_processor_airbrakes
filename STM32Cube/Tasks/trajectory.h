@@ -15,7 +15,7 @@ extern xQueueHandle altQueue;
 extern xQueueHandle angleQueue;
 
 void trajectory_task(void* argument);
-void trajectory_init(void);
+bool trajectory_init(void);
 
 // Struct for recieving altitude data, could replace with import
 typedef struct AltStruct {

@@ -239,22 +239,28 @@ int main(void)
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  sdmmcInit();
+  bool initRes = true;
 #if USE_ICM == 1
   ICM_20948_init();
 #endif
-  logInit();
-  trajectory_init();
-  canHandlerInit(); //create bus queue
-  flightPhaseInit();
-  healthCheckInit();
-  controllerInit();
-  state_est_init();
-  vn_handler_init();
+  initRes &= sdmmcInit();
+  initRes &= logInit();
+  initRes &= trajectory_init();
+  initRes &= canHandlerInit(); //create bus queue
+  initRes &= flightPhaseInit();
+  initRes &= healthCheckInit();
+  initRes &= controllerInit();
+  initRes &= state_est_init();
+  initRes &= vn_handler_init();
 
-  otitsRegister(test_defaultTaskPass, TEST_SOURCE_DEFAULT, "DefaultPass");
-  otitsRegister(test_defaultTaskFail, TEST_SOURCE_DEFAULT, "DefaultFail");
-  otitsRegister(test_taskStackUsage, TEST_SOURCE_DEFAULT, "StackUsage");
+  // otits is ifdef guarded within itself so can leave these
+  initRes &= otitsRegister(test_defaultTaskPass, TEST_SOURCE_DEFAULT, "DefaultPass");
+  initRes &= otitsRegister(test_defaultTaskFail, TEST_SOURCE_DEFAULT, "DefaultFail");
+  initRes &= otitsRegister(test_taskStackUsage, TEST_SOURCE_DEFAULT, "StackUsage");
+
+  if (!initRes) {
+      Error_Handler();
+  }
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
