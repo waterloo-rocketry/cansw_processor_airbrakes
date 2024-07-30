@@ -28,7 +28,7 @@ float updateController(ControllerState* state, float time_ms, float error) {
         state->begun = true;
     }
     state->last_error = error;
-    state->last_ms = millis_();
+    state->last_ms = time_ms;
 
     float output =
         controller_term_P + state->controller_term_I - controller_term_D;
