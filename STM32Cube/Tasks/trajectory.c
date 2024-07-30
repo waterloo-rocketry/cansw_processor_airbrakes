@@ -71,28 +71,32 @@ void trajectory_task(void* argument) {
         FusionEuler angles;
         const float ext = 0.5;
         if(xQueueReceive(altQueue, &altTime, 10) == pdTRUE) {
-                if(xQueuePeek(angleQueue, &angles, 100) == pdTRUE) {
-                    if(prev_alt != INT_MAX) {
-                        float vely = (altTime.alt-prev_alt)*1000.0/(altTime.time-prev_time);
+            if(xQueuePeek(angleQueue, &angles, 100) == pdTRUE) {
+                if(prev_alt != INT_MAX) {
+                    float vely = (altTime.alt-prev_alt)*1000.0/(altTime.time-prev_time);
 
-                        //if we see velocity drop, we know apogee is incoming regardless
-                        //to prevent the bit being prematurely set at startup due to weird numerical stuff, we only check this condition while in coast phase
-                        if(extensionAllowed() && (vely < RECOVERY_MIN_VELOCITY) ) xEventGroupSetBits(flightPhaseEventsHandle, RECOVERY_DEPLOYMENT_BIT);
+                    //if we see velocity drop, we know apogee is incoming regardless
+                    //to prevent the bit being prematurely set at startup due to weird numerical stuff, we only check this condition while in coast phase
+                    if(extensionAllowed() && (vely < RECOVERY_MIN_VELOCITY) ) xEventGroupSetBits(flightPhaseEventsHandle, RECOVERY_DEPLOYMENT_BIT);
 
-                        float velx = vely*tan(angles.angle.pitch);
-                        float apogee = get_max_altitude(vely,velx, altTime.alt, ext, ROCKET_BURNOUT_MASS);
-                        logInfo("traj", "%fm", apogee);
-                        xQueueOverwrite(apogeeQueue, &apogee);
-                    }
-                    prev_alt = altTime.alt;
-                    prev_time = altTime.time;
+                    float velx = vely*tan(angles.angle.pitch);
+                    float apogee = get_max_altitude(vely,velx, altTime.alt, ext, ROCKET_BURNOUT_MASS);
+                    logInfo("traj", "%fm", apogee);
+                    xQueueOverwrite(apogeeQueue, &apogee);
                 }
-
+                prev_alt = altTime.alt;
+                prev_time = altTime.time;
+            }
         }
     }
 }
-void trajectory_init() {
+
+bool trajectory_init() {
     altQueue = xQueueCreate(1, sizeof(AltTime));
     angleQueue = xQueueCreate(1, sizeof(FusionEuler));
-    otitsRegister(test_apogeeQueue, TEST_SOURCE_TRAJ, "apogeeQ");
+
+    if (altQueue == NULL || angleQueue == NULL) return false;
+    if (!otitsRegister(test_apogeeQueue, TEST_SOURCE_TRAJ, "apogeeQ")) return false;
+
+    return true;
 }

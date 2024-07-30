@@ -2,8 +2,8 @@
 
 #include <math.h>
 
-#define GRAV_AT_SEA_LVL 9.80665         // m/s^2
-#define EARTH_MEAN_RADIUS 6371009       // m
+#define GRAV_AT_SEA_LVL 9.80665    // m/s^2
+#define EARTH_MEAN_RADIUS 6371009  // m
 #define TOL 0.00001
 #define TIME_STEP 0.05  // s
 
@@ -36,34 +36,14 @@ typedef struct {
     float p03;
 } Cubic2VariablePolynomial;
 
-/**
- * Evaluates a cubic 2 variable polynomial at the given coordinates.
- */
-float evaluate_cubic_2_variable(Cubic2VariablePolynomial* poly, float x,
-                                float y) {
-    return poly->p00 + poly->p10 * x + poly->p01 * y + poly->p20 * x * x +
-           poly->p11 * x * y + poly->p02 * y * y + poly->p30 * x * x * x +
-           poly->p21 * x * x * y + poly->p12 * x * y * y +
-           poly->p03 * y * y * y;
-}
-
-float interpolate_drag(float extension, float velocity, float altitude) {
-    if (extension < 0) {
-        extension = 0;
-    } else if (extension > 1) {
-        extension = 1;
-    }
-
-    float x = (velocity - 273.9f) / 148.7f;
-    float y = (altitude - 5000.0f) / 3172.0f;
-
-    Cubic2VariablePolynomial coeffs[11] = {
+// Cubic drag force polynomial coeffs for extensions 0-100% in 10% intervals
+static const Cubic2VariablePolynomial DRAG_POLYNOMIAL_COEFFS[11] = {
         {232.2951f, 244.7010f, -75.1435f, 64.3402f, -79.5220f, 11.7309f,
-         -0.8306f, -20.4344f, 9.7041f, -0.6148f},
+         -0.8306f, -20.4344f, 9.7041f, -0.6148f}, // 0% ext
         {235.8993f, 249.2100f, -76.2767f, 65.8251f, -81.2931f, 12.0289f,
-         -0.8408f, -21.0236f, 9.9787f, -0.7853f},
+         -0.8408f, -21.0236f, 9.9787f, -0.7853f}, // 10% ext
         {245.6886f, 260.2967f, -80.2111f, 69.3746f, -85.4361f, 12.5705f,
-         -0.6199f, -22.1676f, 10.4297f, -0.6666f},
+         -0.6199f, -22.1676f, 10.4297f, -0.6666f}, // etc
         {253.9691f, 270.2409f, -83.5032f, 72.3919f, -89.3117f, 13.3189f,
          -0.7371f, -23.2489f, 11.0822f, -0.7471f},
         {263.5127f, 280.7695f, -86.9338f, 75.8929f, -93.6884f, 14.1591f,
@@ -79,14 +59,40 @@ float interpolate_drag(float extension, float velocity, float altitude) {
         {316.4963f, 339.6502f, -104.5570f, 92.4088f, -114.1954f, 16.9114f,
          -0.5681f, -30.4995f, 13.9269f, -1.2933f},
         {340.9146f, 367.1520f, -114.8622f, 101.0439f, -123.1214f, 18.4047f,
-         -0.1879f, -31.8071f, 15.4422f, -1.1456f}};
+         -0.1879f, -31.8071f, 15.4422f, -1.1456f} // 100% ext
+};
+
+/**
+ * Evaluates a cubic 2 variable polynomial at the given coordinates.
+ */
+float evaluate_cubic_2_variable(const Cubic2VariablePolynomial* poly, float x,
+                                float y) {
+    return poly->p00 + poly->p10 * x + poly->p01 * y + poly->p20 * x * x +
+           poly->p11 * x * y + poly->p02 * y * y + poly->p30 * x * x * x +
+           poly->p21 * x * x * y + poly->p12 * x * y * y +
+           poly->p03 * y * y * y;
+}
+
+float interpolate_drag(float extension, float velocity, float altitude) {
+    if (extension < 0) {
+        extension = 0;
+    } else if (extension > 1) {
+        extension = 1;
+    }
+
+    if (velocity < 34.0f) {
+        return 0.0f;
+    }
+
+    float x = (velocity - 273.9f) / 148.7f;
+    float y = (altitude - 5000.0f) / 3172.0f;
 
     int index = (int)(extension * 10.0f);
     if (extension * 10.0f == index) {
-        return evaluate_cubic_2_variable(&coeffs[index], x, y);
+        return evaluate_cubic_2_variable(&DRAG_POLYNOMIAL_COEFFS[index], x, y);
     }
-    float first = evaluate_cubic_2_variable(&coeffs[index], x, y);
-    float second = evaluate_cubic_2_variable(&coeffs[index + 1], x, y);
+    float first = evaluate_cubic_2_variable(&DRAG_POLYNOMIAL_COEFFS[index], x, y);
+    float second = evaluate_cubic_2_variable(&DRAG_POLYNOMIAL_COEFFS[index + 1], x, y);
     float diff = (extension * 10.0f) - ((float)index);
     return diff * second + (1.0f - diff) * first;
 }
