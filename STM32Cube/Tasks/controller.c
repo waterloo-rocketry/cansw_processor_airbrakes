@@ -82,5 +82,11 @@ void controlTask(void *argument)
 			//printf_("extension: %f\n", extension);
 
 		}
+		else if (recoveryPhase())
+		{
+			build_actuator_cmd_analog( (uint32_t) millis_(), ACTUATOR_AIRBRAKES_SERVO, MIN_EXTENSION_CMD, &msg); //close the airbrakes once we have reached the recovery phase
+			xQueueSend(busQueue, &msg, 5);
+			logInfo("controller", "ext CMD: %d", cmd_extension);
+		}
 	}
 }
