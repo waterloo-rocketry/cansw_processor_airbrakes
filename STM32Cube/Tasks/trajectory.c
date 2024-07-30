@@ -17,6 +17,7 @@
 #include "otits.h"
 #include "trajectory_lib.h"
 #include "log.h"
+#include "flight_phase.h"
 
 xQueueHandle altQueue;
 xQueueHandle angleQueue;
@@ -73,6 +74,11 @@ void trajectory_task(void* argument) {
                 if(xQueuePeek(angleQueue, &angles, 100) == pdTRUE) {
                     if(prev_alt != INT_MAX) {
                         float vely = (altTime.alt-prev_alt)*1000.0/(altTime.time-prev_time);
+
+                        //if we see velocity drop, we know apogee is incoming regardless
+                        //to prevent the bit being prematurely set at startup due to weird numerical stuff, we only check this condition while in coast phase
+                        if(extensionAllowed() && (vely < RECOVERY_MIN_VELOCITY) ) xEventGroupSetBits(flightPhaseEventsHandle, RECOVERY_DEPLOYMENT_BIT);
+
                         float velx = vely*tan(angles.angle.pitch);
                         float apogee = get_max_altitude(vely,velx, altTime.alt, ext, ROCKET_BURNOUT_MASS);
                         logInfo("traj", "%fm", apogee);

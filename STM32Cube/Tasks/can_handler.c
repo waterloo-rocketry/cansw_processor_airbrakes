@@ -31,7 +31,8 @@ void can_handle_rx(const can_msg_t *message, uint32_t timestamp) {
 
 	case MSG_SENSOR_ALTITUDE:
 	    AltTime data;
-	    get_altitude_data(message, &data.alt);
+	    get_altitude_data(message, &data.alt); //altimeter raw data comes in in feet, we use m like god intended
+	    data.alt = data.alt / FT_TO_M;
 	    data.time = millis_();
 	    result = xQueueOverwriteFromISR(altQueue, &data, &xHigherPriorityTaskWoken);
 	    break;
