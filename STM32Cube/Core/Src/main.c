@@ -136,6 +136,42 @@ Otits_Result_t test_defaultTaskFail() {
 	res.outcome = TEST_OUTCOME_FAILED;
 	return res;
 }
+
+Otits_Result_t test_taskStackUsage() {
+    Otits_Result_t res;
+    const int numTasks = 9;
+    int stackWatermarks[numTasks];
+
+    stackWatermarks[0] = uxTaskGetStackHighWaterMark(logTaskhandle);
+    stackWatermarks[1] = uxTaskGetStackHighWaterMark(VNTaskHandle);
+    stackWatermarks[2] = uxTaskGetStackHighWaterMark(trajectoryTaskHandle);
+    stackWatermarks[3] = uxTaskGetStackHighWaterMark(stateEstTaskHandle);
+    stackWatermarks[4] = uxTaskGetStackHighWaterMark(canhandlerhandle);
+    stackWatermarks[5] = uxTaskGetStackHighWaterMark(healthChecksTaskHandle);
+    stackWatermarks[6] = uxTaskGetStackHighWaterMark(controllerHandle);
+    stackWatermarks[7] = uxTaskGetStackHighWaterMark(flightPhaseHandle);
+    stackWatermarks[8] = uxTaskGetStackHighWaterMark(oTITSHandle);
+
+    for (int i = 0; i < numTasks; i++) {
+        if (stackWatermarks[i] < 50) {
+            char info[10];
+            snprintf_(info, 10, "low%d", i);
+            res.info = info;
+            res.outcome = TEST_OUTCOME_FAILED;
+            return res;
+        } else if (stackWatermarks[i] > 1000) {
+            char info[10];
+            snprintf_(info, 10, "high%d", i);
+            res.info = info;
+            res.outcome = TEST_OUTCOME_FAILED;
+            return res;
+        }
+    }
+
+    res.info = "";
+    res.outcome = TEST_OUTCOME_PASSED;
+    return res;
+}
 /* USER CODE END 0 */
 
 /**
@@ -203,20 +239,28 @@ int main(void)
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  sdmmcInit();
+  bool initRes = true;
+#if USE_ICM == 1
   ICM_20948_init();
+#endif
+  initRes &= sdmmcInit();
+  initRes &= logInit();
+  initRes &= trajectory_init();
+  initRes &= canHandlerInit(); //create bus queue
+  initRes &= flightPhaseInit();
+  initRes &= healthCheckInit();
+  initRes &= controllerInit();
+  initRes &= state_est_init();
+  initRes &= vn_handler_init();
 
-  logInit();
-  trajectory_init();
-  canHandlerInit(); //create bus queue
-  flightPhaseInit();
-  healthCheckInit();
-  controllerInit();
-  state_est_init();
-  vn_handler_init();
+  // otits is ifdef guarded within itself so can leave these
+  initRes &= otitsRegister(test_defaultTaskPass, TEST_SOURCE_DEFAULT, "DefaultPass");
+  initRes &= otitsRegister(test_defaultTaskFail, TEST_SOURCE_DEFAULT, "DefaultFail");
+  initRes &= otitsRegister(test_taskStackUsage, TEST_SOURCE_DEFAULT, "StackUsage");
 
-  otitsRegister(test_defaultTaskPass, TEST_SOURCE_DEFAULT, "DefaultPass");
-  otitsRegister(test_defaultTaskFail, TEST_SOURCE_DEFAULT, "DefaultFail");
+  if (!initRes) {
+      Error_Handler();
+  }
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -228,7 +272,7 @@ int main(void)
   BaseType_t xReturned = pdPASS;
 
   //dunno if casting from CMSIS priorities is valid
-  xReturned &= xTaskCreate(vnIMUHandler, "VN Task", 2560, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
+  xReturned &= xTaskCreate(vnIMUHandler, "VN Task", 1024, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
   xReturned &= xTaskCreate(canHandlerTask, "CAN handler", 512, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
   xReturned &= xTaskCreate(stateEstTask, "StateEst", 1024, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
   xReturned &= xTaskCreate(trajectory_task, "traj", 512, NULL, (UBaseType_t) osPriorityNormal, &trajectoryTaskHandle);
@@ -237,7 +281,7 @@ int main(void)
   xReturned &= xTaskCreate(controlTask, "Controller", 512, NULL, (UBaseType_t) osPriorityNormal, &controllerHandle);
   xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 512, NULL, (UBaseType_t) osPriorityNormal, &flightPhaseHandle);
 #if  defined(TEST_MODE) && defined(DEBUG)
-  xReturned &= xTaskCreate(otitsTask, "oTITS", 512, NULL, (UBaseType_t) osPriorityNormal, &oTITSHandle);
+  xReturned &= xTaskCreate(otitsTask, "oTITS", 1024, NULL, (UBaseType_t) osPriorityNormal, &oTITSHandle);
 #endif
 
   if(xReturned != pdPASS)

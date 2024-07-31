@@ -137,6 +137,7 @@ Otits_Result_t test_magSelfTest() {
 
 bool ICM_20948_init() {
     bool res = true;
+#if USE_ICM == 1
     ICMMutex = xSemaphoreCreateMutex();
     if (ICMMutex == NULL) return false;
 
@@ -145,10 +146,13 @@ bool ICM_20948_init() {
     res &= otitsRegister(test_magSelfTest, TEST_SOURCE_ICM, "MagSelfTest");
 
     res &= MY2C_init();
+#endif
     return res;
 }
 
+
 bool ICM_20948_setup() {
+#if USE_ICM == 1
     if (xSemaphoreTake(ICMMutex, MUTEX_WAIT) != pdTRUE) return false;
     // Select user bank 0
     MY2C_write1ByteRegister(ICM_20948_ADDR, REG_BANK_SEL, 0x00);
@@ -186,11 +190,13 @@ bool ICM_20948_setup() {
     MY2C_write1ByteRegister(AK09916_MAG_ADDR, CNTL2, 0x06);
 
     xSemaphoreGive(ICMMutex);
+#endif
     return true;
 }
 
 bool ICM_20948_check_sanity(void) {
-    if (xSemaphoreTake(ICMMutex, MUTEX_WAIT) != pdTRUE) return false;
+#if USE_ICM == 1
+   if (xSemaphoreTake(ICMMutex, MUTEX_WAIT) != pdTRUE) return false;
 
     // Select user bank 0
     MY2C_write1ByteRegister(ICM_20948_ADDR, REG_BANK_SEL, 0x00);
@@ -206,11 +212,13 @@ bool ICM_20948_check_sanity(void) {
 
     // checks pass
     xSemaphoreGive(ICMMutex);
+#endif
     return true;
 }
 
 static bool ICM_20948_get_accel_raw(int16_t *x, int16_t *y, int16_t *z) {
-    if (!x || !y || !z) { return false; }
+#if USE_ICM == 1
+if (!x || !y || !z) { return false; }
     if (xSemaphoreTake(ICMMutex, MUTEX_WAIT) != pdTRUE) return false;
 
     // Accelerometer measurement data
@@ -227,10 +235,12 @@ static bool ICM_20948_get_accel_raw(int16_t *x, int16_t *y, int16_t *z) {
     *z = (int16_t)((uint16_t)z_h << 8 | z_l);
 
     xSemaphoreGive(ICMMutex);
+#endif
     return true;
 }
 
 static bool ICM_20948_get_gyro_raw(int16_t *x, int16_t *y, int16_t *z) {
+#if USE_ICM == 1
     if (!x || !y || !z) { return false; }
     if (xSemaphoreTake(ICMMutex, MUTEX_WAIT) != pdTRUE) return false;
 
@@ -247,11 +257,13 @@ static bool ICM_20948_get_gyro_raw(int16_t *x, int16_t *y, int16_t *z) {
     *z = (int16_t)((uint16_t)z_h << 8 | z_l);
 
     xSemaphoreGive(ICMMutex);
+#endif
     return true;
 }
 
 static bool ICM_20948_get_mag_raw(int16_t *x, int16_t *y, int16_t *z) {
-    if (!x || !y || !z) { return false; }
+#if USE_ICM == 1
+ if (!x || !y || !z) { return false; }
     if (xSemaphoreTake(ICMMutex, MUTEX_WAIT) != pdTRUE) return false;
 
     // Check if magnetometer data is ready, fail if it is not
@@ -279,10 +291,12 @@ static bool ICM_20948_get_mag_raw(int16_t *x, int16_t *y, int16_t *z) {
     MY2C_read1ByteRegister(AK09916_MAG_ADDR, ST2);
 
     xSemaphoreGive(ICMMutex);
+#endif
     return true;
 }
 
 bool ICM_20948_get_accel_converted(float *x, float *y, float *z) {
+#if USE_ICM == 1
     int16_t x_raw;
     int16_t y_raw;
     int16_t z_raw;
@@ -294,10 +308,12 @@ bool ICM_20948_get_accel_converted(float *x, float *y, float *z) {
     *x = (float) (x_raw / ACCEL_SENSITIVITY);
     *y = (float) (y_raw / ACCEL_SENSITIVITY);
     *z = (float) (z_raw / ACCEL_SENSITIVITY);
+#endif
     return true;
 }
 
 bool ICM_20948_get_gyro_converted(float *x, float *y, float *z) {
+#if USE_ICM == 1
     int16_t x_raw;
     int16_t y_raw;
     int16_t z_raw;
@@ -309,10 +325,12 @@ bool ICM_20948_get_gyro_converted(float *x, float *y, float *z) {
     *x = (float) (x_raw / GYRO_SENSITIVITY);
     *y = (float) (y_raw / GYRO_SENSITIVITY);
     *z = (float) (z_raw / GYRO_SENSITIVITY);
+#endif
     return true;
 }
 
 bool ICM_20948_get_mag_converted(float *x, float *y, float *z) {
+#if USE_ICM == 1
     int16_t x_raw;
     int16_t y_raw;
     int16_t z_raw;
@@ -324,5 +342,6 @@ bool ICM_20948_get_mag_converted(float *x, float *y, float *z) {
     *x = (float) (x_raw * MAG_SENSITIVITY);
     *y = (float) (y_raw * MAG_SENSITIVITY);
     *z = (float) (z_raw * MAG_SENSITIVITY);
+#endif
     return true;
 }

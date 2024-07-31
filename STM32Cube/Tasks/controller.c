@@ -23,9 +23,13 @@
 QueueHandle_t apogeeQueue;
 QueueHandle_t targetQueue;
 
-void controllerInit() {
-    apogeeQueue = xQueueCreate(1, sizeof(float));
-    targetQueue = xQueueCreate(1, sizeof(uint16_t));
+bool controllerInit() {
+	apogeeQueue = xQueueCreate(1, sizeof(float));
+	targetQueue = xQueueCreate(1, sizeof(uint16_t));
+
+	if (apogeeQueue == NULL || targetQueue == NULL) return false;
+
+	return true;
 }
 
 void controlTask(void* argument) {
@@ -54,19 +58,21 @@ void controlTask(void* argument) {
                 updateController(&DEFAULT_CONTROLLER_PARAMS, &controller_state,
                                  millis_(), apogeeEstimate, target_altitude);
 
-            uint8_t cmd_extension =
-                extension * (MAX_EXTENSION_CMD - MIN_EXTENSION_CMD) +
-                MIN_EXTENSION_CMD;
+			uint8_t cmd_extension = extension * (MAX_EXTENSION_CMD - MIN_EXTENSION_CMD) + MIN_EXTENSION_CMD;
 
-            can_msg_t msg;
-            build_actuator_cmd_analog((uint32_t)millis_(),
-                                      ACTUATOR_AIRBRAKES_SERVO, cmd_extension,
-                                      &msg);
-            xQueueSend(busQueue, &msg,
-                       5);  // If we are in the coast phase, command the
-                            // airbrakes servo to the target extension value
-            logInfo("controller", "ext CMD: %d", cmd_extension);
-            // printf_("extension: %f\n", extension);
-        }
-    }
+			can_msg_t msg;
+			build_actuator_cmd_analog( (uint32_t) millis_(), ACTUATOR_AIRBRAKES_SERVO, cmd_extension, &msg);
+			xQueueSend(busQueue, &msg, 5); //If we are in the coast phase, command the airbrakes servo to the target extension value
+			logInfo("controller", "ext CMD: %d", cmd_extension);
+			//printf_("extension: %f\n", extension);
+
+		}
+		else if (recoveryPhase())
+		{
+			can_msg_t msg;
+			build_actuator_cmd_analog( (uint32_t) millis_(), ACTUATOR_AIRBRAKES_SERVO, MIN_EXTENSION_CMD, &msg); //close the airbrakes once we have reached the recovery phase
+			xQueueSend(busQueue, &msg, 5);
+			logInfo("controller", "ext CMD: %d", MIN_EXTENSION_CMD);
+		}
+	}
 }
