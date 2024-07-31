@@ -3,14 +3,7 @@
 
 #include <stdbool.h>
 
-// These controller values assume error of apogee in metres, and using time
-// in seconds
-#define CONTROLLER_GAIN_P 0.00005
-#define CONTROLLER_GAIN_I 0.001
-#define CONTROLLER_GAIN_D 0.0
-#define CONTROLLER_MAX_EXTENSION 1.0
-#define CONTROLLER_MIN_EXTENSION 0.0
-#define CONTROLLER_I_SATMAX 10.0
+#include "trajectory_lib.h"
 
 /**
  * State of the controller.
@@ -35,13 +28,35 @@ typedef struct {
 } ControllerState;
 
 /**
+ * Parameters for the controller.
+ *
+ * These controller values assume error of apogee in metres, and using time
+ * in seconds
+ */
+typedef struct {
+    /**
+     * Coefficients.
+     */
+    float kp, ki, kd;
+    /**
+     * Saturation of the integral term.
+     */
+    float i_satmax;
+} ControllerParams;
+
+const ControllerParams DEFAULT_CONTROLLER_PARAMS = {
+    .kp = 0.0005, .ki = 0.001, .kd = 0, .i_satmax = 10.0};
+
+/**
  * Initializes the state of the controller.
  */
 void controllerStateInit(ControllerState* state);
 
 /**
- * Applies and updates the controller. Returns the value of PID terms summed.
+ * Applies and updates the controller. Returns the extension that should be
+ * applied.
  */
-float updateController(ControllerState* state, float time_ms, float error);
+float updateController(const ControllerParams* params, ControllerState* state,
+                       float time_ms, float trajectory_m, float target_m);
 
 #endif

@@ -50,18 +50,9 @@ void controlTask(void* argument) {
         if (xQueueReceive(apogeeQueue, &apogeeEstimate, 100) == pdTRUE &&
             extensionAllowed()) {
             // PID controller update
-            float output = updateController(&controller_state, millis_(),
-                                            target_altitude - apogeeEstimate);
-
             float extension =
-                0.5 - output;  // invert the controller output - if we are
-                               // undershooting retract, and if we are
-                               // overshooting, extend
-
-            if (extension > CONTROLLER_MAX_EXTENSION)
-                extension = CONTROLLER_MAX_EXTENSION;
-            if (extension < CONTROLLER_MIN_EXTENSION)
-                extension = CONTROLLER_MIN_EXTENSION;
+                updateController(&DEFAULT_CONTROLLER_PARAMS, &controller_state,
+                                 millis_(), apogeeEstimate, target_altitude);
 
             uint8_t cmd_extension =
                 extension * (MAX_EXTENSION_CMD - MIN_EXTENSION_CMD) +
