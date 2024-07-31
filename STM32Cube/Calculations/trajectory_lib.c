@@ -111,8 +111,8 @@ float dragAccel_m_s2(float extension, float speed_m_s, float altitude_m) {
         poly = coeffs[index];
     } else {
         // Linear interpolation
-        Cubic2VariablePolynomial* p1 = &coeffs[index];
-        Cubic2VariablePolynomial* p2 = &coeffs[index + 1];
+        const Cubic2VariablePolynomial* p1 = &coeffs[index];
+        const Cubic2VariablePolynomial* p2 = &coeffs[index + 1];
         float diff = extensionX10 - (float)index;
 #define INTERPOLATE_FIELD(field) \
     poly.field = diff * p2->field + (1.0f - diff) * p1->field;
