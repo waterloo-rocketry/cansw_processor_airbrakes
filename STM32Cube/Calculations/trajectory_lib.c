@@ -52,48 +52,12 @@ typedef struct {
 
 // Cubic drag force polynomial coeffs for extensions 0-100% in 10% intervals
 static const Cubic2VariablePolynomial DRAG_POLYNOMIAL_COEFFS[11] = {
-        {232.2951f, 244.7010f, -75.1435f, 64.3402f, -79.5220f, 11.7309f,
-         -0.8306f, -20.4344f, 9.7041f, -0.6148f}, // 0% ext
-        {235.8993f, 249.2100f, -76.2767f, 65.8251f, -81.2931f, 12.0289f,
-         -0.8408f, -21.0236f, 9.9787f, -0.7853f}, // 10% ext
-        {245.6886f, 260.2967f, -80.2111f, 69.3746f, -85.4361f, 12.5705f,
-         -0.6199f, -22.1676f, 10.4297f, -0.6666f}, // etc
-        {253.9691f, 270.2409f, -83.5032f, 72.3919f, -89.3117f, 13.3189f,
-         -0.7371f, -23.2489f, 11.0822f, -0.7471f},
-        {263.5127f, 280.7695f, -86.9338f, 75.8929f, -93.6884f, 14.1591f,
-         -0.3771f, -24.5324f, 11.7445f, -0.9399f},
-        {272.4592f, 290.5670f, -90.1040f, 78.8810f, -97.0343f, 14.5126f,
-         -0.1988f, -25.6374f, 12.0348f, -0.7327f},
-        {284.8368f, 304.7727f, -94.4923f, 82.4469f, -101.4462f, 15.1080f,
-         -0.6357f, -26.5433f, 12.4927f, -0.8323f},
-        {296.2638f, 317.3919f, -98.5746f, 86.2809f, -106.2663f, 15.9556f,
-         -0.5224f, -28.0106f, 13.2557f, -0.8541f},
-        {303.1856f, 325.1022f, -100.9674f, 88.7552f, -109.3743f, 16.5627f,
-         -0.4253f, -28.9892f, 13.8034f, -0.9447f},
-        {316.4963f, 339.6502f, -104.5570f, 92.4088f, -114.1954f, 16.9114f,
-         -0.5681f, -30.4995f, 13.9269f, -1.2933f},
-        {340.9146f, 367.1520f, -114.8622f, 101.0439f, -123.1214f, 18.4047f,
-         -0.1879f, -31.8071f, 15.4422f, -1.1456f} // 100% ext
-};
-
-/**
- * Evaluates a cubic 2 variable polynomial at the given coordinates.
- */
-static float evaluate_cubic_2_variable(const Cubic2VariablePolynomial* poly, float x,
-                                float y) {
-    return poly->p00 + poly->p10 * x + poly->p01 * y + poly->p20 * x * x +
-           poly->p11 * x * y + poly->p02 * y * y + poly->p30 * x * x * x +
-           poly->p21 * x * x * y + poly->p12 * x * y * y +
-           poly->p03 * y * y * y;
-}
-
-const Cubic2VariablePolynomial coeffs[11] = {
     {232.2951f, 244.7010f, -75.1435f, 64.3402f, -79.5220f, 11.7309f, -0.8306f,
-     -20.4344f, 9.7041f, -0.6148f},
+     -20.4344f, 9.7041f, -0.6148f},  // 0% ext
     {235.8993f, 249.2100f, -76.2767f, 65.8251f, -81.2931f, 12.0289f, -0.8408f,
-     -21.0236f, 9.9787f, -0.7853f},
+     -21.0236f, 9.9787f, -0.7853f},  // 10% ext
     {245.6886f, 260.2967f, -80.2111f, 69.3746f, -85.4361f, 12.5705f, -0.6199f,
-     -22.1676f, 10.4297f, -0.6666f},
+     -22.1676f, 10.4297f, -0.6666f},  // etc
     {253.9691f, 270.2409f, -83.5032f, 72.3919f, -89.3117f, 13.3189f, -0.7371f,
      -23.2489f, 11.0822f, -0.7471f},
     {263.5127f, 280.7695f, -86.9338f, 75.8929f, -93.6884f, 14.1591f, -0.3771f,
@@ -109,7 +73,19 @@ const Cubic2VariablePolynomial coeffs[11] = {
     {316.4963f, 339.6502f, -104.5570f, 92.4088f, -114.1954f, 16.9114f, -0.5681f,
      -30.4995f, 13.9269f, -1.2933f},
     {340.9146f, 367.1520f, -114.8622f, 101.0439f, -123.1214f, 18.4047f,
-     -0.1879f, -31.8071f, 15.4422f, -1.1456f}};
+     -0.1879f, -31.8071f, 15.4422f, -1.1456f}  // 100% ext
+};
+
+/**
+ * Evaluates a cubic 2 variable polynomial at the given coordinates.
+ */
+static float evaluateCubic2Variable(const Cubic2VariablePolynomial* poly,
+                                    float x, float y) {
+    return poly->p00 + poly->p10 * x + poly->p01 * y + poly->p20 * x * x +
+           poly->p11 * x * y + poly->p02 * y * y + poly->p30 * x * x * x +
+           poly->p21 * x * x * y + poly->p12 * x * y * y +
+           poly->p03 * y * y * y;
+}
 
 float dragAccel_m_s2(float extension, float speed_m_s, float altitude_m) {
     // Writing the conditions with inequalities like this allows us to express
@@ -134,11 +110,11 @@ float dragAccel_m_s2(float extension, float speed_m_s, float altitude_m) {
     float extensionX10 = extension * 10.0f;
     int index = (int)extensionX10;
     if (extensionX10 == index) {
-        poly = coeffs[index];
+        poly = DRAG_POLYNOMIAL_COEFFS[index];
     } else {
         // Linear interpolation
-        const Cubic2VariablePolynomial* p1 = &coeffs[index];
-        const Cubic2VariablePolynomial* p2 = &coeffs[index + 1];
+        const Cubic2VariablePolynomial* p1 = &DRAG_POLYNOMIAL_COEFFS[index];
+        const Cubic2VariablePolynomial* p2 = &DRAG_POLYNOMIAL_COEFFS[index + 1];
         float diff = extensionX10 - (float)index;
 #define INTERPOLATE_FIELD(field) \
     poly.field = diff * p2->field + (1.0f - diff) * p1->field;
