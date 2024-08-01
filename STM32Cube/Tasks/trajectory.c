@@ -9,7 +9,6 @@
 
 #include <limits.h>
 #include <math.h>
-#include <stdbool.h>
 
 #include "Fusion.h"
 #include "controller.h"
