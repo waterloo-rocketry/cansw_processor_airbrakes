@@ -44,8 +44,7 @@ typedef struct {
     float i_satmax;
 } ControllerParams;
 
-const ControllerParams DEFAULT_CONTROLLER_PARAMS = {
-    .kp = 0.0005, .ki = 0.001, .kd = 0, .i_satmax = 10.0};
+extern const ControllerParams DEFAULT_CONTROLLER_PARAMS;
 
 /**
  * Initializes the state of the controller.

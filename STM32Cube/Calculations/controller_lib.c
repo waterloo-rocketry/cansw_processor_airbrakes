@@ -1,5 +1,8 @@
 #include "controller_lib.h"
 
+const ControllerParams DEFAULT_CONTROLLER_PARAMS = {
+    .kp = 0.0005, .ki = 0.001, .kd = 0, .i_satmax = 10.0};
+
 void controllerStateInit(ControllerState* state) {
     state->controller_term_I = 0.0f;
     state->last_error = 0.0f;
