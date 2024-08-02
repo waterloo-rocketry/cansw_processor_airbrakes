@@ -14,7 +14,7 @@
 #include "can_handler.h"
 #include "state_estimation.h"
 
-#define SAMPLE_RATE_HZ 1 //Hz; Need to set to match VN data rate
+#define SAMPLE_RATE_HZ 20 //Hz; Need to set to match VN data rate
 #define TASK_DELAY_TICKS 1000 / SAMPLE_RATE_HZ
 
 #ifndef USE_ICM //Default use ICM to off
