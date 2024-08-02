@@ -7,7 +7,7 @@
   <Register>
     <Id>7</Id>
     <Name>Async Data Output Freq</Name>
-    <Values>5;5</Values>
+    <Values>0;0</Values>
   </Register>
   <Register>
     <Id>26</Id>
@@ -17,16 +17,16 @@
   <Register>
     <Id>75</Id>
     <Name>Binary Output Message Configuration #1</Name>
-    <Values>3,200,09,0041,0208</Values>
+    <Values>3,133,09,0001,0228</Values>
   </Register>
   <Register>
     <Id>76</Id>
     <Name>Binary Output Message Configuration #2</Name>
-    <Values>3,150,35,0001,0400,0002,0124</Values>
+    <Values>3,0,35,0001,0400,0002,0124</Values>
   </Register>
   <Register>
     <Id>77</Id>
     <Name>Binary Output Message Configuration #3</Name>
-    <Values>3,100,05,0001,000E</Values>
+    <Values>3,40,05,0001,000E</Values>
   </Register>
 </VectorNav_Sensor>

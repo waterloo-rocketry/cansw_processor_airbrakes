@@ -28,15 +28,15 @@ const uint32_t ASCII_METERS = 109;
 const float RAD_TO_DEG = 180 / M_PI;
 const float g = 9.81;
 const bool verbose = false;
-const uint8_t SD_RATE_DIVISOR_GROUP1 = 5;
-const uint8_t CAN_RATE_DIVISOR_GROUP1 = 5;
-const uint8_t CAN_RATE_DIVISOR_GROUP2 = 5;
-const uint8_t SD_RATE_DIVISOR_GROUP2 = 5;
+const uint8_t SD_RATE_DIVISOR_GROUP1 = 1;
+const uint8_t CAN_RATE_DIVISOR_GROUP1 = 3;
+const uint8_t CAN_RATE_DIVISOR_GROUP3 = 10;
+const uint8_t SD_RATE_DIVISOR_GROUP3 = 1;
 
 uint8_t SDGroup1Counter=0;
 uint8_t CANGroup1Counter=0;
-uint8_t SDGroup2Counter=0;
-uint8_t CANGroup2Counter=0;
+uint8_t SDGroup3Counter=0;
+uint8_t CANGroup3Counter=0;
 
 uint8_t USART1_Rx_Buffer[MAX_BINARY_OUTPUT_LENGTH];
 SemaphoreHandle_t USART1_DMA_Sempahore;
@@ -136,14 +136,15 @@ void vnIMUHandler(void *argument)
 							continue;
 						}
 
-						//Group #1
+						//Group #1: 53 bytes: 53 bytes: Time startup (Common), NumSats (gnss), GnssPosLla (gnss), GnssPosUncertainty (gnss)
+
 						if (packetLength == 53){
 							can_msg_t msg;
 
 							uint32_t time_startup = (uint32_t) VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
 
-							vec3d pos = VnUartPacket_extractVec3d(&packet);
 							uint8_t numSatellites = VnUartPacket_extractInt8(&packet);
+							vec3d pos = VnUartPacket_extractVec3d(&packet);
 							vec3f postUncertainty = VnUartPacket_extractVec3f(&packet);
 
 							uint32_t quality_ = sqrt(pow(postUncertainty.c[0], 2) + pow(postUncertainty.c[1], 2) + pow(postUncertainty.c[2], 2)); //the higher the number the worse the quality
@@ -177,43 +178,6 @@ void vnIMUHandler(void *argument)
 							}
 						}
 
-						//Binary Output #2 92 bytes | Time startup (Common), Angular rate (IMU), Ypr (Attitude), PosEcef (INS), VelEcef (INS), LinAccelEcef (INS)
-						else if (packetLength == 92){
-							uint32_t time_startup = (uint32_t) VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
-
-							vec3f angularRate = VnUartPacket_extractVec3f(&packet); //rad/s
-							vec3f yprAngles = VnUartPacket_extractVec3f(&packet); //deg
-
-							vec3d posEcef = VnUartPacket_extractVec3d(&packet); //m
-							vec3f velEcef = VnUartPacket_extractVec3f(&packet); //m/s
-							vec3f linAccelEcef = VnUartPacket_extractVec3f(&packet); //m/s^2 NOT INCLUDING GRAVITY
-
-							SDGroup2Counter++;
-							CANGroup2Counter++;
-
-
-							if (SDGroup2Counter >= SD_RATE_DIVISOR_GROUP2){
-	                            logInfo("VN#2", "%ds, AngRate (%.3f, %.3f, %.3f), YPR (%.3f, %.3f, %.3f), PosECEF (%.3f, %.3f, %.3f), VelECEF (%.3f, %.3f, %.3f), LinAccECEF (%.3f, %.3f, %.3f)\n",
-	                                                            time_startup,
-	                                                            angularRate.c[0], angularRate.c[1], angularRate.c[2],
-	                                                            yprAngles.c[0], yprAngles.c[1], yprAngles.c[2],
-	                                                            posEcef.c[0], posEcef.c[1], posEcef.c[2],
-	                                                            velEcef.c[0], velEcef.c[1], velEcef.c[2],
-	                                                            linAccelEcef.c[0], linAccelEcef.c[1], linAccelEcef.c[2]);
-								SDGroup2Counter = 0;
-							}
-
-							if (CANGroup2Counter >= CAN_RATE_DIVISOR_GROUP2){
-								//Logging + CAN
-								send3VectorStateCanMsg_double(time_startup, posEcef.c,STATE_POS_X); //position
-								send3VectorStateCanMsg_float(time_startup, velEcef.c,STATE_VEL_X); //velocity
-								send3VectorStateCanMsg_float(time_startup, linAccelEcef.c,STATE_ACC_X); //acceleration
-								send3VectorStateCanMsg_float(time_startup, yprAngles.c,STATE_ANGLE_YAW); //angle;
-								send3VectorStateCanMsg_float(time_startup, angularRate.c,STATE_RATE_YAW); //angle rate in XYZ (TODO: NEED TO CONVERT TO YPR)
-
-								CANGroup2Counter=0;
-							}
-						}
 
 						//Binary Output #3 52 bytes | Time startup (Common), UncompMag (IMU). UncompAccel (IMU), UncompGyro (IMU)
 						else if (packetLength == 52){
@@ -240,6 +204,25 @@ void vnIMUHandler(void *argument)
 							memcpy(data.magnetometer.array, magVec.c, 3 * sizeof(float));
 							data.TimeS = time_startup_ns / (float) NS_TO_S;
 							xQueueSend(IMUDataHandle, &data, 0); //send to state estimation
+
+							SDGroup3Counter++;
+							CANGroup3Counter++;
+
+							if (SDGroup3Counter >= SD_RATE_DIVISOR_GROUP3){
+	                            logInfo("VN#3", "%ds, lin: (%.3f, %.3f, %.3f), gyro: (%.3f, %.3f, %.3f)\n",
+	                            		time_startup_ns, accelVec.c[0],accelVec.c[1],accelVec.c[2],
+										gyroVec.c[0],gyroVec.c[1],gyroVec.c[2]);
+
+	                            SDGroup3Counter = 0;
+							}
+
+							if (CANGroup3Counter >= CAN_RATE_DIVISOR_GROUP3){
+								//Logging + CAN
+								send3VectorStateCanMsg_double(time_startup_ns, accelVec.c,STATE_ACC_X); //Linear Acceleration
+								send3VectorStateCanMsg_double(time_startup_ns, gyroVec.c,STATE_RATE_YAW); //Angular Acceleration
+								CANGroup3Counter = 0;
+							}
+
 						}
 						else {
 							//printf_("unhandled message format!\r\n");
