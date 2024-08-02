@@ -133,7 +133,12 @@ float dragAccel_m_s2(float extension, float speed_m_s, float altitude_m) {
 
     float x = (speed_m_s - 273.9f) / 148.7f;
     float y = (altitude_m - 5000.0f) / 3172.0f;
-    return evaluateCubic2Variable(&poly, x, y);
+    float drag = evaluateCubic2Variable(&poly, x, y);
+    if (drag >= 0.0F) {
+        return drag;
+    } else {
+        return 0.0F;
+    }
 }
 
 /**
