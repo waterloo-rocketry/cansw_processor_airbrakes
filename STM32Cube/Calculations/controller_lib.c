@@ -1,6 +1,7 @@
 #include "controller_lib.h"
 
-#include "millis.h"
+const ControllerParams DEFAULT_CONTROLLER_PARAMS = {
+    .kp = 0.0005, .ki = 0.001, .kd = 0, .i_satmax = 10.0};
 
 void controllerStateInit(ControllerState* state) {
     state->controller_term_I = 0.0f;
@@ -9,31 +10,37 @@ void controllerStateInit(ControllerState* state) {
     state->begun = false;
 }
 
-float updateController(ControllerState* state, float error) {
-    float controller_term_P = error * CONTROLLER_GAIN_P;
+float updateController(const ControllerParams* params, ControllerState* state,
+                       float time_ms, float trajectory_m, float target_m) {
+    float error = target_m - trajectory_m;
+    float controller_term_P = error * params->kp;
     float controller_term_D = 0.0f;
     if (state->begun) {
-        float dt = (millis_() - state->last_ms) / 1000.0;  // time delay in s
+        float dt = (time_ms - state->last_ms) / 1000.0;  // time delay in s
         // Trapezoidal approximation
         state->controller_term_I +=
-            CONTROLLER_GAIN_I * (state->last_error + error) * 0.5 * dt;
-        if (state->controller_term_I > CONTROLLER_I_SATMAX)
-            state->controller_term_I = CONTROLLER_I_SATMAX;
-        if (state->controller_term_I < -CONTROLLER_I_SATMAX)
-            state->controller_term_I = -CONTROLLER_I_SATMAX;
+            params->ki * (state->last_error + error) * 0.5 * dt;
+        if (state->controller_term_I > params->i_satmax)
+            state->controller_term_I = params->i_satmax;
+        if (state->controller_term_I < -params->i_satmax)
+            state->controller_term_I = -params->i_satmax;
 
         // prevent divide by 0 errors
         if (dt >= 0.0000001)
-            controller_term_D =
-                CONTROLLER_GAIN_D * (error - state->last_error) / dt;
+            controller_term_D = params->kd * (error - state->last_error) / dt;
     } else {
         state->begun = true;
     }
     state->last_error = error;
-    state->last_ms = millis_();
+    state->last_ms = time_ms;
 
     float output =
         controller_term_P + state->controller_term_I - controller_term_D;
 
-    return output;
+    float extension = EXTENSION_REFERENCE - output;
+
+    if (!(0.0f <= extension)) extension = 0.0f;
+    if (!(extension <= 1.0f)) extension = 1.0f;
+
+    return extension;
 }

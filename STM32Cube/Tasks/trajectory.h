@@ -8,6 +8,8 @@
 #ifndef TRAJECTORY_H_
 #define TRAJECTORY_H_
 
+#include <stdbool.h>
+
 #include "FreeRTOS.h"
 #include "queue.h"
 
