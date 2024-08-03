@@ -231,3 +231,13 @@ float getMaxAltitude_m(float vy_m_s, float vx_m_s, float y_m) {
 
     return prevAlt;
 }
+
+float second_order_lowpass_filter(float input, float* values, float alpha) {
+    float beta = 1 - alpha;
+
+	output = alpha * alpha * input + 2 * alpha * beta * values[0] - beta * beta * values[1];
+
+	values[1] = values[0];
+	values[0] = output;
+	return output;
+}

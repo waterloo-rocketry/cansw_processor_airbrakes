@@ -62,6 +62,8 @@ Otits_Result_t test_apogeeQueue() {
 void trajectory_task(void* argument) {
     float prev_time = -1;
     int32_t prev_alt = INT_MAX;
+    uint32_t recovery_timeout = 0;
+    float filter_data[2] = {0.0f}; //storage for lowpass filter data
 
     for (;;) {
         AltTime altTime;
@@ -69,16 +71,30 @@ void trajectory_task(void* argument) {
         if (xQueueReceive(altQueue, &altTime, 10) == pdTRUE) {
             if (xQueuePeek(angleQueue, &angles, 100) == pdTRUE) {
                 if (prev_alt != INT_MAX) {
-                    float vely = (altTime.alt - prev_alt) * 1000.0 /
+                    float vely_raw = (altTime.alt - prev_alt) * 1000.0 /
                                  (altTime.time - prev_time);
+                    float vely = second_order_lowpass_filter(vely_raw, filter_data, VELOCITY_FILTER_ALPHA);
 
                     // if we see velocity drop, we know apogee is incoming
                     // regardless to prevent the bit being prematurely set at
                     // startup due to weird numerical stuff, we only check this
                     // condition while in coast phase
-                    if (extensionAllowed() && (vely < RECOVERY_MIN_VELOCITY))
-                        xEventGroupSetBits(flightPhaseEventsHandle,
-                                           RECOVERY_DEPLOYMENT_BIT);
+                    // Also, to deal with potential noise, the system must see consecutive velocity readings below the threshold
+                    if (extensionAllowed())
+					{
+                    	if (vely < RECOVERY_MIN_VELOCITY)
+						{
+                    		recovery_timeout++;
+                    		if(recovery_timeout >= RECOVERY_TIMEOUT_READINGS)
+                    		{
+                    			xEventGroupSetBits(flightPhaseEventsHandle, RECOVERY_DEPLOYMENT_BIT);
+                    		}
+						}
+                    	else
+                    	{
+                    		recovery_timeout = 0;
+                    	}
+					}
 
                     float velx =
                         vely /
