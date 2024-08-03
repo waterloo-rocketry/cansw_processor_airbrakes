@@ -12,7 +12,7 @@
 #include "otits.h"
 
 #define BOOST_TIME_MS 9000 //time from inj valve open to motor bunout
-#define RECOVERY_DELAY_MS 60000 //time from inj valve open to recovery deployment
+#define RECOVERY_DELAY_MS 35000 //time from inj valve open to recovery deployment
 
 static FLIGHT_PHASE flight_state = PHASE_PRELAUNCH;
 static float injOpenTime;
