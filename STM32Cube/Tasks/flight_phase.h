@@ -25,9 +25,11 @@ extern EventGroupHandle_t flightPhaseEventsHandle;
 #define INJ_OPEN_BIT 0x1
 #define RECOVERY_DEPLOYMENT_BIT 0x2
 #define RECOVERY_MIN_VELOCITY 30.0
+#define RECOVERY_TIMEOUT_READINGS 5 //Number of consecutive readings below threshold after which recovery lockout should be enabled
 
 
 bool extensionAllowed();
+bool recoveryPhase();
 
 void flightPhaseTask(void * argument);
 bool flightPhaseInit();
