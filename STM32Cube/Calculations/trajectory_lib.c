@@ -7,7 +7,7 @@
 #define TOL 0.00001
 #define TIME_STEP 0.05  // s
 #define ROCKET_BURNOUT_MASS_KG 39.609
-#define LAUNCH_PAD_ELEVATION 295.0
+#define LAUNCH_PAD_ELEVATION_M 295.0
 
 /**
  * Data iterated in RK4 method.
@@ -133,7 +133,7 @@ float dragAccel_m_s2(float extension, float speed_m_s, float altitude_m) {
     }
 
     float x = (speed_m_s - 273.9f) / 148.7f;
-    float y = (altitude_m + LAUNCH_PAD_ELEVATION - 5000.0f) / 3172.0f;
+    float y = (altitude_m + LAUNCH_PAD_ELEVATION_M - 5000.0f) / 3172.0f;
     float drag = evaluateCubic2Variable(&poly, x, y);
     if (drag >= 0.0F) {
         return drag;
