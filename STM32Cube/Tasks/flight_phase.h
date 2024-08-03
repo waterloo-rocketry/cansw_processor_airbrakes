@@ -29,6 +29,7 @@ extern EventGroupHandle_t flightPhaseEventsHandle;
 
 
 bool extensionAllowed();
+bool recoveryPhase();
 
 void flightPhaseTask(void * argument);
 bool flightPhaseInit();
