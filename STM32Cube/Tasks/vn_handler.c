@@ -218,8 +218,8 @@ void vnIMUHandler(void *argument)
 
 							if (CANGroup3Counter >= CAN_RATE_DIVISOR_GROUP3){
 								//Logging + CAN
-								send3VectorStateCanMsg_double(time_startup_ns, accelVec.c,STATE_ACC_X); //Linear Acceleration
-								send3VectorStateCanMsg_double(time_startup_ns, gyroVec.c,STATE_RATE_YAW); //Angular Acceleration
+								send3VectorStateCanMsg_float(time_startup_ns, accelVec.c,STATE_ACC_X); //Linear Acceleration
+								send3VectorStateCanMsg_float(time_startup_ns, gyroVec.c,STATE_RATE_YAW); //Angular Velocity
 								CANGroup3Counter = 0;
 							}
 
