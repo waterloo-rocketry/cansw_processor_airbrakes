@@ -241,3 +241,14 @@ float second_order_lowpass_filter(float input, float* values, float alpha) {
 	values[0] = output;
 	return output;
 }
+
+float moving_average_filter(float input, float* values)
+{
+	float output = input * 0.25 + values[0]*0.25 + values[1]*0.25 + values[2]*0.25;
+
+	values[2] = values[1];
+	values[1] = values[0];
+	values[0] = input;
+
+	return output;
+}
