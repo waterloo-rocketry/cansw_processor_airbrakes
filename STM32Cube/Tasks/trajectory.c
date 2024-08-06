@@ -77,7 +77,8 @@ void trajectory_task(void* argument) {
 
                     //float vely = second_order_lowpass_filter(vely_raw, filter_data, VELOCITY_FILTER_ALPHA);
                     float vely = moving_average_filter(vely_raw, filter_data);
-                    printf_(">vely:%d\n", (int) vely);
+                    //printf_(">vely:%d\n", (int) vely);
+
                     // if we see velocity drop, we know apogee is incoming
                     // regardless to prevent the bit being prematurely set at
                     // startup due to weird numerical stuff, we only check this
@@ -105,7 +106,7 @@ void trajectory_task(void* argument) {
                             M_PI);  // state est measures pitch from horizontal
                     float apogee = getMaxAltitude_m(vely, velx, altTime.alt);
                     logInfo("traj", "%fm", apogee);
-                    printf_(">traj:%fm\n", apogee);
+                    //printf_(">traj:%fm\n", apogee);
                     xQueueOverwrite(apogeeQueue, &apogee);
                 }
                 prev_alt = altTime.alt;
