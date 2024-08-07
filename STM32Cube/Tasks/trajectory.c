@@ -64,7 +64,7 @@ void trajectory_task(void* argument) {
     float prev_time = -1;
     int32_t prev_alt = INT_MAX;
     uint32_t recovery_timeout = 0;
-    float filter_data[3] = {0.0f}; //storage for lowpass filter data
+    float filter_data[3] = {0.0f}; //storage for filter data
 
     for (;;) {
         AltTime altTime;
