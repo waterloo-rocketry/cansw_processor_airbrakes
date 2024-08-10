@@ -16,6 +16,7 @@
 #include "state_estimation.h"
 #include "vn_handler.h"
 #include "can_handler.h"
+#include "millis.h"
 
 
 extern UART_HandleTypeDef huart1;
@@ -84,10 +85,10 @@ static double minFromDeg(double deg){
 	return result;
 }
 
-static void send3VectorStateCanMsg_float(uint64_t time, float vector[3], uint8_t firstStateIDOfVector){
+static void send3VectorStateCanMsg_float(uint32_t time, float vector[3], uint8_t firstStateIDOfVector){
 	can_msg_t msg;
 	for (int i = 0; i < 3; i++) {
-		build_state_est_data_msg((uint32_t) time, &vector[i], firstStateIDOfVector + i, &msg);
+		build_state_est_data_msg(time, &vector[i], firstStateIDOfVector + i, &msg);
 		xQueueSend(busQueue, &msg, MS_WAIT_CAN);
 	}
 }
@@ -146,7 +147,7 @@ void vnIMUHandler(void *argument)
 						if (packetLength == 53){
 							can_msg_t msg;
 
-							uint32_t time_startup = (uint32_t) VnUartPacket_extractUint64(&packet)/ NS_TO_MS; //time in ns -> s
+							uint32_t time_startup = (uint32_t) (VnUartPacket_extractUint64(&packet)/ NS_TO_MS); //time in ns -> s
 
 							uint8_t numSatellites = VnUartPacket_extractInt8(&packet);
 							vec3d pos = VnUartPacket_extractVec3d(&packet);
@@ -182,13 +183,14 @@ void vnIMUHandler(void *argument)
 								uint16_t altitude_decimal = decimalFromDouble2(pos.c[2]);
 
 
-								build_gps_lon_msg((uint32_t) time_startup, degrees_lon, minutes_lon, decimal_min_lon, (int) (degrees_lon >= 0) ? 'W' : 'E', &msg);
+								uint32_t msg_ts = (uint32_t) millis_();
+								build_gps_lon_msg(msg_ts, degrees_lon, minutes_lon, decimal_min_lon, (int) (degrees_lon >= 0) ? 'W' : 'E', &msg);
 								xQueueSend(busQueue, &msg, MS_WAIT_CAN);
-								build_gps_lat_msg((uint32_t) time_startup, degrees_lat, minutes_lat, decimal_min_lat, (int) (degrees_lat >= 0) ? 'N' : 'S', &msg);
+								build_gps_lat_msg(msg_ts, degrees_lat, minutes_lat, decimal_min_lat, (int) (degrees_lat >= 0) ? 'N' : 'S', &msg);
 								xQueueSend(busQueue, &msg, MS_WAIT_CAN);
-								build_gps_alt_msg((uint32_t) time_startup, altitude, altitude_decimal , (uint8_t) 'M', &msg);
+								build_gps_alt_msg(msg_ts, altitude, altitude_decimal , (uint8_t) 'M', &msg);
 								xQueueSend(busQueue, &msg, MS_WAIT_CAN);
-								build_gps_info_msg((uint32_t) time_startup, numSatellites, quality, &msg);
+								build_gps_info_msg(msg_ts, numSatellites, quality, &msg);
 								xQueueSend(busQueue, &msg, MS_WAIT_CAN);
 
 								CANGroup1Counter = 0;
@@ -235,8 +237,8 @@ void vnIMUHandler(void *argument)
 
 							if (CANGroup3Counter >= CAN_RATE_DIVISOR_GROUP3){
 								//Logging + CAN
-								send3VectorStateCanMsg_float(time_startup_ns, accelVec.c,STATE_ACC_X); //Linear Acceleration
-								send3VectorStateCanMsg_float(time_startup_ns, gyroVec.c,STATE_RATE_YAW); //Angular Velocity
+								send3VectorStateCanMsg_float((uint32_t) millis_(), accelVec.c,STATE_ACC_X); //Linear Acceleration
+								send3VectorStateCanMsg_float((uint32_t) millis_(), gyroVec.c,STATE_RATE_YAW); //Angular Velocity
 								CANGroup3Counter = 0;
 							}
 
