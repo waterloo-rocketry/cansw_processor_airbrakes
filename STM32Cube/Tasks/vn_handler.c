@@ -5,6 +5,7 @@
 
 #include <math.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "stm32h7xx_hal.h"
 
@@ -76,7 +77,11 @@ static uint16_t decimalFromDouble4(double num){
 }
 
 static double minFromDeg(double deg){
-	return (deg -  (uint32_t)deg)  * 60;
+	double x1=fabs(deg);
+	uint32_t x2 = (uint32_t) fabs(deg);
+	double result = (x1-x2)*60;
+
+	return result;
 }
 
 static void send3VectorStateCanMsg_float(uint64_t time, float vector[3], uint8_t firstStateIDOfVector){
@@ -165,11 +170,23 @@ void vnIMUHandler(void *argument)
 
 							if (CANGroup1Counter >= CAN_RATE_DIVISOR_GROUP1){
 								//Logging + CAN
-								build_gps_lon_msg((uint32_t) time_startup, (uint8_t) pos.c[1], (uint8_t) minFromDeg(pos.c[1]), decimalFromDouble4(minFromDeg(pos.c[1])), (int) (pos.c[1] >= 0) ? 'N' : 'S', &msg);
+								uint8_t degrees_lon = (uint8_t) abs(pos.c[0]);
+								uint8_t minutes_lon = (uint8_t) minFromDeg(pos.c[0]);
+								uint8_t decimal_min_lon = decimalFromDouble4(minFromDeg(pos.c[0]));
+
+								uint8_t degrees_lat = (uint8_t) abs(pos.c[1]);
+								uint8_t minutes_lat = (uint8_t) minFromDeg(pos.c[1]);
+								uint8_t decimal_min_lat = decimalFromDouble4(minFromDeg(pos.c[1]));
+
+								uint16_t altitude = (uint16_t) abs(pos.c[2]);
+								uint16_t altitude_decimal = decimalFromDouble2(pos.c[2]);
+
+
+								build_gps_lon_msg((uint32_t) time_startup, degrees_lon, minutes_lon, decimal_min_lon, (int) (degrees_lon >= 0) ? 'W' : 'E', &msg);
 								xQueueSend(busQueue, &msg, MS_WAIT_CAN);
-								build_gps_lat_msg((uint32_t) time_startup, (uint8_t) pos.c[1], (uint8_t) minFromDeg(pos.c[1]), decimalFromDouble4(minFromDeg(pos.c[1])), (int) (pos.c[1] >= 0) ? 'E' : 'W', &msg);
+								build_gps_lat_msg((uint32_t) time_startup, degrees_lat, minutes_lat, decimal_min_lat, (int) (degrees_lat >= 0) ? 'N' : 'S', &msg);
 								xQueueSend(busQueue, &msg, MS_WAIT_CAN);
-								build_gps_alt_msg((uint32_t) time_startup, (uint16_t)pos.c[2], decimalFromDouble2(pos.c[2]), (uint8_t) 'M', &msg);
+								build_gps_alt_msg((uint32_t) time_startup, altitude, altitude_decimal , (uint8_t) 'M', &msg);
 								xQueueSend(busQueue, &msg, MS_WAIT_CAN);
 								build_gps_info_msg((uint32_t) time_startup, numSatellites, quality, &msg);
 								xQueueSend(busQueue, &msg, MS_WAIT_CAN);
