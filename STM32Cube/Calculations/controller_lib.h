@@ -42,6 +42,10 @@ typedef struct {
      * Saturation of the integral term.
      */
     float i_satmax;
+    /**
+     * Reference extension, assumed to allow us to hit the target apogee.
+     */
+    float ext_ref;
 } ControllerParams;
 
 extern const ControllerParams DEFAULT_CONTROLLER_PARAMS;

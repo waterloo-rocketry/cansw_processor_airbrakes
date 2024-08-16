@@ -213,7 +213,7 @@ static RK4State rk4(float h_s, float extension, RK4State state) {
     return updatedState;
 }
 
-float getMaxAltitude_m(float vy_m_s, float vx_m_s, float y_m) {
+float getMaxAltitude_m(float ext_ref, float vy_m_s, float vx_m_s, float y_m) {
     float prevAlt = 0.0;  // variable to store previous altitude
 
     RK4State states;
@@ -225,7 +225,7 @@ float getMaxAltitude_m(float vy_m_s, float vx_m_s, float y_m) {
     while (states.y_m >= prevAlt) {
         prevAlt =
             states.y_m;  // to check if altitude is decreasing to exit the loop
-        states = rk4(TIME_STEP, EXTENSION_REFERENCE,
+        states = rk4(TIME_STEP, ext_ref,
                      states);  // update velocity and altitude
     }
 

@@ -37,7 +37,7 @@ float updateController(const ControllerParams* params, ControllerState* state,
     float output =
         controller_term_P + state->controller_term_I - controller_term_D;
 
-    float extension = EXTENSION_REFERENCE - output;
+    float extension = params->ext_ref - output;
 
     if (!(0.0f <= extension)) extension = 0.0f;
     if (!(extension <= 1.0f)) extension = 1.0f;
