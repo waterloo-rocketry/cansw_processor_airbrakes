@@ -5,7 +5,7 @@
 #define GRAV_AT_SEA_LVL 9.80665    // m/s^2
 #define EARTH_MEAN_RADIUS 6371009  // m
 #define TOL 0.00001
-#define TIME_STEP 0.05                        // s
+#define TIME_STEP 0.05  // s
 #define ROCKET_BURNOUT_MASS_KG 42.5288206112  // 93.76 lbs
 #define LAUNCH_PAD_ELEVATION_M 295.0
 
@@ -235,21 +235,20 @@ float getMaxAltitude_m(float vy_m_s, float vx_m_s, float y_m) {
 float second_order_lowpass_filter(float input, float* values, float alpha) {
     float beta = 1 - alpha;
 
-    float output = alpha * alpha * input + 2 * alpha * beta * values[0] -
-                   beta * beta * values[1];
+	float output = alpha * alpha * input + 2 * alpha * beta * values[0] - beta * beta * values[1];
 
-    values[1] = values[0];
-    values[0] = output;
-    return output;
+	values[1] = values[0];
+	values[0] = output;
+	return output;
 }
 
-float moving_average_filter(float input, float* values) {
-    float output =
-        input * 0.25 + values[0] * 0.25 + values[1] * 0.25 + values[2] * 0.25;
+float moving_average_filter(float input, float* values)
+{
+	float output = input * 0.25 + values[0]*0.25 + values[1]*0.25 + values[2]*0.25;
 
-    values[2] = values[1];
-    values[1] = values[0];
-    values[0] = input;
+	values[2] = values[1];
+	values[1] = values[0];
+	values[0] = input;
 
-    return output;
+	return output;
 }
