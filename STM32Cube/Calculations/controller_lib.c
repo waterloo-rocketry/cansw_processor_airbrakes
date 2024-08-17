@@ -1,7 +1,7 @@
 #include "controller_lib.h"
 
 const ControllerParams DEFAULT_CONTROLLER_PARAMS = {
-    .kp = 0.020, .ki = 0.0001, .kd = 0, .i_satmax = 10.0};
+    .kp = 0.020, .ki = 0.0001, .kd = 0, .i_satmax = 10.0, .ext_ref = 0.58};
 
 void controllerStateInit(ControllerState* state) {
     state->controller_term_I = 0.0f;
