@@ -77,6 +77,8 @@ static const Cubic2VariablePolynomial DRAG_POLYNOMIAL_COEFFS[11] = {
      -0.1879f, -31.8071f, 15.4422f, -1.1456f}  // 100% ext
 };
 
+#define DRAG_HACK_SCALE 1.25
+
 /**
  * Evaluates a cubic 2 variable polynomial at the given coordinates.
  */
@@ -123,7 +125,7 @@ float dragAccel_m_s2(float extension, float speed_m_s, float altitude_m) {
 #undef INTERPOLATE_FIELD
     }
     // Divide drag force by mass to get acceleration
-#define SCALE_FIELD(field) poly.field /= ROCKET_BURNOUT_MASS_KG;
+#define SCALE_FIELD(field) poly.field *= DRAG_HACK_SCALE / ROCKET_BURNOUT_MASS_KG;
     APPLY_TO_FIELDS(SCALE_FIELD)
 #undef SCALE_FIELD
 #undef APPLY_TO_FIELDS
