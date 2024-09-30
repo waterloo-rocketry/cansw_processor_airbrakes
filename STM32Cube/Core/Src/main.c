@@ -1024,8 +1024,6 @@ void StartDefaultTask(void *argument)
 
 	for(;;)
 	{
-		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
-		vTaskDelay(1000);
 	}
   /* USER CODE END 5 */
 }
