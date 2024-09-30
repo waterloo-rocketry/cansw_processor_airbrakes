@@ -38,6 +38,8 @@
 #include "otits.h"
 #include "sdmmc.h"
 #include "vn_handler.h"
+#include "blinky.h"
+#include "fast_blinky.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -97,6 +99,8 @@ TaskHandle_t healthChecksTaskHandle = NULL;
 TaskHandle_t controllerHandle = NULL;
 TaskHandle_t flightPhaseHandle = NULL;
 TaskHandle_t oTITSHandle = NULL;
+TaskHandle_t blinkyTaskHandle = NULL;
+TaskHandle_t fastBlinkyTaskHandle = NULL;
 
 /* USER CODE END PV */
 
@@ -123,55 +127,6 @@ void StartDefaultTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-Otits_Result_t test_defaultTaskPass() {
-	Otits_Result_t res;
-	res.info = "this should pass";
-	res.outcome = TEST_OUTCOME_PASSED;
-	return res;
-}
-
-Otits_Result_t test_defaultTaskFail() {
-	Otits_Result_t res;
-	res.info = "this should fail";
-	res.outcome = TEST_OUTCOME_FAILED;
-	return res;
-}
-
-Otits_Result_t test_taskStackUsage() {
-    Otits_Result_t res;
-    const int numTasks = 9;
-    int stackWatermarks[numTasks];
-
-    stackWatermarks[0] = uxTaskGetStackHighWaterMark(logTaskhandle);
-    stackWatermarks[1] = uxTaskGetStackHighWaterMark(VNTaskHandle);
-    stackWatermarks[2] = uxTaskGetStackHighWaterMark(trajectoryTaskHandle);
-    stackWatermarks[3] = uxTaskGetStackHighWaterMark(stateEstTaskHandle);
-    stackWatermarks[4] = uxTaskGetStackHighWaterMark(canhandlerhandle);
-    stackWatermarks[5] = uxTaskGetStackHighWaterMark(healthChecksTaskHandle);
-    stackWatermarks[6] = uxTaskGetStackHighWaterMark(controllerHandle);
-    stackWatermarks[7] = uxTaskGetStackHighWaterMark(flightPhaseHandle);
-    stackWatermarks[8] = uxTaskGetStackHighWaterMark(oTITSHandle);
-
-    for (int i = 0; i < numTasks; i++) {
-        if (stackWatermarks[i] < 50) {
-            char info[10];
-            snprintf_(info, 10, "low%d", i);
-            res.info = info;
-            res.outcome = TEST_OUTCOME_FAILED;
-            return res;
-        } else if (stackWatermarks[i] > 1000) {
-            char info[10];
-            snprintf_(info, 10, "high%d", i);
-            res.info = info;
-            res.outcome = TEST_OUTCOME_FAILED;
-            return res;
-        }
-    }
-
-    res.info = "";
-    res.outcome = TEST_OUTCOME_PASSED;
-    return res;
-}
 /* USER CODE END 0 */
 
 /**
@@ -253,11 +208,6 @@ int main(void)
   initRes &= state_est_init();
   initRes &= vn_handler_init();
 
-  // otits is ifdef guarded within itself so can leave these
-  initRes &= otitsRegister(test_defaultTaskPass, TEST_SOURCE_DEFAULT, "DefaultPass");
-  initRes &= otitsRegister(test_defaultTaskFail, TEST_SOURCE_DEFAULT, "DefaultFail");
-  initRes &= otitsRegister(test_taskStackUsage, TEST_SOURCE_DEFAULT, "StackUsage");
-
   if (!initRes) {
       Error_Handler();
   }
@@ -271,8 +221,13 @@ int main(void)
   /* add threads, ... */
   BaseType_t xReturned = pdPASS;
 
-  //dunno if casting from CMSIS priorities is valid
-  xReturned &= xTaskCreate(vnIMUHandler, "VN Task", 1024, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
+  // Create a FreeRTOS task for blinky
+  xReturned &= xTaskCreate(blinkyTask, "blinky task", 512, NULL, (UBaseType_t) osPriorityNormal, &blinkyTaskHandle);
+  // Create a FreeRTOS task for faster blinky
+  // xReturned &= xTaskCreate(fastBlinkyTask, "fast blinky task", 512, NULL, (UBaseType_t) osPriorityNormal, &fastBlinkyTaskHandle);
+
+  // For this tutorial we can ignore the other tasks processor usually runs
+  /*xReturned &= xTaskCreate(vnIMUHandler, "VN Task", 1024, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
   xReturned &= xTaskCreate(canHandlerTask, "CAN handler", 512, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
   xReturned &= xTaskCreate(stateEstTask, "StateEst", 1024, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
   xReturned &= xTaskCreate(trajectory_task, "traj", 512, NULL, (UBaseType_t) osPriorityNormal, &trajectoryTaskHandle);
@@ -280,10 +235,7 @@ int main(void)
   xReturned &= xTaskCreate(healthCheckTask, "health checks", 512, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
   xReturned &= xTaskCreate(controlTask, "Controller", 512, NULL, (UBaseType_t) osPriorityNormal, &controllerHandle);
   xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 512, NULL, (UBaseType_t) osPriorityNormal, &flightPhaseHandle);
-#if  defined(TEST_MODE) && defined(DEBUG)
-  xReturned &= xTaskCreate(otitsTask, "oTITS", 1024, NULL, (UBaseType_t) osPriorityNormal, &oTITSHandle);
-#endif
-
+*/
   if(xReturned != pdPASS)
   {
 	  //one or more tasks failed to be created
