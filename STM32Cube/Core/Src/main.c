@@ -24,20 +24,22 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "printf.h"
-#include "canlib.h"
+//#include "canlib.h"
 #include "millis.h"
-#include "ICM-20948.h"
+//#include "ICM-20948.h"
 
 #include "log.h"
-#include "controller.h"
-#include "flight_phase.h"
-#include "health_checks.h"
-#include "state_estimation.h"
-#include "trajectory.h"
+//#include "controller.h"
+//#include "flight_phase.h"
+//#include "health_checks.h"
+//#include "state_estimation.h"
+//#include "trajectory.h"
 #include "can_handler.h"
 #include "otits.h"
-#include "sdmmc.h"
-#include "vn_handler.h"
+//#include "sdmmc.h"
+//#include "vn_handler.h"
+
+#include "simulink_handler.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -97,6 +99,9 @@ TaskHandle_t healthChecksTaskHandle = NULL;
 TaskHandle_t controllerHandle = NULL;
 TaskHandle_t flightPhaseHandle = NULL;
 TaskHandle_t oTITSHandle = NULL;
+TaskHandle_t updateModelHandle = NULL;
+
+
 
 /* USER CODE END PV */
 
@@ -118,7 +123,10 @@ static void MX_USART1_UART_Init(void);
 static void MX_TIM2_Init(void);
 void StartDefaultTask(void *argument);
 
+
+
 /* USER CODE BEGIN PFP */
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -172,6 +180,8 @@ Otits_Result_t test_taskStackUsage() {
     res.outcome = TEST_OUTCOME_PASSED;
     return res;
 }
+
+
 /* USER CODE END 0 */
 
 /**
@@ -243,15 +253,16 @@ int main(void)
 #if USE_ICM == 1
   ICM_20948_init();
 #endif
-  initRes &= sdmmcInit();
-  initRes &= logInit();
-  initRes &= trajectory_init();
+//  initRes &= sdmmcInit();
+//  initRes &= logInit();
+//  initRes &= trajectory_init();
   initRes &= canHandlerInit(); //create bus queue
-  initRes &= flightPhaseInit();
-  initRes &= healthCheckInit();
-  initRes &= controllerInit();
-  initRes &= state_est_init();
-  initRes &= vn_handler_init();
+//  initRes &= flightPhaseInit();
+//  initRes &= healthCheckInit();
+//  initRes &= controllerInit();
+//  initRes &= state_est_init();
+//  initRes &= vn_handler_init();
+  	updateModelTaskInit();
 
   // otits is ifdef guarded within itself so can leave these
   initRes &= otitsRegister(test_defaultTaskPass, TEST_SOURCE_DEFAULT, "DefaultPass");
@@ -272,14 +283,16 @@ int main(void)
   BaseType_t xReturned = pdPASS;
 
   //dunno if casting from CMSIS priorities is valid
-  xReturned &= xTaskCreate(vnIMUHandler, "VN Task", 1024, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
+//  xReturned &= xTaskCreate(vnIMUHandler, "VN Task", 1024, NULL, (UBaseType_t) osPriorityNormal, &VNTaskHandle);
   xReturned &= xTaskCreate(canHandlerTask, "CAN handler", 512, NULL, (UBaseType_t) osPriorityNormal, &canhandlerhandle);
-  xReturned &= xTaskCreate(stateEstTask, "StateEst", 1024, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
-  xReturned &= xTaskCreate(trajectory_task, "traj", 512, NULL, (UBaseType_t) osPriorityNormal, &trajectoryTaskHandle);
-  xReturned &= xTaskCreate(logTask, "Logging", 1024, NULL, (UBaseType_t) osPriorityNormal, &logTaskhandle);
-  xReturned &= xTaskCreate(healthCheckTask, "health checks", 512, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
-  xReturned &= xTaskCreate(controlTask, "Controller", 512, NULL, (UBaseType_t) osPriorityNormal, &controllerHandle);
-  xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 512, NULL, (UBaseType_t) osPriorityNormal, &flightPhaseHandle);
+//  xReturned &= xTaskCreate(stateEstTask, "StateEst", 1024, NULL, (UBaseType_t) osPriorityNormal, &stateEstTaskHandle);
+//  xReturned &= xTaskCreate(trajectory_task, "traj", 512, NULL, (UBaseType_t) osPriorityNormal, &trajectoryTaskHandle);
+//  xReturned &= xTaskCreate(logTask, "Logging", 1024, NULL, (UBaseType_t) osPriorityNormal, &logTaskhandle);
+//  xReturned &= xTaskCreate(healthCheckTask, "health checks", 512, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
+//  xReturned &= xTaskCreate(controlTask, "Controller", 512, NULL, (UBaseType_t) osPriorityNormal, &controllerHandle);
+//  xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 512, NULL, (UBaseType_t) osPriorityNormal, &flightPhaseHandle);
+  xReturned &= xTaskCreate(updateModelTask, "simulink", 512, NULL, (UBaseType_t) osPriorityRealtime, &updateModelHandle);
+
 #if  defined(TEST_MODE) && defined(DEBUG)
   xReturned &= xTaskCreate(otitsTask, "oTITS", 1024, NULL, (UBaseType_t) osPriorityNormal, &oTITSHandle);
 #endif
@@ -1069,9 +1082,14 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
 	/* Infinite loop */
+	int test_in = 0;
 
 	for(;;)
 	{
+		test_in = (test_in + 1) % 11; //redneck saw wave
+		rtU_thisIsAnInput = (double) (test_in - 5);
+		printf_("PID output: %d", rtY_thisIsAnOutput);
+
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 		vTaskDelay(1000);
 	}
