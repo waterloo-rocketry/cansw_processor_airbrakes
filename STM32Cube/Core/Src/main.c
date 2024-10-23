@@ -291,7 +291,7 @@ int main(void)
 //  xReturned &= xTaskCreate(healthCheckTask, "health checks", 512, NULL, (UBaseType_t) osPriorityNormal, &healthChecksTaskHandle);
 //  xReturned &= xTaskCreate(controlTask, "Controller", 512, NULL, (UBaseType_t) osPriorityNormal, &controllerHandle);
 //  xReturned &= xTaskCreate(flightPhaseTask, "Flight Phase", 512, NULL, (UBaseType_t) osPriorityNormal, &flightPhaseHandle);
-  xReturned &= xTaskCreate(updateModelTask, "simulink", 512, NULL, (UBaseType_t) osPriorityRealtime, &updateModelHandle);
+  xReturned &= xTaskCreate(updateModelTask, "simulink", 512, NULL, (UBaseType_t) osPriorityNormal, &updateModelHandle);
 
 #if  defined(TEST_MODE) && defined(DEBUG)
   xReturned &= xTaskCreate(otitsTask, "oTITS", 1024, NULL, (UBaseType_t) osPriorityNormal, &oTITSHandle);
