@@ -1088,7 +1088,7 @@ void StartDefaultTask(void *argument)
 	{
 		test_in = (test_in + 1) % 11; //redneck saw wave
 		rtU_thisIsAnInput = (double) (test_in - 5);
-		printf_("PID output: %d", rtY_thisIsAnOutput);
+		printf_("PID output: %f", rtY_thisIsAnOutput);
 
 		HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_12);
 		vTaskDelay(1000);

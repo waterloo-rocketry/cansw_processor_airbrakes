@@ -74,11 +74,13 @@ void updateModelTaskInit()
 
 void updateModelTask(void *arguments)
 {
+	TickType_t LastWakeTime = xTaskGetTickCount();
+	RT_MODEL *const rtM = rtMPtr;
 
 	for(;;)
 	{
 		rt_OneStep(rtM);
-		vTaskDelayUntil(200); //base model step is 0.2s
+		vTaskDelayUntil(&LastWakeTime, 200); //base model step is 0.2s
 	}
 
 }
