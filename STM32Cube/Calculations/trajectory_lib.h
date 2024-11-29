@@ -1,7 +1,7 @@
 #ifndef TRAJECTORY_LIB_H_
 #define TRAJECTORY_LIB_H_
 
-#define EXTENSION_REFERENCE 0.58f
+#define EXTENSION_REFERENCE 0.53f
 
 /**
  * Returns the acceleration due to drag acting on the rocket.
